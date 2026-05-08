@@ -68,7 +68,7 @@ impl sema::Importer for importer {
 		ret self.mod
 	}
 
-	fn ModById(mut *self, id: mod::ID): &mod::Mod {
+	fn ModByID(mut *self, id: mod::ID): &mod::Mod {
 		ret self.mods[id]
 	}
 

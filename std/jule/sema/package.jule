@@ -25,7 +25,7 @@ trait Importer {
 	fn GetMod(mut *self): &mod::Mod
 
 	// Returns module path by identity.
-	fn ModById(mut *self, id: mod::ID): &mod::Mod
+	fn ModByID(mut *self, id: mod::ID): &mod::Mod
 
 	// Returns &ImportInfo by path.
 	// This function accepted as returns already imported and checked package.

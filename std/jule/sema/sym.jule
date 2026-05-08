@@ -561,7 +561,7 @@ impl symBuilder {
 			imp.Duplicate = true
 
 			mut oldMod := self.importer.GetMod()
-			self.importer.SetMod(self.importer.ModById(port.ModID))
+			self.importer.SetMod(self.importer.ModByID(port.ModID))
 			if !isImplicitImport(imp) && !isRuntimeInternal(imp) {
 				self.checkPackageAccessibility(decl, oldMod, port.Path)
 			}
