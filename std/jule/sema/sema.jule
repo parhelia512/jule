@@ -199,8 +199,8 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 // See developer reference (1), and (2).
 fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 	mut size := len(f.Generics)
-	if f.Decl.Owner != nil {
-		size += len(f.Decl.Owner.Generics)
+	if f.Owner != nil {
+		size += len(f.Owner.Decl.Generics)
 	}
 
 	if size == 0 {
@@ -222,10 +222,9 @@ fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 		})
 	}
 
-	if f.Decl.Owner != nil {
-		mut owner := f.Owner
-		for (i, mut g) in owner.Generics {
-			mut decl := owner.Decl.Generics[i]
+	if f.Owner != nil {
+		for (i, mut g) in f.Owner.Generics {
+			mut decl := f.Owner.Decl.Generics[i]
 			*dest = append(*dest, &TypeAlias{
 				Used:    true,
 				Generic: true,
@@ -1750,6 +1749,7 @@ impl sema {
 	fn checkTraitDeclMethods(mut &self, mut t: &Trait) {
 		for (i, mut f) in t.Methods {
 			self.checkTraitDeclMethod(f)
+			f.Owner = t
 
 			// Break checking if type alias has error.
 			if len(self.errors) > 0 {

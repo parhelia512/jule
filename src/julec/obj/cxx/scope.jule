@@ -103,7 +103,7 @@ impl scopeCoder {
 		self.oc.write(";\n")
 		mut sb := strings::Builder{}
 		addrmap := self.registerAddrmap(uintptr(it))
-		identCoder.iterNext(&sb, uintptr(it), addrmap)
+		self.oc.ic.iterNext(&sb, uintptr(it), addrmap)
 		next := sb.Str()
 		self.oc.write(next)
 		self.oc.write(":;\n")
@@ -150,7 +150,7 @@ impl scopeCoder {
 
 		// Close scope.
 		self.oc.indent()
-		identCoder.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
+		self.oc.ic.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
 		self.oc.write(":;\n")
 		self.oc.doneIndent()
 		self.oc.indent()
@@ -200,10 +200,10 @@ impl scopeCoder {
 	fn rangeIndexIter(mut &self, mut it: &sema::RangeIter) {
 		mut sb := strings::Builder{}
 		addrmap := self.registerAddrmap(uintptr(it))
-		identCoder.iterBegin(&sb, uintptr(it), addrmap)
+		self.oc.ic.iterBegin(&sb, uintptr(it), addrmap)
 		begin := sb.Str()
 		sb.Clear()
-		identCoder.iterNext(&sb, uintptr(it), addrmap)
+		self.oc.ic.iterNext(&sb, uintptr(it), addrmap)
 		next := sb.Str()
 
 		mut ref := false
@@ -247,7 +247,7 @@ impl scopeCoder {
 				}
 				mut keyBIdent := strings::Builder{}
 				keyBIdent.WriteStr("(*")!
-				identCoder.var(&keyBIdent, it.KeyB)
+				self.oc.ic.var(&keyBIdent, it.KeyB)
 				keyBIdent.WriteByte(')')!
 				name := keyBIdent.Str()
 				optimizedVarPrefixForKeyB = len(self.oc.ec.varPrefixes)
@@ -281,7 +281,7 @@ impl scopeCoder {
 		self.oc.write("++it;\n")
 		self.oc.indent()
 		if it.KeyA != nil {
-			identCoder.var(&self.oc.Buf, it.KeyA)
+			self.oc.ic.var(&self.oc.Buf, it.KeyA)
 			self.oc.write("++;\n")
 			self.oc.indent()
 		}
@@ -295,7 +295,7 @@ impl scopeCoder {
 		self.oc.write("}\n")
 
 		self.oc.indent()
-		identCoder.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
+		self.oc.ic.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
 		self.oc.write(":;\n")
 
 		// Close scope.
@@ -307,10 +307,10 @@ impl scopeCoder {
 	fn rangeHashmapIter(mut &self, mut it: &sema::RangeIter) {
 		mut sb := strings::Builder{}
 		addrmap := self.registerAddrmap(uintptr(it))
-		identCoder.iterBegin(&sb, uintptr(it), addrmap)
+		self.oc.ic.iterBegin(&sb, uintptr(it), addrmap)
 		begin := sb.Str()
 		sb.Clear()
-		identCoder.iterNext(&sb, uintptr(it), addrmap)
+		self.oc.ic.iterNext(&sb, uintptr(it), addrmap)
 		next := sb.Str()
 
 		mut _map := it.Expr.Type.Map()
@@ -333,7 +333,7 @@ impl scopeCoder {
 		self.oc.indent()
 		self.oc.tc.structureIns(&self.oc.Buf, iterator)
 		self.oc.write(" it = ")
-		identCoder.funcIns(&self.oc.Buf, f)
+		self.oc.ic.funcIns(&self.oc.Buf, f)
 		self.oc.write("(")
 		self.oc.ec.possibleRefExpr(it.Expr.Model)
 		self.oc.write(");\n")
@@ -345,7 +345,7 @@ impl scopeCoder {
 		self.oc.write(" ")
 		self.oc.write(resultName)
 		self.oc.write(" = ")
-		identCoder.funcIns(&self.oc.Buf, nextCall)
+		self.oc.ic.funcIns(&self.oc.Buf, nextCall)
 		self.oc.write("(&it);\n")
 		self.oc.indent()
 		self.oc.write("if (")
@@ -379,7 +379,7 @@ impl scopeCoder {
 		self.oc.write("}\n")
 
 		self.oc.indent()
-		identCoder.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
+		self.oc.ic.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
 		self.oc.write(":;\n")
 
 		// Close scope.
@@ -391,10 +391,10 @@ impl scopeCoder {
 	fn strRuneIter(mut &self, mut it: opt::StrRuneIter, utf8: bool) {
 		mut sb := strings::Builder{}
 		addrmap := self.registerAddrmap(uintptr(it.Base))
-		identCoder.iterBegin(&sb, uintptr(it.Base), addrmap)
+		self.oc.ic.iterBegin(&sb, uintptr(it.Base), addrmap)
 		begin := sb.Str()
 		sb.Clear()
-		identCoder.iterNext(&sb, uintptr(it.Base), addrmap)
+		self.oc.ic.iterNext(&sb, uintptr(it.Base), addrmap)
 		next := sb.Str()
 
 		self.oc.write("{\n")
@@ -453,7 +453,7 @@ impl scopeCoder {
 		self.oc.write("__jule_runeStep(it, end - it, ")
 		if it.Base.KeyB != nil {
 			self.oc.write("&")
-			identCoder.var(&self.oc.Buf, it.Base.KeyB)
+			self.oc.ic.var(&self.oc.Buf, it.Base.KeyB)
 		} else {
 			self.oc.write("nullptr")
 		}
@@ -472,7 +472,7 @@ impl scopeCoder {
 		self.oc.write("it += len;\n")
 		self.oc.indent()
 		if it.Base.KeyA != nil {
-			identCoder.var(&self.oc.Buf, it.Base.KeyA)
+			self.oc.ic.var(&self.oc.Buf, it.Base.KeyA)
 			if utf8 {
 				self.oc.write(" += len;\n")
 			} else {
@@ -490,7 +490,7 @@ impl scopeCoder {
 		self.oc.write("}\n")
 
 		self.oc.indent()
-		identCoder.iterEnd(&self.oc.Buf, uintptr(it.Base), addrmap)
+		self.oc.ic.iterEnd(&self.oc.Buf, uintptr(it.Base), addrmap)
 		self.oc.write(":;\n")
 
 		// Close scope.
@@ -526,7 +526,7 @@ impl scopeCoder {
 			self.oc.write("\n")
 			self.oc.indent()
 			self.oc.write("goto ")
-			identCoder.matchEnd(&self.oc.Buf, uintptr(c), addrmap)
+			self.oc.ic.matchEnd(&self.oc.Buf, uintptr(c), addrmap)
 			self.oc.write(";\n")
 			self.oc.doneIndent()
 			self.oc.indent()
@@ -541,7 +541,7 @@ impl scopeCoder {
 			self.oc.write("\n")
 		}
 		self.oc.indent()
-		identCoder.matchEnd(&self.oc.Buf, uintptr(c), addrmap)
+		self.oc.ic.matchEnd(&self.oc.Buf, uintptr(c), addrmap)
 		self.oc.write(":;\n")
 		self.oc.doneIndent()
 		self.oc.indent()
@@ -566,22 +566,22 @@ impl scopeCoder {
 		self.oc.doneIndent()
 		self.oc.write("\n")
 		self.oc.indent()
-		identCoder.iterNext(&self.oc.Buf, uintptr(it), addrmap)
+		self.oc.ic.iterNext(&self.oc.Buf, uintptr(it), addrmap)
 		self.oc.write(":;\n")
 		self.oc.indent()
 		self.oc.write("}\n")
 		self.oc.indent()
-		identCoder.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
+		self.oc.ic.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
 		self.oc.write(":;")
 	}
 
 	fn whileIter(mut &self, mut it: &sema::WhileIter) {
 		mut sb := strings::Builder{}
 		addrmap := self.registerAddrmap(uintptr(it))
-		identCoder.iterBegin(&sb, uintptr(it), addrmap)
+		self.oc.ic.iterBegin(&sb, uintptr(it), addrmap)
 		begin := sb.Str()
 		sb.Clear()
-		identCoder.iterNext(&sb, uintptr(it), addrmap)
+		self.oc.ic.iterNext(&sb, uintptr(it), addrmap)
 		next := sb.Str()
 		itaddr := conv::FormatUint(u64(uintptr(it)), 16)
 
@@ -640,7 +640,7 @@ impl scopeCoder {
 		}
 		self.oc.indent()
 
-		identCoder.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
+		self.oc.ic.iterEnd(&self.oc.Buf, uintptr(it), addrmap)
 		self.oc.write(":;\n")
 
 		// Close scope.
@@ -670,12 +670,12 @@ impl scopeCoder {
 		childIndex++
 		self.emitDefersByLevel(childIndex, false)
 		self.oc.write("goto ")
-		identCoder.iterNext(&self.oc.Buf, c.It, self.getAddrmap(c.It))
+		self.oc.ic.iterNext(&self.oc.Buf, c.It, self.getAddrmap(c.It))
 	}
 
 	fn label(mut &self, l: &sema::Label) {
 		addrmap := self.registerAddrmap(uintptr(l))
-		identCoder.label(&self.oc.Buf, uintptr(l), addrmap)
+		self.oc.ic.label(&self.oc.Buf, uintptr(l), addrmap)
 		self.oc.write(":")
 
 		// For async runtime, we need to add a compiler barrier here.
@@ -694,7 +694,7 @@ impl scopeCoder {
 		}
 
 		self.oc.write("goto ")
-		identCoder.label(&self.oc.Buf, uintptr(gt.Label), self.getAddrmap(uintptr(gt.Label)))
+		self.oc.ic.label(&self.oc.Buf, uintptr(gt.Label), self.getAddrmap(uintptr(gt.Label)))
 	}
 
 	fn tryMapSet(mut &self, mut m: compExpr): (ok: bool) {
@@ -712,7 +712,7 @@ impl scopeCoder {
 		const Static = false
 		mut f := ins.FindMethod("set", Static).Instances[0]
 		self.oc.write("(*")
-		identCoder.funcIns(&self.oc.Buf, f)
+		self.oc.ic.funcIns(&self.oc.Buf, f)
 		self.oc.write("((")
 		self.oc.ec.possibleRefExpr(iem.Expr.Model)
 		self.oc.write(").must_ok(\"")
@@ -799,27 +799,27 @@ impl scopeCoder {
 			ret
 		| token::ADD_ASSIGN:
 			if kind == types::Cmplx128 {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Add)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Add)
 			} else {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Add)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Add)
 			}
 		| token::SUB_ASSIGN:
 			if kind == types::Cmplx128 {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Sub)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Sub)
 			} else {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Sub)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Sub)
 			}
 		| token::MUL_ASSIGN:
 			if kind == types::Cmplx128 {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Mul)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Mul)
 			} else {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Mul)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Mul)
 			}
 		| token::QUO_ASSIGN:
 			if kind == types::Cmplx128 {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Div)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx128Div)
 			} else {
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Div)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Cmplx64Div)
 			}
 		|:
 			panic("unreachable")
@@ -932,7 +932,7 @@ impl scopeCoder {
 				self.oc.write(typeTrait + "(")
 				self.oc.ec.possibleRefExpr(r)
 				self.oc.write(", (__jule_TypeMeta*)&")
-				identCoder.traitDecl(&self.oc.Buf, t)
+				self.oc.ic.traitDecl(&self.oc.Buf, t)
 				self.oc.write("_mptr_data")
 				self.oc.write(conv::Itoa(obj::FindTraitTypeOffset(t, rt)))
 				self.oc.write(")")
@@ -950,7 +950,7 @@ impl scopeCoder {
 		const Static = false
 		mut f := ins.FindMethod("lookup", Static).Instances[0]
 
-		identCoder.funcIns(&self.oc.Buf, f)
+		self.oc.ic.funcIns(&self.oc.Buf, f)
 		self.oc.write("(")
 		self.assignLeft(iem.Expr.Model)
 		self.oc.write(".alloc, ")
@@ -999,7 +999,7 @@ impl scopeCoder {
 						if v == dv {
 							// variable is declaring now
 							// takes pointer from the lvalue tuple data
-							identCoder.var(&self.oc.Buf, v)
+							self.oc.ic.var(&self.oc.Buf, v)
 							self.oc.write(" = ")
 							self.oc.ec.possibleRefExpr(r.Model)
 							self.oc.write(";\n")
@@ -1014,7 +1014,7 @@ impl scopeCoder {
 				}
 				self.oc.tc.kind(&self.oc.Buf, l.Type)
 				self.oc.write(" ")
-				identCoder.toOut(&self.oc.Buf, assignArgName, uintptr(i))
+				self.oc.ic.toOut(&self.oc.Buf, assignArgName, uintptr(i))
 				self.oc.write(" = ")
 			}
 			self.oc.ec.possibleRefExpr(r.Model)
@@ -1028,7 +1028,7 @@ impl scopeCoder {
 			self.oc.indent()
 			self.assignLeft(l.Model)
 			self.oc.write(" = ")
-			identCoder.toOut(&self.oc.Buf, assignArgName, uintptr(i))
+			self.oc.ic.toOut(&self.oc.Buf, assignArgName, uintptr(i))
 			self.oc.write(";\n")
 		}
 
@@ -1111,7 +1111,7 @@ impl scopeCoder {
 	fn typeAssertionAssign(mut &self, mut a: &sema::MultiAssign) {
 		mut ce := a.Right.(&sema::TypeAssertionExpr)
 		mut f := obj::FindFuncGenericInstance(meta::Program.Runtime.DynAssertAssign, ce.Expr.Type, ce.Type)
-		identCoder.funcIns(&self.oc.Buf, f)
+		self.oc.ic.funcIns(&self.oc.Buf, f)
 		self.oc.write("(")
 		self.assignLeft(ce.Expr.Model)
 		self.oc.write(", ")
@@ -1202,7 +1202,7 @@ impl scopeCoder {
 					if m.Expr.Type.Trait() != nil { // Trait type.
 						t := m.Expr.Type.Trait()
 						self.oc.write(".type == (__jule_TypeMeta*)&")
-						identCoder.traitDecl(&self.oc.Buf, t)
+						self.oc.ic.traitDecl(&self.oc.Buf, t)
 						self.oc.write("_mptr_data")
 						self.oc.write(conv::Itoa(obj::FindTraitTypeOffset(m.Expr.Type.Trait(), expr.Type)))
 					} else { // Any type.
@@ -1226,7 +1226,7 @@ impl scopeCoder {
 
 		self.oc.write("{\n")
 		self.oc.indent()
-		identCoder.caseBegin(&self.oc.Buf, uintptr(c), self.registerAddrmap(uintptr(c)))
+		self.oc.ic.caseBegin(&self.oc.Buf, uintptr(c), self.registerAddrmap(uintptr(c)))
 		self.oc.write(":;\n")
 		if len(c.Scope.Stmts) > 0 {
 			self.oc.indent()
@@ -1295,7 +1295,7 @@ impl scopeCoder {
 
 		self.oc.write("\n")
 		self.oc.indent()
-		identCoder.matchEnd(&self.oc.Buf, uintptr(m), addrmap)
+		self.oc.ic.matchEnd(&self.oc.Buf, uintptr(m), addrmap)
 		self.oc.write(":;")
 		self.oc.write("\n")
 
@@ -1310,7 +1310,7 @@ impl scopeCoder {
 			// Empty select.
 			if slct.Default == nil {
 				self.oc.write("__jule_AsyncAwait ")
-				identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Emptyselect)
+				self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Emptyselect)
 				self.oc.write("();")
 			} else {
 				// Just the default case.
@@ -1350,7 +1350,7 @@ impl scopeCoder {
 			self.oc.doneIndent()
 			self.oc.write("\n")
 			self.oc.indent()
-			identCoder.matchEnd(&self.oc.Buf, uintptr(slct), addrmap)
+			self.oc.ic.matchEnd(&self.oc.Buf, uintptr(slct), addrmap)
 			self.oc.write(":;")
 			self.oc.write("\n")
 			self.oc.indent()
@@ -1371,22 +1371,22 @@ impl scopeCoder {
 			self.oc.tc.structureIns(&scaseBuf, scaseIns)
 			scase = scaseBuf.Str()
 			scaseBuf.Clear()
-			identCoder.field(&scaseBuf, scaseIns.FindField("ch").Decl)
+			self.oc.ic.field(&scaseBuf, scaseIns.FindField("ch").Decl)
 			scaseCh = scaseBuf.Str()
 			scaseBuf.Clear()
-			identCoder.field(&scaseBuf, scaseIns.FindField("data").Decl)
+			self.oc.ic.field(&scaseBuf, scaseIns.FindField("data").Decl)
 			scaseData = scaseBuf.Str()
 			scaseBuf.Clear()
-			identCoder.field(&scaseBuf, scaseIns.FindField("tryRecv").Decl)
+			self.oc.ic.field(&scaseBuf, scaseIns.FindField("tryRecv").Decl)
 			scaseTryRecv = scaseBuf.Str()
 			scaseBuf.Clear()
-			identCoder.field(&scaseBuf, scaseIns.FindField("tryRecvImmediate").Decl)
+			self.oc.ic.field(&scaseBuf, scaseIns.FindField("tryRecvImmediate").Decl)
 			scaseTryRecvImmediate = scaseBuf.Str()
 			scaseBuf.Clear()
-			identCoder.field(&scaseBuf, scaseIns.FindField("trySend").Decl)
+			self.oc.ic.field(&scaseBuf, scaseIns.FindField("trySend").Decl)
 			scaseTrySend = scaseBuf.Str()
 			scaseBuf.Clear()
-			identCoder.field(&scaseBuf, scaseIns.FindField("trySendImmediate").Decl)
+			self.oc.ic.field(&scaseBuf, scaseIns.FindField("trySendImmediate").Decl)
 			scaseTrySendImmediate = scaseBuf.Str()
 		}
 
@@ -1435,25 +1435,25 @@ impl scopeCoder {
 			buf.WriteStr("=(")!
 			buf.WriteStr(typeUintptr)!
 			buf.WriteByte(')')!
-			identCoder.funcIns(buf, tryRecv)
+			self.oc.ic.funcIns(buf, tryRecv)
 			buf.WriteStr(", .")!
 			buf.WriteStr(scaseTryRecvImmediate)!
 			buf.WriteStr("=(")!
 			buf.WriteStr(typeUintptr)!
 			buf.WriteByte(')')!
-			identCoder.funcIns(buf, tryRecvImmediate)
+			self.oc.ic.funcIns(buf, tryRecvImmediate)
 			buf.WriteStr(", .")!
 			buf.WriteStr(scaseTrySend)!
 			buf.WriteStr("=(")!
 			buf.WriteStr(typeUintptr)!
 			buf.WriteByte(')')!
-			identCoder.funcIns(buf, trySend)
+			self.oc.ic.funcIns(buf, trySend)
 			buf.WriteStr(", .")!
 			buf.WriteStr(scaseTrySendImmediate)!
 			buf.WriteStr("=(")!
 			buf.WriteStr(typeUintptr)!
 			buf.WriteByte(')')!
-			identCoder.funcIns(buf, trySendImmediate)
+			self.oc.ic.funcIns(buf, trySendImmediate)
 
 			buf.WriteByte('}')!
 		}
@@ -1494,7 +1494,7 @@ impl scopeCoder {
 				self.oc.write("\n")
 
 				let mut varBuf: strings::Builder
-				identCoder.var(&varBuf, v)
+				self.oc.ic.var(&varBuf, v)
 				data = varBuf.Str()
 				value = v.ValueSym.Value.Model
 			| &sema::Assign:
@@ -1579,7 +1579,7 @@ impl scopeCoder {
 
 		self.oc.indent()
 		self.oc.write("__selectIndex = __jule_AsyncAwait ")
-		identCoder.funcIns(&self.oc.Buf, meta::Program.Runtime.Runselect)
+		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Runselect)
 		self.oc.write("(__chanArr, ")
 		self.oc.write(conv::Itoa(nchan))
 		self.oc.write(", __caseArr, ")
@@ -1623,7 +1623,7 @@ impl scopeCoder {
 		self.oc.indent()
 		self.oc.write("}\n")
 		self.oc.indent()
-		identCoder.matchEnd(&self.oc.Buf, uintptr(slct), addrmap)
+		self.oc.ic.matchEnd(&self.oc.Buf, uintptr(slct), addrmap)
 		self.oc.write(":;")
 		self.oc.write("\n")
 		self.oc.doneIndent()
@@ -1635,7 +1635,7 @@ impl scopeCoder {
 		mut case := unsafe { (&sema::Case)((*sema::Case)(f.DestCase)) }
 		self.emitDefersByLevel(case.Scope.ChildIndex+1, false)
 		self.oc.write("goto ")
-		identCoder.caseBegin(&self.oc.Buf, f.DestCase, self.getAddrmap(f.DestCase))
+		self.oc.ic.caseBegin(&self.oc.Buf, f.DestCase, self.getAddrmap(f.DestCase))
 	}
 
 	fn breakStmt(mut &self, b: &sema::Break) {
@@ -1657,11 +1657,11 @@ impl scopeCoder {
 		self.oc.write("goto ")
 		match {
 		| b.It != 0:
-			identCoder.iterEnd(&self.oc.Buf, b.It, self.getAddrmap(b.It))
+			self.oc.ic.iterEnd(&self.oc.Buf, b.It, self.getAddrmap(b.It))
 		| b.Match != 0:
-			identCoder.matchEnd(&self.oc.Buf, b.Match, self.getAddrmap(b.Match))
+			self.oc.ic.matchEnd(&self.oc.Buf, b.Match, self.getAddrmap(b.Match))
 		| b.Select != 0:
-			identCoder.matchEnd(&self.oc.Buf, b.Select, self.getAddrmap(b.Select))
+			self.oc.ic.matchEnd(&self.oc.Buf, b.Select, self.getAddrmap(b.Select))
 		|:
 			panic("unreachable")
 		}
@@ -1886,6 +1886,17 @@ impl scopeCoder {
 			self.oc.indent()
 			self.oc.write("}")
 		}
+	}
+
+	fn captureVarHandling(mut &self, mut m: &sema::AnonFuncExpr, mut v: &sema::Var): bool {
+		for _, cv in m.Captured {
+			if cv == v {
+				self.oc.write(closureCtxIdent + "->")
+				self.oc.ic.anonFuncVar(&self.oc.Buf, v)
+				ret true
+			}
+		}
+		ret false
 	}
 
 	fn var(mut &self, mut v: &sema::Var) {
@@ -2362,7 +2373,7 @@ impl scopeCoder {
 		closure := obj::IsClosure(m)
 		if closure {
 			self.oc.ec.varPrefixes = append(self.oc.ec.varPrefixes,
-				fn|mut v| captureVarHandling(self.oc, m, v))
+				fn|mut v| self.captureVarHandling(m, v))
 		}
 		self.oc.write("{\n")
 		self.oc.addIndent()
@@ -2450,17 +2461,6 @@ fn isIterCopyOptimizable(val: &sema::Value, v: &sema::Var): bool {
 		ret true
 	}
 	ret !v.Mutable && !val.Mutable
-}
-
-fn captureVarHandling(mut oc: &ObjectCoder, mut m: &sema::AnonFuncExpr, mut v: &sema::Var): bool {
-	for _, cv in m.Captured {
-		if cv == v {
-			oc.write(closureCtxIdent + "->")
-			identCoder.anonFuncVar(&oc.Buf, v)
-			ret true
-		}
-	}
-	ret false
 }
 
 fn returnKw(f: &sema::FuncIns): str {

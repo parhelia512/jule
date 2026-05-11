@@ -2224,8 +2224,8 @@ impl eval {
 		}
 
 		mut old := self.s
-		if f.Decl.Owner != nil {
-			self.s = f.Decl.Owner.sema
+		if f.Owner != nil {
+			self.s = f.Owner.Decl.sema
 		}
 
 		defer {

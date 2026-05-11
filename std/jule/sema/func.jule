@@ -46,6 +46,12 @@ impl Param {
 	}
 }
 
+// Types of a potential owner of a function.
+enum FuncOwner: type {
+	&Struct,
+	&Trait,
+}
+
 // Function.
 struct Func {
 	sema: &sema
@@ -74,7 +80,7 @@ struct Func {
 	Generics: []&ast::Generic
 	Result:   &RetType
 	Params:   []&Param
-	Owner:    &Struct
+	Owner:    FuncOwner
 
 	// Function instances for each unique type combination of function call.
 	// Nil if function is never used.
@@ -89,16 +95,7 @@ impl Func {
 
 	// Reports whether function is method.
 	fn IsMethod(*self): bool {
-		if self.Owner != nil {
-			ret true
-		}
-		if len(self.Params) > 0 {
-			p := self.Params[0]
-			if p.IsSelf() {
-				ret true
-			}
-		}
-		ret false
+		ret self.Owner != nil
 	}
 
 	// Reports whether function is entry point.

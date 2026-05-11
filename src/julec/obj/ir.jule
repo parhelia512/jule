@@ -3,19 +3,22 @@
 // license that can be found in the LICENSE file.
 
 use "julec/env"
+use "std/jule"
 use "std/jule/ast"
 use "std/jule/importer"
 use "std/jule/log"
 use "std/jule/sema"
 use "std/jule/token"
 use "std/slices"
+use "std/strings"
 
 // Intermediate representation of the code for compiler.
 struct IR {
-	Root:    str               // Directory of the root package.
-	Passes:  [][]str           // All unique pass directives.
-	Runtime: &sema::ImportInfo // ImportInfo instance of the "std/runtime" package.
-	Ordered: OrderedDefines    //  Ordered defines, nil by default. Initialized by the Order method.
+	Root:             str               // Directory of the root package.
+	Passes:           [][]str           // All unique pass directives.
+	Runtime:          &sema::ImportInfo // ImportInfo instance of the "std/runtime" package.
+	Ordered:          OrderedDefines    // Ordered defines, nil by default. Initialized by the Order method.
+	PackageNameCache: map[str]str       // Package defines name cache, nil by default. Initialized by the Cache method
 
 	// The main package. Not including in the Used.
 	// The Last dependency of the program, root package of the program.
@@ -38,13 +41,18 @@ impl IR {
 	// The pass directives will not be handled.
 	// To handle them properly, use the [CollectPasses].
 	fn Build(path: str, flags: int): (&IR, []log::Log) {
+		mut ir := &IR{
+			Root: path,
+		}
+
+		// Setup importer.
 		mut importer := importer::New(buildCompileInfo())
+
 		const UpdateMod = true // Detect and use the root module for the main package if exist.
 		mut files, mut logs := importer.ImportPackage(path, UpdateMod)
 		if len(logs) > 0 {
 			ret nil, logs
 		}
-		root := path
 
 		if len(files) == 0 {
 			ret nil, nil
@@ -61,13 +69,11 @@ impl IR {
 			ret nil, logs
 		}
 
-		mut ir := &IR{
-			Root: root,
-			Main: pkg,
-			Used: importer.AllPackages(),
-		}
+		// Collect data.
+		ir.Used = importer.AllPackages()
 
 		// Set up special packages.
+		ir.Main = pkg
 		ir.Runtime = pkg.Files[0].Imports[0] // runtime package
 
 		ret ir, nil
@@ -75,6 +81,29 @@ impl IR {
 }
 
 impl IR {
+	fn cache(mut *self, imp: &sema::ImportInfo) {
+		name := strings::ReplaceAll(imp.LinkPath, jule::ImportPathSep, "_")
+		self.PackageNameCache[imp.Path] = "__jule_" + name
+	}
+
+	// Caches the IR.
+	fn Cache(mut *self) {
+		// Build an imitiation import information for our root package.
+		rootImp := &sema::ImportInfo{
+			Path:     self.Root,
+			LinkPath: "std/main",
+		}
+
+		self.PackageNameCache = make(map[str]str, 256)
+		self.cache(rootImp)
+		for (_, mut imp) in self.Used {
+			if imp.Extern {
+				continue
+			}
+			self.cache(imp)
+		}
+	}
+
 	// Collects all pass directives of the IR and stores them in [Passes].
 	// Eliminates duplicated directives.
 	// Appending custom directives before this function is allowed.

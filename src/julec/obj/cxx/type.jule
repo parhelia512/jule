@@ -140,13 +140,13 @@ impl typeCoder {
 	fn mapType(mut *self, mut &buf: *strings::Builder, mut m: &sema::Map) {
 		mut ins := obj::FindStructGenericInstance(meta::Program.Runtime.Map, m.Key, m.Value)
 		buf.WriteStr("__jule_Ptr<")!
-		identCoder.structureIns(buf, ins)
+		self.oc.ic.structureIns(buf, ins)
 		buf.WriteStr(">")!
 	}
 
 	// Generates C++ code of Struct type.
 	fn structure(mut *self, mut &buf: *strings::Builder, s: &sema::Struct) {
-		identCoder.structure(buf, s)
+		self.oc.ic.structure(buf, s)
 	}
 
 	// Generates C++ code of Struct instance type.
@@ -155,7 +155,7 @@ impl typeCoder {
 			if s.Source != nil {
 				self.kind(buf, s.Source)
 			} else {
-				identCoder.structureIns(buf, s)
+				self.oc.ic.structureIns(buf, s)
 			}
 			ret
 		}
@@ -164,7 +164,7 @@ impl typeCoder {
 			buf.Write(concatAllParts(d.Args...))!
 			buf.WriteStr("::")!
 		}
-		identCoder.structureIns(buf, s)
+		self.oc.ic.structureIns(buf, s)
 		if len(s.Generics) > 0 {
 			buf.WriteByte('<')!
 			for (i, mut g) in s.Generics {
@@ -285,7 +285,7 @@ impl typeCoder {
 	fn channel(mut *self, mut &buf: *strings::Builder, mut ch: &sema::Chan) {
 		mut ins := obj::FindStructGenericInstance(meta::Program.Runtime.Pchan, ch.Value)
 		buf.WriteStr("__jule_Ptr<")!
-		identCoder.structureIns(buf, ins)
+		self.oc.ic.structureIns(buf, ins)
 		buf.WriteStr(">")!
 	}
 
@@ -443,16 +443,16 @@ impl resultCoder {
 			self.func(s, t.Kind.(&sema::FuncIns))
 		| &sema::Enum:
 			te := t.Kind.(&sema::Enum)
-			identCoder.toOut(s, te.Name, uintptr(te))
+			self.tc.oc.ic.toOut(s, te.Name, uintptr(te))
 		| &sema::TypeEnum:
 			te := t.Kind.(&sema::TypeEnum)
-			identCoder.toOut(s, te.Name, uintptr(te))
+			self.tc.oc.ic.toOut(s, te.Name, uintptr(te))
 		| &sema::StructIns:
 			mut si := t.Kind.(&sema::StructIns)
-			identCoder.structureIns(s, si)
+			self.tc.oc.ic.structureIns(s, si)
 		| &sema::Trait:
 			mut trt := t.Kind.(&sema::Trait)
-			identCoder.traitDecl(s, trt)
+			self.tc.oc.ic.traitDecl(s, trt)
 		| &sema::Prim:
 			s.WriteStr(t.Kind.(&sema::Prim).Kind)!
 		| &sema::Tuple:
