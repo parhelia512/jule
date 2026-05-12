@@ -140,15 +140,26 @@ impl identCoder {
 
 	fn funcIns(*self, mut &buf: *strings::Builder, mut f: &sema::FuncIns) {
 		if f.Decl.Extern || len(f.Generics) == 0 {
-			if f.Decl.IsMethod() && f.Decl.Static && len(f.Owner.Generics) > 0 {
+			// Function may have zero generics, but owner needs a special treatment.
+			// Because it have generic types.
+			if f.Owner != nil && len(f.Owner.Generics) > 0 {
 				self.structureIns(buf, f.Owner)
-				buf.WriteStr("_static_")!
+				if f.Decl.Static {
+					buf.WriteStr("_static_")!
+					self.writeIdentTo(buf, f.Decl.Name)
+				} else {
+					buf.WriteByte('_')!
+				}
 				self.writeIdentTo(buf, f.Decl.Name)
-				ret
+			} else {
+				// No generics for function or owner.
+				// Handle it like an ordinary function.
+				self.func(buf, f.Decl)
 			}
-			self.func(buf, f.Decl)
 			ret
 		}
+		// Deterministic identifier generation is not possible.
+		// Fallback to the non-deterministic method.
 		self.toOut(buf, f.Decl.Name, uintptr(f))
 	}
 
@@ -198,10 +209,14 @@ impl identCoder {
 			identCoder.export(buf, export)
 			ret
 		}
+		// No generics for structure.
+		// Handle it like an ordinary structure.
 		if len(s.Generics) == 0 {
 			self.structure(buf, s.Decl)
 			ret
 		}
+		// Deterministic identifier generation is not possible.
+		// Fallback to the non-deterministic method.
 		self.toOut(buf, s.Decl.Name, uintptr(s))
 	}
 

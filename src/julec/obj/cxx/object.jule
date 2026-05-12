@@ -1275,7 +1275,11 @@ impl ObjectCoder {
 				} else if m.Fallible || !m.IsVoid() {
 					self.write("return ")
 				}
-				self.ic.func(&self.Buf, sm)
+				// Generate function identifier using the instance.
+				// Because the owner structure may have generics.
+				// The identifier generator handles genericed types in a
+				// non-deterministic way.
+				self.ic.funcIns(&self.Buf, sm.Instances[0])
 				self.write("(")
 				mut ptr := !m.Params[0].IsSmartptr()
 				// Structure uses source type. Handle it.
