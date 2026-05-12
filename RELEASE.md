@@ -42,24 +42,28 @@ This stage is about building the compiler and obtaining the executable binary.
 
 ### Windows
 
+On Windows, the automated build process `release-windows.ps1` is used.
+This process fetches and builds the latest IR versions compiled for Windows via the [julec-ir](https://github.com/julelang/julec-ir) repository.
+The release archive will be added to the workspace directory where you run the script, named according to the platform–architecture combination (for example, `jule-windows-amd64.zip`).
+
+Dependencies:
+- `curl.exe` (modern Windows versions have it by default)
+- `7z.exe` (7-Zip)
+- `clang++.exe` (Clang, for ARM64)
+- `x86_64-w64-mingw32-clang++.exe` (Clang, for AMD64)
+
 > [!NOTE]
-> For Windows, a native machine or a VM should be used.\
+> For Windows, a native machine or a VM should be used.
 >
 > It is recommended to build on an ARM64 system.\
-> Building for Intel (AMD64) using MinGW-Clang should be straightforward, use the correct binary like `x86_64-w64-mingw32-clang++`.
-
-- Obtain the latest IR code for the target platform and architecture using [julec-ir](https://github.com/julelang/julec-ir).
-- Build the IR within the source code prepared during the preparation stage.
-
-> [!WARNING]
-> Make sure the build is statically linked.
-> Otherwise, on some systems the compiler may fail to run due to missing dependencies such as DLLs, making it unusable.
+> Use MinGW-Clang for Clang dependency.
+> It includes the `clang++.exe` for ARM64, and `x86_64-w64-mingw32-clang++.exe` for AMD64 by default.
 
 ### Linux (devcontainers)
 
 On Linux, the automated build process located under `.devcontainers/release` is used.
 This process fetches and builds the latest IR versions compiled for Linux via the [julec-ir](https://github.com/julelang/julec-ir) repository.
-The release archive will be added to the directory where you run the script, named according to the platform–architecture combination (for example, `julec-linux-amd64.tar.xz`).
+The release archive will be added to the directory where you run the script, named according to the platform–architecture combination (for example, `jule-linux-amd64.tar.xz`).
 
 It is recommended to run the script from the root directory of the source code.
 
