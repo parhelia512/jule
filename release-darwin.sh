@@ -16,7 +16,7 @@ mkdir ./bin
 
 # Get ARM64 IRs from the GitHub and compile it.
 curl -L -o ir.cpp https://raw.githubusercontent.com/julelang/julec-ir/main/src/darwin-arm64.cpp
-clang++ -Wno-everything --std=c++20 -fwrapv -ffloat-store -fno-fast-math -fexcess-precision=standard -fno-rounding-math -ffp-contract=fast -O3 -flto=thin -DNDEBUG -fomit-frame-pointer -fno-strict-aliasing -o ./bin/julec ir.cpp
+curl -fsSL https://raw.githubusercontent.com/julelang/julec-ir/refs/heads/main/meta/darwin-arm64.txt | bash
 
 # Create tar.xz for release.
 cd ..
@@ -31,7 +31,7 @@ rm ./ir.cpp
 
 # Get AMD64 IRs from the GitHub and compile it.
 curl -L -o ir.cpp https://raw.githubusercontent.com/julelang/julec-ir/main/src/darwin-amd64.cpp
-clang++ -arch x86_64 -Wno-everything --std=c++20 -fwrapv -ffloat-store -fno-fast-math -fexcess-precision=standard -fno-rounding-math -ffp-contract=fast -O3 -flto=thin -DNDEBUG -fomit-frame-pointer -fno-strict-aliasing -o ./bin/julec ir.cpp
+curl -fsSL https://raw.githubusercontent.com/julelang/julec-ir/refs/heads/main/meta/darwin-amd64.txt | bash
 
 # Create tar.xz for release.
 cd ..
