@@ -128,7 +128,7 @@ struct TupleExpr {
 // Literal expression.
 struct LitExpr {
 	Token: &token::Token
-	Value: str
+	Value: string
 }
 
 // Unsafe expression.
@@ -140,7 +140,7 @@ struct UnsafeExpr {
 // Identifier expression.
 struct NameExpr {
 	Token:  &token::Token // Token of identifier.
-	Name:   str           // The name.
+	Name:   string        // The name.
 	Extern: bool          // It is in the extern namespace.
 }
 
@@ -293,14 +293,14 @@ struct Constraint {
 // Generic type declaration.
 struct Generic {
 	Token:      &token::Token
-	Name:       str
+	Name:       string
 	Constraint: &Constraint
 }
 
 // Label statement.
 struct Label {
 	Token: &token::Token
-	Name:  str
+	Name:  string
 }
 
 // Goto statement.
@@ -319,7 +319,7 @@ struct AssignLeft {
 	Token:     &token::Token
 	Mutable:   bool
 	Reference: bool
-	Name:      str
+	Name:      string
 	X:         &Expr // Expression.
 }
 
@@ -381,7 +381,7 @@ struct Param {
 	Variadic:  bool
 	Reference: bool
 	Type:      &Expr
-	Name:      str
+	Name:      string
 }
 
 impl Param {
@@ -414,7 +414,7 @@ struct Func {
 	Short:      bool // Whether this function is an anonymous function, defined by short literal.
 	Static:     bool
 	Fallible:   bool
-	Name:       str
+	Name:       string
 	Directives: []&Directive
 	Scope:      &ScopeTree
 	Generics:   []&Generic
@@ -444,7 +444,7 @@ struct Var {
 	Scope:      &ScopeTree // nil for global scopes
 	Token:      &token::Token
 	Op:         &token::Token // Expression assign operator token.
-	Name:       str
+	Name:       string
 	Extern:     bool
 	Public:     bool
 	Mutable:    bool
@@ -551,7 +551,7 @@ struct TypeAlias {
 	Public:   bool
 	Extern:   bool
 	Token:    &token::Token
-	Name:     str
+	Name:     string
 	Strict:   bool
 	Type:     &Expr
 	Generics: []&Generic
@@ -603,7 +603,7 @@ struct Use {
 // Enum item.
 struct EnumItem {
 	Token: &token::Token
-	Name:  str
+	Name:  string
 	X:     &Expr // Nil for auto expression.
 }
 
@@ -618,7 +618,7 @@ impl EnumItem {
 struct Enum {
 	Token:  &token::Token
 	Public: bool
-	Name:   str
+	Name:   string
 	Type:   &Expr
 	Items:  []&EnumItem
 	End:    &token::Token
@@ -641,7 +641,7 @@ struct TypeEnumItem {
 struct TypeEnum {
 	Token:  &token::Token
 	Public: bool
-	Name:   str
+	Name:   string
 	Items:  []&TypeEnumItem
 	End:    &token::Token
 }
@@ -651,7 +651,7 @@ struct Field {
 	Token:   &token::Token
 	Public:  bool
 	Mutable: bool // Interior mutability.
-	Name:    str
+	Name:    string
 	Type:    &Expr
 	Tag:     &token::Token // Nil if not given.
 }
@@ -660,7 +660,7 @@ struct Field {
 struct Struct {
 	Token:      &token::Token
 	End:        &token::Token
-	Name:       str
+	Name:       string
 	Fields:     []&Field
 	Public:     bool
 	Extern:     bool
@@ -672,7 +672,7 @@ struct Trait {
 	// Trait declaration.
 	Token:    &token::Token
 	End:      &token::Token
-	Name:     str
+	Name:     string
 	Public:   bool
 	Inherits: []&Expr
 	Methods:  []&Func
