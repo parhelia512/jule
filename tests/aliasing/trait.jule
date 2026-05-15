@@ -3,19 +3,19 @@
 // license that can be found in the LICENSE file.
 
 trait Trait {
-	fn test(*self): str
+	fn test(*self): string
 }
 
 struct Foo2{}
 
 impl Trait for Foo2 {
-	fn test(*self): str { ret "Foo" }
+	fn test(*self): string { ret "Foo" }
 }
 
 type Bar2: Foo2
 
 impl Trait for Bar2 {
-	fn test(*self): str { ret "Bar" }
+	fn test(*self): string { ret "Bar" }
 }
 
 fn init() {

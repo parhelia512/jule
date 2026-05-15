@@ -5,17 +5,17 @@
 struct Foo {
 	x: int
 	y: bool
-	z: str
+	z: string
 }
 
 impl Foo {
-	fn test(*self): str { ret "Foo" }
+	fn test(*self): string { ret "Foo" }
 }
 
 type Bar: Foo
 
 impl Bar {
-	fn test(*self): str { ret "Bar" }
+	fn test(*self): string { ret "Bar" }
 }
 
 fn init() {

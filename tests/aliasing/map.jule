@@ -4,7 +4,7 @@
 
 use "std/fmt"
 
-type Map: map[int]str
+type Map: map[int]string
 
 impl Bla2 for Map {
 	async fn foo2(*self) {
