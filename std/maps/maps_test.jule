@@ -5,19 +5,19 @@
 use "std/testing"
 
 struct equalCase {
-	m1: map[int]str
-	m2: map[int]str
+	m1: map[int]string
+	m2: map[int]string
 	eq: bool
 }
 
 struct keysCase {
-	m: map[int]str
+	m: map[int]string
 	s: []int
 }
 
 struct valuesCase {
-	m: map[int]str
-	s: []str
+	m: map[int]string
+	s: []string
 }
 
 let equalCases: []equalCase = [
