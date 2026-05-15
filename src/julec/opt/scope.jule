@@ -377,12 +377,12 @@ impl scopeOptimizer {
 				}
 				match {
 				| prim.IsU8():
-					// Expression is: []byte(str)
+					// Expression is: []byte(string)
 					// Use string's bytes directly, byte casting is unnecessary.
 					mut model := any(&BytesFromStr{Expr: cem.Expr.Model})
 					it.Expr.Model = unsafe { *(*sema::Expr)(&model) }
 				| prim.IsI32():
-					// Expression is: []rune(str)
+					// Expression is: []rune(string)
 					// Avoid making allocation, iterate runes of string.
 					exprOptimizer.optimizeValue(&cem.Expr.Model, self.data, self) // Optimize string expression.
 					self.setCurrentStmt(&StrRuneIter{

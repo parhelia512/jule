@@ -29,8 +29,8 @@ const (
 // Common group of semantic analysis expression model types and optimizer specific types.
 enum compExpr: type {
 	sema::Expr,
-	str,  // For built-in expressions.
-	&str, // For built-in expressions.
+	string,  // For built-in expressions.
+	&string, // For built-in expressions.
 	&opt::UnsafeBinaryExpr,
 	&opt::UnsafeIndexingExpr,
 	&opt::StrCompExpr,
@@ -318,8 +318,8 @@ impl exprCoder {
 		ret true
 	}
 
-	fn structBinary(mut &self, mut &buf: *strings::Builder, mut s: &sema::StructIns, l: str,
-		r: str, op: int, kind: str) {
+	fn structBinary(mut &self, mut &buf: *strings::Builder, mut s: &sema::StructIns, l: string,
+		r: string, op: int, kind: string) {
 		if op != token::EQL && op != token::NEQ {
 			panic("cxx: unsupported token occurred for structure binary, this is an implementation mistake")
 		}
@@ -335,8 +335,8 @@ impl exprCoder {
 		buf.WriteByte(')')!
 	}
 
-	fn _unsafeBinaryNoDynamic(mut &self, mut &buf: *strings::Builder, l: str,
-		r: str, mut lk: &sema::Type, mut rk: &sema::Type, op: int, kind: str) {
+	fn _unsafeBinaryNoDynamic(mut &self, mut &buf: *strings::Builder, l: string,
+		r: string, mut lk: &sema::Type, mut rk: &sema::Type, op: int, kind: string) {
 		lp := lk.Prim()
 		match {
 		| lp != nil && (lp.IsCmplx128() || lp.IsCmplx64()):
@@ -439,7 +439,7 @@ impl exprCoder {
 	}
 
 	fn _unsafeBinary(mut &self, mut &buf: *strings::Builder, mut l: sema::OperandExpr,
-		mut r: sema::OperandExpr, op: int, kind: str) {
+		mut r: sema::OperandExpr, op: int, kind: string) {
 		// Special cases for comparable types.
 		if (op == token::EQL || op == token::NEQ) && self.unsafeDynamicBinary(buf, l, r, op) {
 			ret
@@ -2048,7 +2048,7 @@ impl exprCoder {
 		for (i, mut expr) in m.Exprs {
 			self.possibleRefExpr(expr)
 			mut buf := unsafe { self.oc.Buf.Buf() }
-			args[i] = str(buf[n:])
+			args[i] = string(buf[n:])
 			unsafe { self.oc.Buf.SetBuf(buf[:n]) }
 		}
 		self.oc.write(fmt::Sprintf(m.Code, args...))
@@ -2247,10 +2247,10 @@ impl exprCoder {
 
 	fn model(mut &self, mut m: compExpr) {
 		match type m {
-		| str:
-			self.oc.write(m.(str))
-		| &str:
-			self.oc.write(*m.(&str))
+		| string:
+			self.oc.write(m.(string))
+		| &string:
+			self.oc.write(*m.(&string))
 		| &constant::Const:
 			self.constant(m.(&constant::Const))
 		| &sema::Type:
@@ -2414,7 +2414,7 @@ impl exprCoder {
 	}
 
 	// Assumes collection element kind able to init.
-	fn initCollection(mut &self, mut elem: &sema::Type, size: str) {
+	fn initCollection(mut &self, mut elem: &sema::Type, size: string) {
 		// If element type supports fastmemcopy implementation, use it to initialize.
 		if sema::Fastmemcopy(elem) {
 			self.oc.write("memset(")
@@ -2523,7 +2523,7 @@ impl exprCoder {
 	}
 }
 
-fn decomposeCommonEsq(b: byte): str {
+fn decomposeCommonEsq(b: byte): string {
 	match b {
 	| '\\':
 		ret "\\\\"
@@ -2550,7 +2550,7 @@ fn decomposeCommonEsq(b: byte): str {
 	}
 }
 
-fn sbtoa(b: byte): str {
+fn sbtoa(b: byte): string {
 	if b == 0 {
 		ret "\\000"
 	}
@@ -2560,7 +2560,7 @@ fn sbtoa(b: byte): str {
 			ret seq
 		}
 		if 32 <= b && b <= 126 {
-			ret str(b)
+			ret string(b)
 		}
 	}
 	seq := conv::FormatUint(u64(b), 8)
@@ -2574,13 +2574,13 @@ fn sbtoa(b: byte): str {
 	}
 }
 
-fn cstrBytes(mut &s: *strings::Builder, ctx: str) {
+fn cstrBytes(mut &s: *strings::Builder, ctx: string) {
 	for _, b in []byte(ctx) {
 		s.WriteStr(sbtoa(b))!
 	}
 }
 
-fn cstrLit(mut &s: *strings::Builder, ctx: str) {
+fn cstrLit(mut &s: *strings::Builder, ctx: string) {
 	s.WriteByte('"')!
 	cstrBytes(s, ctx)
 	s.WriteByte('"')!
@@ -2627,7 +2627,7 @@ fn utoa(mut &s: *strings::Builder, x: u64) {
 
 // Writes string literal expression for constant literal to buf.
 // Literal is not including quotes, just string content in bytes.
-fn strLit(mut &buf: *strings::Builder, lit: str, len: str) {
+fn strLit(mut &buf: *strings::Builder, lit: string, len: string) {
 	export := obj::FindDirective(meta::Program.Runtime.StrBytePtr.Decl.Directives, directive::Export)
 	if export == nil {
 		panic("strLit: expected exported functions")
@@ -2656,7 +2656,7 @@ fn strLitF(mut &buf: *strings::Builder, lit: fn(): int) {
 }
 
 // Like the strLit function, but writes as slice (will not perform allocation).
-fn strLitAsSlice(mut &buf: *strings::Builder, lit: str, len: str) {
+fn strLitAsSlice(mut &buf: *strings::Builder, lit: string, len: string) {
 	export := obj::FindDirective(meta::Program.Runtime.SliceBytePtr.Decl.Directives, directive::Export)
 	if export == nil {
 		panic("strLitF: expected exported functions")
@@ -2672,7 +2672,7 @@ fn strLitAsSlice(mut &buf: *strings::Builder, lit: str, len: str) {
 }
 
 // Returns string expr as byte slice (will not perform allocation).
-fn strToSlice(mut &buf: *strings::Builder, expr: str) {
+fn strToSlice(mut &buf: *strings::Builder, expr: string) {
 	export := obj::FindDirective(meta::Program.Runtime.StrAsSlice.Decl.Directives, directive::Export)
 	if export == nil {
 		panic("strLitF: expected exported functions")
@@ -2686,10 +2686,10 @@ fn strToSlice(mut &buf: *strings::Builder, expr: str) {
 // Function f writes buffer buf and this function returns
 // as separate string the written part. Buffer will not contain
 // written part.
-fn writeAndReadFromBuf(mut &buf: *strings::Builder, f: fn()): str {
+fn writeAndReadFromBuf(mut &buf: *strings::Builder, f: fn()): string {
 	mut i := buf.Len()
 	f()
-	s := str(unsafe { buf.Buf()[i:] })
+	s := string(unsafe { buf.Buf()[i:] })
 	unsafe { buf.SetBuf(buf.Buf()[:i]) }
 	ret s
 }
@@ -2706,7 +2706,7 @@ struct useExprMemory {
 	Model:    compExpr
 	Type:     int
 	OpID:     int
-	OpKind:   str
+	OpKind:   string
 }
 
 impl useExprMemory {

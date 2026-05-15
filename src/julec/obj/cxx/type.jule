@@ -16,11 +16,11 @@ use "std/unsafe"
 const ctxParamType = "void*"
 
 struct customType {
-	kind: str
+	kind: string
 }
 
 impl sema::Kind for customType {
-	fn Str(*self): str {
+	fn Str(*self): string {
 		ret self.kind
 	}
 
@@ -58,7 +58,7 @@ impl typeCoder {
 	}
 
 	// Writes given identifier as Jule type identifier.
-	fn toType(mut *self, mut &buf: *strings::Builder, mut id: str) {
+	fn toType(mut *self, mut &buf: *strings::Builder, mut id: string) {
 		match id {
 		| types::Cmplx128:
 			self.structureIns(buf, meta::Program.Runtime.Cmplx128)
@@ -94,7 +94,7 @@ impl typeCoder {
 		buf.WriteByte('>')!
 	}
 
-	fn asSptr2(mut *self, mut &buf: *strings::Builder, valueTyp: str) {
+	fn asSptr2(mut *self, mut &buf: *strings::Builder, valueTyp: string) {
 		buf.WriteStr(typePtr + "<")!
 		buf.WriteStr(valueTyp)!
 		buf.WriteByte('>')!
@@ -521,6 +521,6 @@ fn shouldInitialized(mut t: &sema::Type): bool {
 	}
 }
 
-fn toStrArraySize(n: i64, base: int): str {
+fn toStrArraySize(n: i64, base: int): string {
 	ret conv::FormatInt(n, base)
 }

@@ -27,7 +27,7 @@ const (
 )
 
 // Map for "julec help" command.
-let HelpMap: [...][2]str = [
+let HelpMap: [...][2]string = [
 	[CmdHelp, "Show the list of available commands"],
 	[CmdBuild, "Compiles a program"],
 	[CmdTest, "Compiles a test program"],
@@ -37,11 +37,11 @@ let HelpMap: [...][2]str = [
 	[CmdMod, "Module management"],
 ]
 
-fn printErrorMessage(msg: str) {
+fn printErrorMessage(msg: string) {
 	println(msg)
 }
 
-fn writeCommandsList(mut &s: *strings::Builder, pads: str, pad: int) {
+fn writeCommandsList(mut &s: *strings::Builder, pads: string, pad: int) {
 	mut max := len(HelpMap[0][0])
 	for _, k in HelpMap {
 		n := len(k[0])
@@ -61,7 +61,7 @@ fn writeCommandsList(mut &s: *strings::Builder, pads: str, pad: int) {
 }
 
 // Command: julec help
-fn help(args: []str, pads: str, pad: int) {
+fn help(args: []string, pads: string, pad: int) {
 	if len(args) == 2 { // julec help
 		mut max := len(HelpMap[0][0])
 		for _, k in HelpMap {
@@ -234,7 +234,7 @@ write "julec help" to see commands`)
 }
 
 // Command: julec version
-fn version(args: []str) {
+fn version(args: []string) {
 	if len(args) > 2 {
 		printErrorMessage("invalid command: " + args[2])
 		ret
@@ -280,7 +280,7 @@ const toolsList = `
 	distarch   List all supported architects`
 
 // Command: julec tool
-fn tool(args: []str) {
+fn tool(args: []string) {
 	if len(args) == 2 {
 		println("The tools are:" + toolsList)
 		ret
@@ -303,7 +303,7 @@ fn tool(args: []str) {
 }
 
 // Command: julec env
-fn env(args: []str) {
+fn env(args: []string) {
 	if len(args) > 2 {
 		printErrorMessage("invalid command: " + args[2])
 		ret
@@ -319,7 +319,7 @@ const modCommandsList = `
 	init <modulename>   Initializes a new module in the current path`
 
 // Command: julec mod
-fn mod(args: []str) {
+fn mod(args: []string) {
 	if len(args) == 2 {
 		println(`julec mod is a tool for managing Jule modules.
 
@@ -364,7 +364,7 @@ The commands are:` + modCommandsList)
 
 // Try to process compiler commands.
 // Reports whether "ARGS" is command and processed.
-fn processCommand(mut args: []str) {
+fn processCommand(mut args: []string) {
 	match args[1] {
 	| CmdHelp:
 		help(args, "\t", 1)
@@ -383,7 +383,7 @@ fn processCommand(mut args: []str) {
 	}
 }
 
-fn showInfo(args: []str) {
+fn showInfo(args: []string) {
 	println(
 		`julec is a tool for managing Jule source code.
 

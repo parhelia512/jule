@@ -36,7 +36,7 @@ impl identCoder {
 	// Write identifiers to buf. If identifier contains unicode runes,
 	// handle as ASCII characters. Some backend compilers are not supports
 	// unicode identifiers and causes compile errors.
-	fn writeIdentTo(*self, mut &buf: *strings::Builder, name: str) {
+	fn writeIdentTo(*self, mut &buf: *strings::Builder, name: string) {
 		for _, b in name {
 			if b >= utf8::RuneSelf {
 				// identifier contains unicode runes.
@@ -64,7 +64,7 @@ impl identCoder {
 	// Parameters:
 	//	name: Identifier.
 	//	addr:  Pointer address of package file handler.
-	fn toOut(*self, mut &buf: *strings::Builder, name: str, addr: uintptr) {
+	fn toOut(*self, mut &buf: *strings::Builder, name: string, addr: uintptr) {
 		buf.WriteByte('_')!
 		if addr != 0 {
 			buf.WriteStr(conv::FormatUint(u64(addr), 0xF))!
@@ -79,7 +79,7 @@ impl identCoder {
 	//	row:   Row of definition.
 	//	col:   Column of definition.
 	//	name: Identifier of definition.
-	fn toLocal(*self, mut &buf: *strings::Builder, row: int, col: int, name: str) {
+	fn toLocal(*self, mut &buf: *strings::Builder, row: int, col: int, name: string) {
 		buf.WriteByte('_')!
 		buf.WriteStr(conv::Itoa(row))!
 		buf.WriteStr(conv::Itoa(col))!
@@ -87,7 +87,7 @@ impl identCoder {
 		self.writeIdentTo(buf, name)
 	}
 
-	fn needCacheHit(*self, path: str): str {
+	fn needCacheHit(*self, path: string): string {
 		pkg := filepath::Dir(path)
 		name, ok := self.oc.ir.PackageNameCache[pkg]
 		if !ok {

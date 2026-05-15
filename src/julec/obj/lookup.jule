@@ -6,7 +6,7 @@ use "std/jule/ast"
 use "std/jule/sema"
 
 // Returns directive if exist.
-fn FindDirective(mut directives: []&ast::Directive, tag: str): &ast::Directive {
+fn FindDirective(mut directives: []&ast::Directive, tag: string): &ast::Directive {
 	for (_, mut dr) in directives {
 		if dr.Tag.Kind == tag {
 			ret dr
@@ -16,7 +16,7 @@ fn FindDirective(mut directives: []&ast::Directive, tag: str): &ast::Directive {
 }
 
 // Reports whether directive is exist.
-fn HasDirective(directives: []&ast::Directive, tag: str): bool {
+fn HasDirective(directives: []&ast::Directive, tag: string): bool {
 	ret FindDirective(unsafe { *(&directives) }, tag) != nil
 }
 
@@ -24,7 +24,7 @@ fn HasDirective(directives: []&ast::Directive, tag: str): bool {
 // Intended for flag handling by arguments.
 // If argument exist, adds r ro mode. Otherwise removes the flag r from mode.
 // Returns result mode.
-fn HasDirectiveArg(directive: &ast::Directive, arg: str, mode: int, r: int): int {
+fn HasDirectiveArg(directive: &ast::Directive, arg: string, mode: int, r: int): int {
 	for _, darg in directive.Args {
 		if darg.Kind == arg {
 			ret mode | r
@@ -34,7 +34,7 @@ fn HasDirectiveArg(directive: &ast::Directive, arg: str, mode: int, r: int): int
 }
 
 // Reports whether trait have method in this identifier.
-fn ContainsTraitMethod(mut t: &sema::Trait, name: str): bool {
+fn ContainsTraitMethod(mut t: &sema::Trait, name: string): bool {
 	for _, m in t.Methods {
 		if m.Name == name {
 			ret true
@@ -152,7 +152,7 @@ lookup:
 
 // Returns import if found matched by linkpath.
 // Returns nil, if not exist.
-fn SelectImport(mut imports: []&sema::ImportInfo, linkpath: str): &sema::ImportInfo {
+fn SelectImport(mut imports: []&sema::ImportInfo, linkpath: string): &sema::ImportInfo {
 	for (_, mut imp) in imports {
 		if imp.LinkPath == linkpath {
 			ret imp
@@ -173,7 +173,7 @@ fn FindVar(v: &sema::Var, vars: []&sema::Var): int {
 
 // Returns external identifier of type if it is external.
 // Returns empty string if t is not not external.
-fn GetExternName(t: &sema::Type): str {
+fn GetExternName(t: &sema::Type): string {
 	match type t.Kind {
 	| &sema::StructIns:
 		s := t.Kind.(&sema::StructIns)

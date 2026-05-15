@@ -14,11 +14,11 @@ use "std/strings"
 
 // Intermediate representation of the code for compiler.
 struct IR {
-	Root:             str               // Directory of the root package.
-	Passes:           [][]str           // All unique pass directives.
+	Root:             string            // Directory of the root package.
+	Passes:           [][]string        // All unique pass directives.
 	Runtime:          &sema::ImportInfo // ImportInfo instance of the "std/runtime" package.
 	Ordered:          OrderedDefines    // Ordered defines, nil by default. Initialized by the Order method.
-	PackageNameCache: map[str]str       // Package defines name cache, nil by default. Initialized by the Cache method
+	PackageNameCache: map[string]string // Package defines name cache, nil by default. Initialized by the Cache method
 
 	// The main package. Not including in the Used.
 	// The Last dependency of the program, root package of the program.
@@ -40,7 +40,7 @@ impl IR {
 	//
 	// The pass directives will not be handled.
 	// To handle them properly, use the [CollectPasses].
-	fn Build(path: str, flags: int): (&IR, []log::Log) {
+	fn Build(path: string, flags: int): (&IR, []log::Log) {
 		mut ir := &IR{
 			Root: path,
 		}
@@ -94,7 +94,7 @@ impl IR {
 			LinkPath: "std/main",
 		}
 
-		self.PackageNameCache = make(map[str]str, 256)
+		self.PackageNameCache = make(map[string]string, 256)
 		self.cache(rootImp)
 		for (_, mut imp) in self.Used {
 			if imp.Extern {
@@ -205,7 +205,7 @@ impl IR {
 }
 
 // Package-based implementation of the [IR.CollectPasses].
-fn pushPasses(mut p: &sema::Package, mut &passes: *[][]str) {
+fn pushPasses(mut p: &sema::Package, mut &passes: *[][]string) {
 	for (_, mut f) in p.Files {
 	Iter:
 		for (_, mut pass) in f.Passes {

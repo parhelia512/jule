@@ -20,7 +20,7 @@ impl AnsiEscape {
 
 	// Print with ANSI sequence.
 	// Resets ANSI after print.
-	fn Print(escape: str, text: str) {
+	fn Print(escape: string, text: string) {
 		print(escape)
 		print(text)
 		AnsiEscape.Reset()

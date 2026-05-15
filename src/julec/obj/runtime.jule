@@ -4,7 +4,7 @@
 
 use "std/jule/sema"
 
-fn RuntimeFindGlobal(mut runtime: &sema::ImportInfo, name: str): &sema::Var {
+fn RuntimeFindGlobal(mut runtime: &sema::ImportInfo, name: string): &sema::Var {
 	const Extern = false
 	mut f := runtime.FindVar(name, Extern)
 	if f == nil {
@@ -13,7 +13,7 @@ fn RuntimeFindGlobal(mut runtime: &sema::ImportInfo, name: str): &sema::Var {
 	ret f
 }
 
-fn RuntimeFindFunc(mut runtime: &sema::ImportInfo, name: str): &sema::Func {
+fn RuntimeFindFunc(mut runtime: &sema::ImportInfo, name: string): &sema::Func {
 	const Extern = false
 	mut f := runtime.FindFunc(name, Extern)
 	if f == nil {
@@ -23,7 +23,7 @@ fn RuntimeFindFunc(mut runtime: &sema::ImportInfo, name: str): &sema::Func {
 	ret f
 }
 
-fn RuntimeFindStruct(mut runtime: &sema::ImportInfo, name: str): &sema::Struct {
+fn RuntimeFindStruct(mut runtime: &sema::ImportInfo, name: string): &sema::Struct {
 	const Extern = false
 	mut f := runtime.FindStruct(name, Extern)
 	if f == nil {

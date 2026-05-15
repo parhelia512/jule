@@ -158,7 +158,7 @@ impl scopeCoder {
 	}
 
 	// Common head object-code for iterations of all kind.
-	fn iterHead(mut &self, mut it: &sema::RangeIter, mut &ref: *bool, begin: str) {
+	fn iterHead(mut &self, mut it: &sema::RangeIter, mut &ref: *bool, begin: string) {
 		self.oc.write("{\n")
 		self.oc.addIndent()
 		self.oc.indent()
@@ -758,7 +758,7 @@ impl scopeCoder {
 		self.oc.ec.divByZeroBinary(loc, opID, l, lt, r, rt)
 	}
 
-	fn cmplxAssign(mut &self, opID: int, opKind: str, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type, kind: str) {
+	fn cmplxAssign(mut &self, opID: int, opKind: string, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type, kind: string) {
 		mut fc := isFallibleResult(r)
 		if opID == token::ASSIGN && fc != nil {
 			self.oc.ec.handleFallibleCallWithData(fc, useExprMemory{
@@ -846,7 +846,7 @@ impl scopeCoder {
 	}
 
 	// The loc needed only if operation is division.
-	fn pureAssign(mut &self, mut loc: &token::Token, mut opID: int, mut opKind: str, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn pureAssign(mut &self, mut loc: &token::Token, mut opID: int, mut opKind: string, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
 		// optimize may optimize multi-assign statements
 		// it uses common tokens of normalized statement
 		// so it may be := assignment token, it is not a bug
@@ -1404,7 +1404,7 @@ impl scopeCoder {
 		self.oc.write(typeInt)
 		self.oc.write(" __selectIndex;\n")
 
-		registerChan := fn(mut &buf: *strings::Builder, mut ch: &sema::Chan, data: str, n: int) {
+		registerChan := fn(mut &buf: *strings::Builder, mut ch: &sema::Chan, data: string, n: int) {
 			buf.WriteStr(scase)!
 			buf.WriteStr("{.")!
 			buf.WriteStr(scaseCh)!
@@ -1461,7 +1461,7 @@ impl scopeCoder {
 		// We have to evaluate all expressions of the cases.
 		for (_, mut case) in slct.Cases {
 			caseHex := conv::FormatUint(u64(uintptr(case)), 16)
-			let mut data: str
+			let mut data: string
 			let mut value: sema::Expr
 			match type case.Stmt {
 			| &sema::Value:
@@ -2366,7 +2366,7 @@ impl scopeCoder {
 		}
 	}
 
-	fn anonFuncScope(mut &self, mut m: &sema::AnonFuncExpr, name: str) {
+	fn anonFuncScope(mut &self, mut m: &sema::AnonFuncExpr, name: string) {
 		if m.Func.Scope == nil {
 			ret
 		}
@@ -2463,7 +2463,7 @@ fn isIterCopyOptimizable(val: &sema::Value, v: &sema::Var): bool {
 	ret !v.Mutable && !val.Mutable
 }
 
-fn returnKw(f: &sema::FuncIns): str {
+fn returnKw(f: &sema::FuncIns): string {
 	if f.Decl == nil || !f.Decl.Async {
 		ret "return"
 	}

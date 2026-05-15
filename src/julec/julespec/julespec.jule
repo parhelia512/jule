@@ -7,7 +7,7 @@ use "std/unicode"
 use "std/unicode/utf8"
 
 // Reports whether the name is the valid identifier.
-fn IsName(name: str): bool {
+fn IsName(name: string): bool {
 	if len(name) == 0 {
 		ret false
 	}

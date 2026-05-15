@@ -61,7 +61,7 @@ fn IsTraitMethod(mut owner: &sema::StructIns, f: &sema::FuncIns): bool {
 //	IsStdPackage(f, "") for determine the whether f is standard library package
 //	IsStdPackage(f, "math") for "std/math"
 //	IsStdPackage(f, "math/big") for "std/math/big"
-fn IsStdPackage(f: str, p: str): bool {
+fn IsStdPackage(f: string, p: string): bool {
 	// Do not handle '/' separators of p, because it
 	// valid path separator for all supported platforms.
 	ret strings::HasPrefix(f, filepath::Join(build::PathStdlib(), p))

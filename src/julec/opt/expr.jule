@@ -201,7 +201,7 @@ impl exprOptimizer {
 		if !casting {
 			ret
 		}
-		// str(?)
+		// string(?)
 		mut s := c.Expr.Type.Slice()
 		if s == nil {
 			ret
@@ -211,7 +211,7 @@ impl exprOptimizer {
 			ret
 		}
 		if sp.IsU8() {
-			// str([]byte)
+			// string([]byte)
 			mut model := any(&StrFromBytes{Expr: c.Expr.Model})
 			m.Model = unsafe { *(*sema::Expr)(&model) }
 		}
@@ -899,7 +899,7 @@ impl exprOptimizer {
 		if prim == nil || !prim.IsStr() {
 			ret
 		}
-		// len((?)(str))
+		// len((?)(string))
 		mut slc := c.Type.Slice()
 		if slc == nil {
 			ret
@@ -908,14 +908,14 @@ impl exprOptimizer {
 		if prim == nil {
 			ret
 		}
-		// len(([]?)(str))
+		// len(([]?)(string))
 		match {
 		| prim.IsU8():
-			// len(([]byte)(str))
-			// simplify expression to len(str), avoid making byte slice allocation
+			// len(([]byte)(string))
+			// simplify expression to len(string), avoid making byte slice allocation
 			m.Expr = c.Expr
 		| prim.IsI32():
-			// len(([]rune)(str))
+			// len(([]rune)(string))
 			// simplify expression to runtime::runeCount, avoid making rune slice allocation
 			mut func := meta::Program.Runtime.RuneCount
 			*self.model = &sema::FuncCallExpr{

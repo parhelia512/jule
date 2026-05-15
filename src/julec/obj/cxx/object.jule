@@ -66,8 +66,8 @@ let mut generalGCPtr = &sema::Type{
 }
 
 struct SerializationInfo {
-	Compiler:     str
-	CompilerArgs: []str
+	Compiler:     string
+	CompilerArgs: []string
 }
 
 struct traitCast {
@@ -77,7 +77,7 @@ struct traitCast {
 
 struct anonHash {
 	expr: &sema::AnonFuncExpr
-	name: str
+	name: string
 	mode: int // ObjectCoder mode when this anonymous function appears.
 }
 
@@ -122,7 +122,7 @@ struct ObjectCoder {
 	// Current indentation.
 	indentBuffer: []byte
 
-	resultMap:    map[str]bool
+	resultMap:    map[string]bool
 	anyTypeMap:   []&sema::Type
 	traitCastMap: []traitCast
 	coSpawnMap:   []&sema::FuncIns
@@ -161,7 +161,7 @@ impl ObjectCoder {
 		ret oc
 	}
 
-	fn write(mut &self, s: str) {
+	fn write(mut &self, s: string) {
 		self.Buf.WriteStr(s)!
 	}
 
@@ -331,7 +331,7 @@ impl ObjectCoder {
 		ret i
 	}
 
-	fn pushAnonFunc(mut &self, mut m: &sema::AnonFuncExpr): (name: str) {
+	fn pushAnonFunc(mut &self, mut m: &sema::AnonFuncExpr): (name: string) {
 		self.meta.concurrent = self.meta.concurrent || m.Func.CalledCo
 
 		closure := obj::IsClosure(m)
@@ -341,7 +341,7 @@ impl ObjectCoder {
 			l := self.anonObj.Len()
 			self.anonObj.WriteStr("__jule_anon_")!
 			self.anonObj.WriteStr(conv::FormatUint(u64(uintptr(m.Func)), 0xF))!
-			name = str(unsafe { self.anonObj.Buf()[l:] })
+			name = string(unsafe { self.anonObj.Buf()[l:] })
 			self.anonObj.WriteStr(anonFuncCtxSuffix + "{\n")!
 			for (_, mut v) in m.Captured {
 				self.anonObj.WriteByte(indentKind)! // 1x indent
@@ -623,7 +623,7 @@ impl ObjectCoder {
 	}
 
 	fn pushResultIns(mut &self, mut f: &sema::FuncIns) {
-		s := str(self.tc.rc.code(f.Result))
+		s := string(self.tc.rc.code(f.Result))
 		_, ok := self.resultMap[s]
 		if ok {
 			ret
@@ -850,7 +850,7 @@ impl ObjectCoder {
 		self.write(";")
 	}
 
-	fn structureOperatorEq(mut &self, name: str, mut s: &sema::StructIns, decl: bool) {
+	fn structureOperatorEq(mut &self, name: string, mut s: &sema::StructIns, decl: bool) {
 		if !s.Comparable {
 			ret
 		}
@@ -982,7 +982,7 @@ impl ObjectCoder {
 	// The identifier parameter means this function is anon, mostly.
 	// But this parameter not only for anonymous functions.
 	// It also useable as custom identifiers for functions.
-	fn funcHead(mut &self, mut &buf: *strings::Builder, mut f: &sema::FuncIns, ptr: bool, name: str) {
+	fn funcHead(mut &self, mut &buf: *strings::Builder, mut f: &sema::FuncIns, ptr: bool, name: string) {
 		if !ptr && opt::Inline && !f.Decl.IsEntryPoint() {
 			buf.WriteStr("inline ")!
 		}
@@ -1176,13 +1176,13 @@ impl ObjectCoder {
 		self.varInitExpr(v, nil)
 	}
 
-	fn anonFuncInsDecl(mut &self, mut m: &sema::AnonFuncExpr, name: str) {
+	fn anonFuncInsDecl(mut &self, mut m: &sema::AnonFuncExpr, name: string) {
 		self.funcHead(&self.anonObj, m.Func, false, name)
 		self.paramsIns(&self.anonObj, m.Func)
 		self.anonObj.WriteByte(';')!
 	}
 
-	fn anonFuncIns(mut &self, mut m: &sema::AnonFuncExpr, name: str) {
+	fn anonFuncIns(mut &self, mut m: &sema::AnonFuncExpr, name: string) {
 		self.funcHead(&self.Buf, m.Func, false, name)
 		self.paramsIns(&self.Buf, m.Func)
 		self.write(" ")
@@ -1192,7 +1192,7 @@ impl ObjectCoder {
 		}
 	}
 
-	fn funcIns(mut &self, mut f: &sema::FuncIns, name: str) {
+	fn funcIns(mut &self, mut f: &sema::FuncIns, name: string) {
 		self.funcHead(&self.Buf, f, false, name)
 		self.paramsIns(&self.Buf, f)
 		self.write(" ")

@@ -30,4 +30,4 @@ let mut Production = false
 let mut COMAXPROCS: i32 = 0
 
 // Tags.
-let mut Tags: []str = nil
+let mut Tags: []string = nil

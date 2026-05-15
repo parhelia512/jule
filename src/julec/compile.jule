@@ -29,7 +29,7 @@ let mut Out = ""
 let mut COMAXPROCS = "default"
 let mut RawTags = ""
 
-let targets = map[str][]str{
+let targets = map[string][]string{
 	"windows": ["amd64", "arm64", "i386"],
 	"linux":   ["amd64", "arm64", "i386"],
 	"darwin":  ["amd64", "arm64"],
@@ -41,7 +41,7 @@ fn init() {
 	env::Compiler = "clang"
 }
 
-fn openOutput(path: str): &os::File {
+fn openOutput(path: string): &os::File {
 	dir := filepath::Dir(path)
 
 	os::Stat(dir) else {
@@ -70,7 +70,7 @@ fn clearObjects() {
 }
 
 // Compile generated IR.
-fn compileIR(compiler: str, mut compilerArgs: []str) {
+fn compileIR(compiler: string, mut compilerArgs: []string) {
 	mut cmd := os::Cmd.New(compiler, compilerArgs...)
 	cmd.Stdout(os::Stdout())!
 	cmd.Stderr(os::Stderr())!
@@ -91,7 +91,7 @@ fn compileIR(compiler: str, mut compilerArgs: []str) {
 	clearObjects()
 }
 
-fn isExternSourceFile(path: str): bool {
+fn isExternSourceFile(path: string): bool {
 	offset := strings::LastIndexByte(path, '.')
 	if offset == -1 {
 		ret false
@@ -101,7 +101,7 @@ fn isExternSourceFile(path: str): bool {
 		build::IsValidAssemblyExt(ext)
 }
 
-fn pushCompCmdClang(mut args: []str): []str {
+fn pushCompCmdClang(mut args: []string): []string {
 	// Disable all warnings.
 	args = append(args, "-Wno-everything")
 
@@ -206,7 +206,7 @@ fn pushCompCmdClang(mut args: []str): []str {
 	ret args
 }
 
-fn pushCompCmdGcc(mut args: []str): []str {
+fn pushCompCmdGcc(mut args: []string): []string {
 	// Disable all warnings.
 	args = append(args, "-w")
 
@@ -303,7 +303,7 @@ fn pushCompCmdGcc(mut args: []str): []str {
 }
 
 // Generate compile command for backend-compiler.
-fn genCompileCmd(sourcePath: str, mut ir: &obj::IR): (compiler: str, args: []str) {
+fn genCompileCmd(sourcePath: string, mut ir: &obj::IR): (compiler: string, args: []string) {
 	compiler = env::CompilerPath
 
 	match env::Compiler {
@@ -343,7 +343,7 @@ fn genCompileCmd(sourcePath: str, mut ir: &obj::IR): (compiler: str, args: []str
 	ret
 }
 
-fn pushPassArguments(mut args: []str, pass: []str): []str {
+fn pushPassArguments(mut args: []string, pass: []string): []string {
 	args = slices::Grow(args, len(pass))
 	for _, arg in pass {
 		if len(strings::Trim(arg, " ")) == 0 {
@@ -354,7 +354,7 @@ fn pushPassArguments(mut args: []str, pass: []str): []str {
 	ret args
 }
 
-fn getCompilePath(): str {
+fn getCompilePath(): string {
 	// Return command-line argument form
 	// instead of absolute path.
 	ret filepath::Join(OutDir, OutName)
@@ -382,19 +382,19 @@ fn checkCompilerFlag() {
 	}
 }
 
-fn checkTargetArch(arch: str) {
+fn checkTargetArch(arch: string) {
 	if arch != dist::AMD64 && arch != dist::ARM64 && arch != dist::I386 {
 		handle::Throw("--target: unsupported/undefined architecture: " + arch)
 	}
 }
 
-fn checkTargetOs(os: str) {
+fn checkTargetOs(os: string) {
 	if os != dist::Windows && os != dist::Linux && os != dist::Darwin {
 		handle::Throw("--target: unsupported/undefined operating system: " + os)
 	}
 }
 
-fn checkTargetPair(os: str, arch: str) {
+fn checkTargetPair(os: string, arch: string) {
 	for _, a in targets[os] {
 		if arch == a {
 			ret
@@ -403,7 +403,7 @@ fn checkTargetPair(os: str, arch: str) {
 	handle::Throw("invalid target: " + os + "-" + arch)
 }
 
-fn checkTargetFlag(target: str) {
+fn checkTargetFlag(target: string) {
 	if target == "" {
 		handle::Throw("missing option value: --target")
 	}
@@ -433,7 +433,7 @@ fn checkTargetFlag(target: str) {
 	types::UpdateTarget()
 }
 
-fn checkOptFlag(opt: str) {
+fn checkOptFlag(opt: string) {
 	if opt == "" {
 		handle::Throw("missing option value: --opt")
 	}
@@ -474,7 +474,7 @@ fn checkTags() {
 		ret
 	}
 	tags := strings::Split(RawTags, " ")
-	env::Tags = make([]str, 0, len(tags))
+	env::Tags = make([]string, 0, len(tags))
 	for _, tag in tags {
 		if !julespec::IsName(tag) {
 			handle::Throw("--tags: invalid tag: " + conv::Quote(tag))
@@ -493,25 +493,25 @@ fn checkCppStdFlag() {
 	}
 }
 
-fn checkFlags(args: []str): []str {
+fn checkFlags(args: []string): []string {
 	mut opt := "L0"
 	mut target := "native-native"
 
 	mut fs := flag::FlagSet.New()
 
-	fs.AddVar[str](unsafe { (&str)(&COMAXPROCS) }, "COMAXPROCS", 0, "Maximum number of Ps that can execute coroutines")
-	fs.AddVar[str](unsafe { (&str)(&opt) }, "opt", 0, "Optimization level")
-	fs.AddVar[str](unsafe { (&str)(&target) }, "target", 0, "Target system")
-	fs.AddVar[str](unsafe { (&str)(&Out) }, "out", 'o', "Output identifier")
+	fs.AddVar[string](unsafe { (&string)(&COMAXPROCS) }, "COMAXPROCS", 0, "Maximum number of Ps that can execute coroutines")
+	fs.AddVar[string](unsafe { (&string)(&opt) }, "opt", 0, "Optimization level")
+	fs.AddVar[string](unsafe { (&string)(&target) }, "target", 0, "Target system")
+	fs.AddVar[string](unsafe { (&string)(&Out) }, "out", 'o', "Output identifier")
 	fs.AddVar[bool](unsafe { (&bool)(&env::Shadowing) }, "shadowing", 0, "Allow shadowing")
 	fs.AddVar[bool](unsafe { (&bool)(&env::Transpilation) }, "transpile", 't', "Transpile code")
-	fs.AddVar[str](unsafe { (&str)(&env::Compiler) }, "compiler", 0, "Backend compiler")
-	fs.AddVar[str](unsafe { (&str)(&env::CompilerPath) }, "compiler-path", 0, "Path of backend compiler")
+	fs.AddVar[string](unsafe { (&string)(&env::Compiler) }, "compiler", 0, "Backend compiler")
+	fs.AddVar[string](unsafe { (&string)(&env::CompilerPath) }, "compiler-path", 0, "Path of backend compiler")
 	fs.AddVar[bool](unsafe { (&bool)(&env::Production) }, "production", 'p', "Compile for production")
-	fs.AddVar[str](unsafe { (&str)(&RawTags) }, "tags", 0, "Compile tags")
+	fs.AddVar[string](unsafe { (&string)(&RawTags) }, "tags", 0, "Compile tags")
 	fs.AddVar[bool](unsafe { (&bool)(&env::RC) }, "disable-rc", 0, "Disable reference counting")
 	fs.AddVar[bool](unsafe { (&bool)(&env::Safety) }, "disable-safety", 0, "Disable safety")
-	fs.AddVar[str](unsafe { (&str)(&env::CppStd) }, "cppstd", 0, "C++ standard")
+	fs.AddVar[string](unsafe { (&string)(&env::CppStd) }, "cppstd", 0, "C++ standard")
 	fs.AddVar[bool](unsafe { (&bool)(&opt::ZCopy) }, "opt-zcopy", 0, "Copy optimization for the built-in copy function")
 	fs.AddVar[bool](unsafe { (&bool)(&opt::ZAppend) }, "opt-zappend", 0, "Append optimization for the built-in append function")
 	fs.AddVar[bool](unsafe { (&bool)(&opt::Copy) }, "opt-copy", 0, "Copy optimization")
@@ -533,7 +533,7 @@ fn checkFlags(args: []str): []str {
 	fs.AddVar[bool](unsafe { (&bool)(&opt::StdStrings) }, "opt-std-strings", 0, "Special optimizations for the std/strings package")
 
 	mut content := fs.Parse(args) else {
-		handle::Throw(error.(str))
+		handle::Throw(error.(string))
 		use nil // Avoid error.
 	}
 
@@ -553,7 +553,7 @@ fn setupSemaFlags(mut &flags: *int) {
 	}
 }
 
-fn buildIR(args: []str): &obj::IR {
+fn buildIR(args: []string): &obj::IR {
 	content := checkFlags(args)
 
 	mut semaFlags := sema::Default
@@ -593,7 +593,7 @@ fn buildIR(args: []str): &obj::IR {
 }
 
 // Process build command by "ARGS" global.
-fn build(mut args: []str) {
+fn build(mut args: []string) {
 	args = args[1:] // Remove program path.
 	if args[0] == "test" {
 		env::Test = true
