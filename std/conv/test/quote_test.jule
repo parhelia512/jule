@@ -7,10 +7,10 @@ use "std/strings"
 use "std/testing"
 
 struct quoteTest {
-	input:   str
-	out:     str
-	ascii:   str
-	graphic: str
+	input:   string
+	out:     string
+	ascii:   string
+	graphic: string
 }
 
 let quotetests = []quoteTest([
@@ -36,7 +36,7 @@ fn testQuote(t: &testing::T) {
 		}
 		{
 			out := conv::AppendQuote([]byte("abc"), tt.input)
-			if str(out) != "abc"+tt.out {
+			if string(out) != "abc"+tt.out {
 				t.Errorf("AppendQuote({}, {}) = {}, want {}", "abc", tt.input, out, "abc"+tt.out)
 			}
 		}
@@ -54,7 +54,7 @@ fn testQuoteToASCII(t: &testing::T) {
 		}
 		{
 			out := conv::AppendQuoteToASCII([]byte("abc"), tt.input)
-			if str(out) != "abc"+tt.ascii {
+			if string(out) != "abc"+tt.ascii {
 				t.Errorf("AppendQuoteToASCII({}, {}) = {}, want {}", "abc", tt.input, out, "abc"+tt.ascii)
 			}
 		}
@@ -72,7 +72,7 @@ fn testQuoteToGraphic(t: &testing::T) {
 		}
 		{
 			out := conv::AppendQuoteToGraphic([]byte("abc"), tt.input)
-			if str(out) != "abc"+tt.graphic {
+			if string(out) != "abc"+tt.graphic {
 				t.Errorf("AppendQuoteToGraphic({}, {}) = {}, want {}", "abc", tt.input, out, "abc"+tt.graphic)
 			}
 		}
@@ -81,9 +81,9 @@ fn testQuoteToGraphic(t: &testing::T) {
 
 struct quoteRuneTest {
 	input:   rune
-	out:     str
-	ascii:   str
-	graphic: str
+	out:     string
+	ascii:   string
+	graphic: string
 }
 
 let quoterunetests = []quoteRuneTest([
@@ -114,7 +114,7 @@ fn testQuoteRune(t: &testing::T) {
 		}
 		{
 			out := conv::AppendQuoteRune([]byte("abc"), tt.input)
-			if str(out) != "abc"+tt.out {
+			if string(out) != "abc"+tt.out {
 				t.Errorf("AppendQuoteRune({}, {}) = {}, want {}", "abc", tt.input, out, "abc"+tt.out)
 			}
 		}
@@ -132,7 +132,7 @@ fn testQuoteRuneToASCII(t: &testing::T) {
 		}
 		{
 			out := conv::AppendQuoteRuneToASCII([]byte("abc"), tt.input)
-			if str(out) != "abc"+tt.ascii {
+			if string(out) != "abc"+tt.ascii {
 				t.Errorf("AppendQuoteRuneToASCII({}, {}) = {}, want {}", "abc", tt.input, out, "abc"+tt.ascii)
 			}
 		}
@@ -150,7 +150,7 @@ fn testQuoteRuneToGraphic(t: &testing::T) {
 		}
 		{
 			out := conv::AppendQuoteRuneToGraphic([]byte("abc"), tt.input)
-			if str(out) != "abc"+tt.graphic {
+			if string(out) != "abc"+tt.graphic {
 				t.Errorf("AppendQuoteRuneToGraphic({}, {}) = {}, want {}", "abc", tt.input, out, "abc"+tt.graphic)
 			}
 		}
@@ -158,45 +158,45 @@ fn testQuoteRuneToGraphic(t: &testing::T) {
 }
 
 struct canBackquoteTest {
-	input: str
+	input: string
 	out:   bool
 }
 
 let canbackquotetests = []canBackquoteTest([
 	{"`", false},
-	{str(rune(0)), false},
-	{str(rune(1)), false},
-	{str(rune(2)), false},
-	{str(rune(3)), false},
-	{str(rune(4)), false},
-	{str(rune(5)), false},
-	{str(rune(6)), false},
-	{str(rune(7)), false},
-	{str(rune(8)), false},
-	{str(rune(9)), true}, // \t
-	{str(rune(10)), false},
-	{str(rune(11)), false},
-	{str(rune(12)), false},
-	{str(rune(13)), false},
-	{str(rune(14)), false},
-	{str(rune(15)), false},
-	{str(rune(16)), false},
-	{str(rune(17)), false},
-	{str(rune(18)), false},
-	{str(rune(19)), false},
-	{str(rune(20)), false},
-	{str(rune(21)), false},
-	{str(rune(22)), false},
-	{str(rune(23)), false},
-	{str(rune(24)), false},
-	{str(rune(25)), false},
-	{str(rune(26)), false},
-	{str(rune(27)), false},
-	{str(rune(28)), false},
-	{str(rune(29)), false},
-	{str(rune(30)), false},
-	{str(rune(31)), false},
-	{str(rune(0x7F)), false},
+	{string(rune(0)), false},
+	{string(rune(1)), false},
+	{string(rune(2)), false},
+	{string(rune(3)), false},
+	{string(rune(4)), false},
+	{string(rune(5)), false},
+	{string(rune(6)), false},
+	{string(rune(7)), false},
+	{string(rune(8)), false},
+	{string(rune(9)), true}, // \t
+	{string(rune(10)), false},
+	{string(rune(11)), false},
+	{string(rune(12)), false},
+	{string(rune(13)), false},
+	{string(rune(14)), false},
+	{string(rune(15)), false},
+	{string(rune(16)), false},
+	{string(rune(17)), false},
+	{string(rune(18)), false},
+	{string(rune(19)), false},
+	{string(rune(20)), false},
+	{string(rune(21)), false},
+	{string(rune(22)), false},
+	{string(rune(23)), false},
+	{string(rune(24)), false},
+	{string(rune(25)), false},
+	{string(rune(26)), false},
+	{string(rune(27)), false},
+	{string(rune(28)), false},
+	{string(rune(29)), false},
+	{string(rune(30)), false},
+	{string(rune(31)), false},
+	{string(rune(0x7F)), false},
 	{`' !"#$%&'()*+,-./:;<=>?@[\]^_{|}~`, true},
 	{`0123456789`, true},
 	{`ABCDEFGHIJKLMNOPQRSTUVWXYZ`, true},
@@ -219,8 +219,8 @@ fn testCanBackquote(t: &testing::T) {
 }
 
 struct unQuoteTest {
-	input: str
-	out:   str
+	input: string
+	out:   string
 }
 
 let unquotetests = []unQuoteTest([
@@ -293,10 +293,10 @@ let misquoted = [
 ]
 
 struct unquoteInvalidTest {
-	input: str
+	input: string
 
 	// one of:
-	want:    str
+	want:    string
 	wantErr: any
 }
 
@@ -328,7 +328,7 @@ fn testUnquoteInvalidUTF8(t: &testing::T) {
 	}
 }
 
-fn _testUnquote(t: &testing::T, mut input: str, mut want: str, mut wantErr: any) {
+fn _testUnquote(t: &testing::T, mut input: string, mut want: string, mut wantErr: any) {
 	if input != "``x\r" {
 		ret
 	}

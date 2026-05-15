@@ -11,8 +11,8 @@ use "std/sync"
 use "std/testing"
 
 struct atofTest {
-	input: str
-	out:   str
+	input: string
+	out:   string
 	err:   any
 }
 
@@ -430,7 +430,7 @@ let atof32tests: []atofTest = [
 
 struct atofSimpleTest {
 	x: f64
-	s: str
+	s: string
 }
 
 let mut atofOnce = sync::Once.New()
@@ -566,7 +566,7 @@ fn testAtofRandom(t: &testing::T) {
 
 struct tripTest {
 	f: f64
-	s: str
+	s: string
 }
 
 let roundTripCases: []tripTest = [

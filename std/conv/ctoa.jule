@@ -42,7 +42,7 @@
 // The format fmt and precision prec have the same meaning as in [FormatFloat].
 // It rounds the result assuming that the original was obtained from a complex
 // value of bitSize bits, which must be 64 for cmplx64 and 128 for cmplx128.
-fn FormatCmplx(c: cmplx128, fmt: byte, prec: int, mut bitSize: int): str {
+fn FormatCmplx(c: cmplx128, fmt: byte, prec: int, mut bitSize: int): string {
 	if bitSize != 64 && bitSize != 128 {
 		panic("invalid bitSize")
 	}

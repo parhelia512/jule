@@ -8,7 +8,7 @@ use "std/testing"
 struct shiftTest {
 	i:     u64
 	shift: int
-	out:   str
+	out:   string
 }
 
 let shifttests: []shiftTest = [
@@ -43,9 +43,9 @@ fn testDecimalShift(t: &testing::T) {
 struct roundTest {
 	i:       u64
 	nd:      int
-	down:    str
-	round:   str
-	up:      str
+	down:    string
+	round:   string
+	up:      string
 	integer: u64
 }
 

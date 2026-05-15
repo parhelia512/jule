@@ -51,7 +51,7 @@ fn lower(c: byte): byte {
 // Is like [ParseInt] but for unsigned numbers.
 //
 // A sign prefix is not permitted.
-fn ParseUint(mut s: str, mut base: int, mut bitSize: int)!: u64 {
+fn ParseUint(mut s: string, mut base: int, mut bitSize: int)!: u64 {
 	const fnParseUint = "ParseUint"
 
 	if s == "" {
@@ -170,7 +170,7 @@ fn ParseUint(mut s: str, mut base: int, mut bitSize: int)!: u64 {
 // represented by a signed integer of the given size,  err.Err = [ErrRange].
 //
 // [integer literals]: https://manual.jule.dev/introduction/data-types#integer-literals
-fn ParseInt(mut s: str, base: int, mut bitSize: int)!: i64 {
+fn ParseInt(mut s: string, base: int, mut bitSize: int)!: i64 {
 	const fnParseInt = "ParseInt"
 
 	if s == "" {
@@ -218,7 +218,7 @@ fn ParseInt(mut s: str, base: int, mut bitSize: int)!: i64 {
 }
 
 // Is equivalent to ParseInt(s, 10, 0), converted to int.
-fn Atoi(mut s: str)!: int {
+fn Atoi(mut s: string)!: int {
 	const fnAtoi = "Atoi"
 
 	sLen := len(s)
@@ -261,7 +261,7 @@ fn Atoi(mut s: str)!: int {
 // Reports whether the underscores in s are allowed.
 // Checking them in this one function lets all the parsers skip over them simply.
 // Underscore must appear only between digits or between a base prefix and a digit.
-fn underscoreOK(mut s: str): bool {
+fn underscoreOK(mut s: string): bool {
 	// saw tracks the last character (class) we saw:
 	// ^ for beginning of number,
 	// 0 for a digit or base prefix,

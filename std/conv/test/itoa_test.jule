@@ -8,7 +8,7 @@ use "std/testing"
 struct itob64Test {
 	input: i64
 	base:  int
-	out:   str
+	out:   string
 }
 
 let itob64tests: []itob64Test = [
@@ -60,7 +60,7 @@ fn testItoa(t: &testing::T) {
 				test.input, test.base, s, test.out)
 		}
 		mut x := conv::AppendInt([]byte("abc"), test.input, test.base)
-		if str(x) != "abc"+test.out {
+		if string(x) != "abc"+test.out {
 			t.Errorf("AppendInt({}, {}, {}) = {} want {}",
 				"abc", test.input, test.base, x, test.out)
 		}
@@ -72,7 +72,7 @@ fn testItoa(t: &testing::T) {
 					test.input, test.base, s, test.out)
 			}
 			x = conv::AppendUint(nil, u64(test.input), test.base)
-			if str(x) != test.out {
+			if string(x) != test.out {
 				t.Errorf("AppendUint(%q, %v, %v) = %q want %v",
 					"abc", u64(test.input), test.base, x, test.out)
 			}
@@ -91,7 +91,7 @@ fn testItoa(t: &testing::T) {
 struct uitob64Test {
 	input: u64
 	base:  int
-	out:   str
+	out:   string
 }
 
 let uitob64tests: []uitob64Test = [
@@ -112,7 +112,7 @@ fn testUitoa(t: &testing::T) {
 				test.input, test.base, s, test.out)
 		}
 		x := conv::AppendUint([]byte("abc"), test.input, test.base)
-		if str(x) != "abc"+test.out {
+		if string(x) != "abc"+test.out {
 			t.Errorf("AppendUint({}, {}, {}) = {} want {}",
 				"abc", test.input, test.base, x, test.out)
 		}
@@ -121,7 +121,7 @@ fn testUitoa(t: &testing::T) {
 
 struct varlenUintTest {
 	input: u64
-	out:   str
+	out:   string
 }
 
 let varlenUints: []varlenUintTest = [

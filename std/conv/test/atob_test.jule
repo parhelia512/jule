@@ -7,7 +7,7 @@ use "std/conv"
 use "std/testing"
 
 struct atobTest {
-	input: str
+	input: string
 	out:   bool
 	err:   any
 }
@@ -58,7 +58,7 @@ fn testParseBool(t: &testing::T) {
 	}
 }
 
-let boolString = map[bool]str{
+let boolString = map[bool]string{
 	true:  "true",
 	false: "false",
 }

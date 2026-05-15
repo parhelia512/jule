@@ -38,7 +38,7 @@
 // Returns the boolean value represented by the string.
 // It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
 // Any other value throws error.
-fn ParseBool(s: str)!: bool {
+fn ParseBool(s: string)!: bool {
 	match s {
 	| "1" | "t" | "T" | "true" | "TRUE" | "True":
 		ret true
@@ -50,7 +50,7 @@ fn ParseBool(s: str)!: bool {
 }
 
 // Returns "true" or "false" according to the value of b.
-fn FormatBool(b: bool): str {
+fn FormatBool(b: bool): string {
 	if b {
 		ret "true"
 	}

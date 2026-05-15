@@ -15,29 +15,29 @@ let mut ErrRange = errors::New("value out of range")
 
 // Records a failed conversion.
 struct NumError {
-	Func: str // the failing function (ParseBool, ParseInt, ParseUint, ParseFloat, ParseComplex)
-	Num:  str // the input
-	Err:  any // the reason the conversion failed (e.g. ErrRange, ErrSyntax, etc.)
+	Func: string // the failing function (ParseBool, ParseInt, ParseUint, ParseFloat, ParseComplex)
+	Num:  string // the input
+	Err:  any    // the reason the conversion failed (e.g. ErrRange, ErrSyntax, etc.)
 }
 
 impl NumError {
-	fn Str(*self): str {
+	fn Str(*self): string {
 		ret "conv::" + self.Func + ": " + "parsing " + Quote(self.Num) + ": " + runtime::toStr(self.Err)
 	}
 }
 
-fn syntaxError(f: str, s: str): &NumError {
+fn syntaxError(f: string, s: string): &NumError {
 	ret &NumError{f, s, ErrSyntax}
 }
 
-fn rangeError(f: str, s: str): &NumError {
+fn rangeError(f: string, s: string): &NumError {
 	ret &NumError{f, s, ErrRange}
 }
 
-fn baseError(f: str, s: str, base: int): &NumError {
+fn baseError(f: string, s: string, base: int): &NumError {
 	ret &NumError{f, s, errors::New("invalid base " + Itoa(base))}
 }
 
-fn bitSizeError(f: str, s: str, bitSize: int): &NumError {
+fn bitSizeError(f: string, s: string, bitSize: int): &NumError {
 	ret &NumError{f, s, errors::New("invalid bit size " + Itoa(bitSize))}
 }

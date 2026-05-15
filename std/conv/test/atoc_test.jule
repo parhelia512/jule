@@ -18,7 +18,7 @@ let infmp = cmplx(math::Inf(-1), math::Inf(+1))
 let infmm = cmplx(math::Inf(-1), math::Inf(-1))
 
 struct atocTest {
-	input: str
+	input: string
 	out:   cmplx128
 	err:   any
 }

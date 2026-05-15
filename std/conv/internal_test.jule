@@ -19,7 +19,7 @@ fn SetOptimize(b: bool): bool {
 	ret old
 }
 
-fn ParseFloatPrefix(s: str, bitSize: int): (f64, int, any) {
+fn ParseFloatPrefix(s: string, bitSize: int): (f64, int, any) {
 	ret parseFloatPrefix(s, bitSize)
 }
 

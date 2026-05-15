@@ -12,7 +12,7 @@ struct ftoaTest {
 	f:    f64
 	fmt:  byte
 	prec: int
-	s:    str
+	s:    string
 }
 
 fn fdiv(a: f64, b: f64): f64 { ret a / b }
@@ -194,20 +194,20 @@ fn testFtoa(t: &testing::T) {
 		test := ftoatests[i]
 		mut s := conv::FormatFloat(test.f, test.fmt, test.prec, 64)
 		if s != test.s {
-			t.Errorf("testN=64 {} {} {} wabt {} got {}", test.f, str(test.fmt), test.prec, test.s, s)
+			t.Errorf("testN=64 {} {} {} wabt {} got {}", test.f, string(test.fmt), test.prec, test.s, s)
 		}
 		mut x := conv::AppendFloat([]byte("abc"), test.f, test.fmt, test.prec, 64)
-		if str(x) != "abc"+test.s {
-			t.Errorf("AppendFloat testN=64 {} {} {} want {} got {}", test.f, str(test.fmt), test.prec, "abc"+test.s, str(x))
+		if string(x) != "abc"+test.s {
+			t.Errorf("AppendFloat testN=64 {} {} {} want {} got {}", test.f, string(test.fmt), test.prec, "abc"+test.s, string(x))
 		}
 		if f64(f32(test.f)) == test.f && test.fmt != 'b' {
 			s = conv::FormatFloat(test.f, test.fmt, test.prec, 32)
 			if s != test.s {
-				t.Errorf("testN=32 {} {} {} want {} got {}", test.f, str(test.fmt), test.prec, test.s, s)
+				t.Errorf("testN=32 {} {} {} want {} got {}", test.f, string(test.fmt), test.prec, test.s, s)
 			}
 			x = conv::AppendFloat([]byte("abc"), test.f, test.fmt, test.prec, 32)
-			if str(x) != "abc"+test.s {
-				t.Errorf("AppendFloat testN=32 {} {} {} want {} got {}", test.f, str(test.fmt), test.prec, "abc"+test.s, str(x))
+			if string(x) != "abc"+test.s {
+				t.Errorf("AppendFloat testN=32 {} {} {} want {} got {}", test.f, string(test.fmt), test.prec, "abc"+test.s, string(x))
 			}
 		}
 	}

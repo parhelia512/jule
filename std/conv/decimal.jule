@@ -61,8 +61,8 @@ const (
 //
 // Credit for this trick goes to Ken.
 struct leftCheat {
-	delta:  int // number of new digits
-	cutoff: str // minus one digit if original < a.
+	delta:  int    // number of new digits
+	cutoff: string // minus one digit if original < a.
 }
 
 let leftCheats: []leftCheat = [
@@ -264,7 +264,7 @@ impl decimal {
 		ret n
 	}
 
-	fn Str(*self): str {
+	fn Str(*self): string {
 		mut n := 10 + self.nd
 		if self.dp > 0 {
 			n += self.dp
@@ -375,7 +375,7 @@ fn rightShift(mut &a: *decimal, k: uint) {
 }
 
 // Is the leading prefix of b lexicographically less than s?
-fn prefixIsLessThan(b: [800]byte, end: int, s: str): bool {
+fn prefixIsLessThan(b: [800]byte, end: int, s: string): bool {
 	mut i := 0
 	for i < len(s); i++ {
 		if i >= end {

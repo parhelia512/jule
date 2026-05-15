@@ -38,7 +38,7 @@
 const fnParseCmplx = "ParseCmplx"
 
 // Handles error returned by parseFloatPrefix for ParseCmplx.
-fn handleErr(mut err: &NumError, s: str): &NumError {
+fn handleErr(mut err: &NumError, s: string): &NumError {
 	err.Func = fnParseCmplx
 	err.Num = s
 	ret err
@@ -64,7 +64,7 @@ fn handleErr(mut err: &NumError, s: str): &NumError {
 // If s is syntactically well-formed but either component is more than 1/2 ULP
 // away from the largest floating point number of the given component's size,
 // it returns err.Err = ErrRange and c = ±Inf for the respective component.
-fn ParseCmplx(mut s: str, bitSize: int)!: cmplx128 {
+fn ParseCmplx(mut s: string, bitSize: int)!: cmplx128 {
 	mut size := 64
 	if bitSize == 64 {
 		size = 32 // cmplx64 uses f32 parts

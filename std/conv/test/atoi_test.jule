@@ -9,7 +9,7 @@ use "std/runtime"
 use "std/testing"
 
 struct parseUint64Test {
-	input: str
+	input: string
 	out:   u64
 	err:   any
 }
@@ -35,7 +35,7 @@ let parseUint64Tests: []parseUint64Test = [
 ]
 
 struct parseUint64BaseTest {
-	input: str
+	input: string
 	base:  int
 	out:   u64
 	err:   any
@@ -130,7 +130,7 @@ let parseUint64BaseTests: []parseUint64BaseTest = [
 ]
 
 struct parseInt64Test {
-	input: str
+	input: string
 	out:   i64
 	err:   any
 }
@@ -164,7 +164,7 @@ let mut parseInt64Tests: []parseInt64Test = [
 ]
 
 struct parseInt64BaseTest {
-	input: str
+	input: string
 	base:  int
 	out:   i64
 	err:   any
@@ -245,7 +245,7 @@ let parseInt64BaseTests: []parseInt64BaseTest = [
 ]
 
 struct parseUint32Test {
-	input: str
+	input: string
 	out:   u32
 	err:   any
 }
@@ -268,7 +268,7 @@ let parseUint32Tests: []parseUint32Test = [
 ]
 
 struct parseInt32Test {
-	input: str
+	input: string
 	out:   i32
 	err:   any
 }
@@ -302,8 +302,8 @@ let mut parseInt32Tests: []parseInt32Test = [
 ]
 
 struct numErrorTest {
-	num:  str
-	want: str
+	num:  string
+	want: string
 }
 
 let numErrorTests: []numErrorTest = [
@@ -553,21 +553,21 @@ fn testAtoi(t: &testing::T) {
 	}
 }
 
-fn bitSizeErrStub(name: str, bitSize: int): any {
+fn bitSizeErrStub(name: string, bitSize: int): any {
 	ret conv::BitSizeError(name, "0", bitSize)
 }
 
-fn baseErrStub(name: str, base: int): any {
+fn baseErrStub(name: string, base: int): any {
 	ret conv::BaseError(name, "0", base)
 }
 
-fn noErrStub(name: str, arg: int): any {
+fn noErrStub(name: string, arg: int): any {
 	ret nil
 }
 
 struct parseErrorTest {
 	arg:     int
-	errStub: fn(name: str, arg: int): any
+	errStub: fn(name: string, arg: int): any
 }
 
 let parseBitSizeTests: []parseErrorTest = [

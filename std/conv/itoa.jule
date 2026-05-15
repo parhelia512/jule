@@ -59,7 +59,7 @@ const (
 // Returns the string representation of i in the given base,
 // for 2 <= base <= 36. The result uses the lower-case letters 'a' to 'z'
 // for digit values >= 10.
-fn FormatUint(i: u64, base: int): str {
+fn FormatUint(i: u64, base: int): string {
 	if fastSmalls && i < nSmalls && base == 10 {
 		ret small(int(i))
 	}
@@ -70,7 +70,7 @@ fn FormatUint(i: u64, base: int): str {
 // Returns the string representation of i in the given base,
 // for 2 <= base <= 36. The result uses the lower-case letters 'a' to 'z'
 // for digit values >= 10.
-fn FormatInt(i: i64, base: int): str {
+fn FormatInt(i: i64, base: int): string {
 	if fastSmalls && 0 <= i && i < nSmalls && base == 10 {
 		ret small(int(i))
 	}
@@ -99,14 +99,14 @@ fn AppendUint(mut dst: []byte, i: u64, base: int): []byte {
 }
 
 // Is equivalent to [FormatInt](i64(i), 10).
-fn Itoa(i: int): str {
+fn Itoa(i: int): string {
 	ret FormatInt(i64(i), 10)
 }
 
 // Returns the string for an i with 0 <= i < nSmalls.
-fn small(i: int): str {
+fn small(i: int): string {
 	if i < 10 {
-		ret str(byte('0' + i))
+		ret string(byte('0' + i))
 	}
 	mut buf := make([]byte, 3)
 	buf[0] = smallsStr[i<<1]
@@ -123,7 +123,7 @@ fn isPowerOfTwo(x: int): bool {
 // set, the string is appended to dst and the resulting byte slice is
 // returned as the first result value; otherwise the string is returned
 // as the second result value.
-fn formatBits(mut dst: []byte, mut u: u64, base: int, neg: bool, append_: bool): (d: []byte, s: str) {
+fn formatBits(mut dst: []byte, mut u: u64, base: int, neg: bool, append_: bool): (d: []byte, s: string) {
 	if base < 2 || base > len(digits) {
 		panic("conv: illegal base")
 	}

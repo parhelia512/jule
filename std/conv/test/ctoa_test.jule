@@ -10,7 +10,7 @@ struct formatCmplxTest {
 	fmt:     byte
 	prec:    int
 	bitSize: int
-	out:     str
+	out:     string
 }
 
 let testsFormatCmplx: []formatCmplxTest = [
