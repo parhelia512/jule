@@ -10,7 +10,7 @@ use "std/unsafe"
 // An error for literal parsing.
 struct Error {
 	Offset: int
-	Text:   str
+	Text:   string
 }
 
 // Reports whether rune is byte actually.
@@ -23,7 +23,7 @@ fn IsAscii(r: rune): bool {
 // Returns rune from literal, literal includes quotes.
 // Allows escape sequences.
 // Assumes lit is syntactically correct.
-fn ToRune(mut lit: str): (rune, errors: []Error) {
+fn ToRune(mut lit: string): (rune, errors: []Error) {
 	mut r := rune(0)
 	lit = lit[1 : len(lit)-1]
 	if lit[0] == '\\' && len(lit) > 1 {
@@ -38,7 +38,7 @@ fn ToRune(mut lit: str): (rune, errors: []Error) {
 // Returns the first rune from ltieral. Quotes of the literal must be removed.
 // Allows escape sequences.
 // Checks the literal syntactically and semantically for the first rune.
-fn GetRune(mut lit: str): (r: rune, length: int, errors: []Error) {
+fn GetRune(mut lit: string): (r: rune, length: int, errors: []Error) {
 	if lit[0] == '\\' && len(lit) > 1 {
 		ok := checkEsqSeq(lit, &errors)
 		if !ok {
@@ -53,7 +53,7 @@ fn GetRune(mut lit: str): (r: rune, length: int, errors: []Error) {
 
 // Returns raw-string value string from literal, literal includes quotes.
 // Assumes lit is syntactically correct.
-fn ToRawStr(lit: str): str {
+fn ToRawStr(lit: string): string {
 	if len(lit) == 2 {
 		ret ""
 	}
@@ -63,7 +63,7 @@ fn ToRawStr(lit: str): str {
 // Returns string value string from literal, literal includes quotes.
 // Allows escape sequences.
 // Assumes lit is syntactically correct.
-fn ToStr(mut lit: str): (str, errors: []Error) {
+fn ToStr(mut lit: string): (string, errors: []Error) {
 	if len(lit) == 2 {
 		ret "", nil
 	}
@@ -93,7 +93,7 @@ fn ToStr(mut lit: str): (str, errors: []Error) {
 
 // Checks the first escape sequence is syntacticaly correct.
 // Assumes the s starts with the escape sequence rune `\`.
-fn checkEsqSeq(s: str, mut &errors: *[]Error): (ok: bool) {
+fn checkEsqSeq(s: strine, mut &errors: *[]Error): (ok: bool) {
 	if len(s) < 2 {
 		*errors = append(*errors, Error{
 			Offset: 0,
@@ -162,7 +162,7 @@ fn checkEsqSeq(s: str, mut &errors: *[]Error): (ok: bool) {
 		if !isOctal(rune(s[1])) {
 			*errors = append(*errors, Error{
 				Offset: 0,
-				Text:   "invalid escape sequence, found \"\\" + str(s[1]) + "\"",
+				Text:   "invalid escape sequence, found \"\\" + string(s[1]) + "\"",
 			})
 			ret false
 		}
@@ -186,7 +186,7 @@ fn checkEsqSeq(s: str, mut &errors: *[]Error): (ok: bool) {
 	}
 }
 
-fn tryBtoaCommonEsq(s: str): (seq: byte, ok: bool) {
+fn tryBtoaCommonEsq(s: string): (seq: byte, ok: bool) {
 	if len(s) < 2 || s[0] != '\\' {
 		ret
 	}
@@ -219,7 +219,7 @@ fn tryBtoaCommonEsq(s: str): (seq: byte, ok: bool) {
 // Decodes the first escape sequence rune from ltieral s, i is the start position of the decoding.
 // Advances the i by size of decoded rune.
 // Assumes literal is syntactically correct.
-fn runeFromEsqSeq(s: str, mut &i: *int, mut &errors: *[]Error): (r: rune, isByte: bool) {
+fn runeFromEsqSeq(s: string, mut &i: *int, mut &errors: *[]Error): (r: rune, isByte: bool) {
 	b, ok := tryBtoaCommonEsq(s[*i:])
 	*i++ // Skip escape sequence solidus.
 	if ok {
@@ -273,7 +273,7 @@ fn runeFromEsqSeq(s: str, mut &i: *int, mut &errors: *[]Error): (r: rune, isByte
 // Advances the i by size of decoded rune.
 // Assumes literal is syntactically correct.
 // The decoded rune will be appended to buf.
-fn strEsqSeq(mut &buf: *[]byte, s: str, mut &i: *int, mut &errors: *[]Error) {
+fn strEsqSeq(mut &buf: *[]byte, s: string, mut &i: *int, mut &errors: *[]Error) {
 	r, isByte := runeFromEsqSeq(s, i, errors)
 	if isByte {
 		*buf = append(*buf, byte(r))

@@ -5,7 +5,7 @@
 use "std/testing"
 
 struct getRuneTest {
-	s:      str
+	s:      string
 	r:      rune
 	n:      int
 	errors: []Error
