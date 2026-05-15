@@ -6,9 +6,9 @@ use "std/internal/cmp"
 use "std/testing"
 
 struct urlTest {
-	input:     str
-	out:       &URL // expected parse
-	roundtrip: str  // expected result of reserializing the URL; empty means same as "in".
+	input:     string
+	out:       &URL   // expected parse
+	roundtrip: string // expected result of reserializing the URL; empty means same as "in".
 }
 
 let urltests: []urlTest = [
@@ -616,7 +616,7 @@ fn testParse(t: &testing::T) {
 const pathThatLooksSchemeRelative = "//not.a.user@not.a.host/just/a/path"
 
 struct parseRequestURLTest {
-	url:           str
+	url:           string
 	expectedValid: bool
 }
 
@@ -683,7 +683,7 @@ fn testParseRequestURI(t: &testing::T) {
 
 struct strUrlTest {
 	url:  URL
-	want: str
+	want: string
 }
 
 let stringURLTests: []strUrlTest = [
@@ -747,9 +747,9 @@ fn testURLString(t: &testing::T) {
 }
 
 struct urlRedactedTest {
-	name: str
+	name: string
 	url:  &URL
-	want: str
+	want: string
 }
 
 let urlRedactedTests: []urlRedactedTest = [
@@ -811,7 +811,7 @@ fn testURLRedacted(t: &testing::T) {
 
 struct encodeQueryTest {
 	m:        Values
-	expected: str
+	expected: string
 }
 
 let encodeQueryTests: []encodeQueryTest = [
@@ -839,9 +839,9 @@ fn testEncodeQuery(t: &testing::T) {
 }
 
 struct resolvePathTest {
-	base:     str
-	ref:      str
-	expected: str
+	base:     string
+	ref:      string
+	expected: string
 }
 
 let resolvePathTests: []resolvePathTest = [
@@ -870,9 +870,9 @@ fn testResolvePath(t: &testing::T) {
 }
 
 struct resolveReferenceTest {
-	base:     str
-	rel:      str
-	expected: str
+	base:     string
+	rel:      string
+	expected: string
 }
 
 let resolveReferenceTests: []resolveReferenceTest = [
@@ -1010,7 +1010,7 @@ let resolveReferenceTests: []resolveReferenceTest = [
 
 #test
 fn testResolveReference(t: &testing::T) {
-	mustParse := fn(url: str): &URL {
+	mustParse := fn(url: string): &URL {
 		ret Parse(url) else {
 			t.Errorf("Parse({}) got err {}", url, error)
 			use nil
@@ -1132,7 +1132,7 @@ fn testQueryValues(t: &testing::T) {
 }
 
 struct parseTest {
-	query: str
+	query: string
 	out:   Values
 	ok:    bool
 }
@@ -1265,7 +1265,7 @@ fn testParseQuery(t: &testing::T) {
 
 struct requestURITest {
 	url: &URL
-	out: str
+	out: string
 }
 
 let requritests: []requestURITest = [
@@ -1396,7 +1396,7 @@ fn testRequestURI(t: &testing::T) {
 }
 
 struct parseErrorTest {
-	input:   str
+	input:   string
 	wantErr: bool
 }
 
@@ -1530,9 +1530,9 @@ fn testShouldEscape(t: &testing::T) {
 }
 
 struct hostnameAndPortTest {
-	input: str // URL.Host field
-	host:  str
-	port:  str
+	input: string // URL.Host field
+	host:  string
+	port:  string
 }
 
 #test
@@ -1577,9 +1577,9 @@ fn testURLHostnameAndPort(t: &testing::T) {
 }
 
 struct joinPathTest {
-	base: str
-	elem: []str
-	out:  str
+	base: string
+	elem: []string
+	out:  string
 }
 
 #test
