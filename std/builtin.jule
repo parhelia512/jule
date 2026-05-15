@@ -51,7 +51,7 @@ type uintptr: uintptr
 
 // UTF-8 byte encoded character string.
 // See for more information: http://manual.jule.dev/introduction/data-types#string
-type str: str
+type string: string
 
 // Boolean type for logical expressions.
 type bool: bool
@@ -105,7 +105,7 @@ fn println(t: T)
 // No guarantee for user code execution after panic is invoked.
 // Resource cleanup is delegated to the operating system or external supervisors.
 // Because panic is a terminating operation, functions that call panic do not return.
-fn panic(message: str)
+fn panic(message: string)
 
 // Returns new instance of data type for supported types.
 //
