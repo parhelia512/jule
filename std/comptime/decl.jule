@@ -29,7 +29,7 @@ struct comptimeDecl {}
 impl comptimeDecl {
 	// Returns name of declaration.
 	// Returns as constant expression.
-	fn Name(*self): str
+	fn Name(*self): string
 
 	// Reports whether type is public as constant expression.
 	fn Public(*self): bool
@@ -73,12 +73,12 @@ impl comptimeDecl {
 	// Supports only structure fields.
 	// Parameter key should be constant.
 	// Returns empty string if key is not exist in the tags.
-	fn Tag(*self, key: str): str
+	fn Tag(*self, key: string): string
 
 	// Reports whether the key is exist in tags as a constant expression.
 	// Supports only structure fields.
 	// Parameter key should be constant.
-	fn IsTag(*self, key: str): bool
+	fn IsTag(*self, key: string): bool
 }
 
 */

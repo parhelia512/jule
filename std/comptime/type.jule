@@ -18,7 +18,7 @@ const (
 	U64              // u64
 	F32              // f32
 	F64              // f64
-	Str              // str
+	Str              // string
 	Bool             // bool
 	Any              // any
 	Array            // Array
@@ -97,7 +97,7 @@ impl comptimeTypeInfo {
 
 	// Returns string value of type (not actual type).
 	// Returns as constant expression.
-	fn Str(*self): str
+	fn Str(*self): string
 
 	// Returns declaration information for type.
 	// Supports only structs, traits, enums, type enums, and functions.

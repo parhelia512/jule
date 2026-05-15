@@ -31,7 +31,7 @@ impl comptimeValue {
 	// Supports only structure types.
 	// Parameter name should be constant.
 	// It allows access to private fields.
-	fn Field(*self, name: str): comptimeValue
+	fn Field(*self, name: string): comptimeValue
 
 	// Same as the Field method, but takes constant index instead of name.
 	fn FieldByIndex(*self, index: int): comptimeValue
@@ -42,7 +42,7 @@ impl comptimeValue {
 	// It allows access to private methods.
 	// It will not use the actual kind, so this method an provide
 	// access to methods of the any strict type alias.
-	fn Method(*self, name: str): comptimeValue
+	fn Method(*self, name: string): comptimeValue
 
 	// Unwraps expression for runtime execution.
 	fn Unwrap(*self)
