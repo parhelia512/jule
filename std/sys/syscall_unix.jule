@@ -6,7 +6,7 @@ let STDIN: uintptr = 0
 let STDOUT: uintptr = 1
 let STDERR: uintptr = 2
 
-fn Rmdir(path: str)! {
+fn Rmdir(path: string)! {
 	Unlinkat(AT_FDCWD, path, AT_REMOVEDIR)?
 }
 

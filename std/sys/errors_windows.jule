@@ -207,7 +207,7 @@ const (
 )
 
 // Error strings for invented errors.
-let errors: [...]str = [
+let errors: [...]string = [
 	"argument list too long",
 	"permission denied",
 	"address already in use",
@@ -358,7 +358,7 @@ const (
 	SIGTERM = Signal(0xf)
 )
 
-let signals: [...]str = [
+let signals: [...]string = [
 	"hangup",
 	"interrupt",
 	"quit",
@@ -380,7 +380,7 @@ fn GetLastErrno(): Errno { ret Errno(GetLastError()) }
 
 fn langid(pri: u16, sub: u16): u32 { ret u32(sub)<<10 | u32(pri) }
 
-fn formatError(e: Errno): str {
+fn formatError(e: Errno): string {
 	// deal with special jule errors
 	idx := int(e - APPLICATION_ERROR)
 	if 0 <= idx && idx < len(errors) {

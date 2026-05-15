@@ -388,7 +388,7 @@ fn Pipe()!: (r: Handle, w: Handle) {
 	ret
 }
 
-fn Open(path: str, flag: int, perm: u32)!: Handle {
+fn Open(path: string, flag: int, perm: u32)!: Handle {
 	if path == "" {
 		throw Errno(ERROR_FILE_NOT_FOUND)
 	}
@@ -499,7 +499,7 @@ fn GetSystemTimeAsFileTime(mut &ft: *Filetime) {
 	unsafe { extern.GetSystemTimeAsFileTime((*extern.FILETIME)(ft)) }
 }
 
-fn LoadLibrary(libname: str)!: Handle {
+fn LoadLibrary(libname: string)!: Handle {
 	utf16libname := integ::UTF16FromStr(libname)
 	phandle := Addrcall[*unsafe](uintptr(extern.LoadLibraryW), &utf16libname[0])
 	if phandle == nil {
@@ -508,7 +508,7 @@ fn LoadLibrary(libname: str)!: Handle {
 	ret Handle(phandle)
 }
 
-fn LoadLibraryEx(libname: str, zero: Handle, flags: uintptr)!: Handle {
+fn LoadLibraryEx(libname: string, zero: Handle, flags: uintptr)!: Handle {
 	utf16libname := integ::UTF16FromStr(libname)
 	phandle := Addrcall[*unsafe](uintptr(extern.LoadLibraryExW), &utf16libname[0], unsafe { (*unsafe)(zero) }, flags)
 	if phandle == nil {
@@ -517,7 +517,7 @@ fn LoadLibraryEx(libname: str, zero: Handle, flags: uintptr)!: Handle {
 	ret Handle(phandle)
 }
 
-fn GetProcAddress(module: Handle, procname: str)!: (proc: uintptr) {
+fn GetProcAddress(module: Handle, procname: string)!: (proc: uintptr) {
 	_procname := integ::BytesFromStr(procname)
 	procp := Addrcall[*unsafe](uintptr(extern.GetProcAddress), unsafe { (*unsafe)(module) }, &_procname[0])
 	if procp == nil {

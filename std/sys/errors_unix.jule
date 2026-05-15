@@ -8,7 +8,7 @@ extern let errno: int
 
 fn GetLastErrno(): Errno { ret Errno(extern.errno) }
 
-fn formatError(e: Errno): str {
+fn formatError(e: Errno): string {
 	if 0 <= int(e) && int(e) < len(errors) {
 		s := errors[e]
 		if s != "" {

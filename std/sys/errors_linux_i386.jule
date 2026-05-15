@@ -178,7 +178,7 @@ const (
 )
 
 // Error table
-let errors: [...]str = [
+let errors: [...]string = [
 	"", // Index 0
 	"operation not permitted",
 	"no such file or directory",
@@ -315,7 +315,7 @@ let errors: [...]str = [
 ]
 
 // Signal table
-let signals: [...]str = [
+let signals: [...]string = [
 	"hangup",
 	"interrupt",
 	"quit",

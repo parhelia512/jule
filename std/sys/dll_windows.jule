@@ -4,13 +4,13 @@
 
 // A DLL implements access to a single DLL.
 struct DLL {
-	Name:   str
+	Name:   string
 	Handle: Handle
 }
 
 impl DLL {
 	// Searches DLL for procedure named name and returns &Proc if found.
-	fn FindProc(&self, name: str)!: (proc: &Proc) {
+	fn FindProc(&self, name: string)!: (proc: &Proc) {
 		addr := GetProcAddress(self.Handle, name)?
 		ret &Proc{
 			Name: name,
@@ -19,7 +19,7 @@ impl DLL {
 	}
 
 	// Like FindProc but panics if search fails.
-	fn MustFindProc(&self, name: str): &Proc {
+	fn MustFindProc(&self, name: string): &Proc {
 		ret self.FindProc(name)!
 	}
 
@@ -31,7 +31,7 @@ impl DLL {
 
 // Implements access to a procedure inside a DLL.
 struct Proc {
-	Name: str
+	Name: string
 	addr: uintptr
 }
 
@@ -51,12 +51,12 @@ impl Proc {
 // If name is not an absolute path, LoadLibraryEx searches for the DLL
 // in a variety of automatic locations unless constrained by flags.
 // See: https://msdn.microsoft.com/en-us/library/ff919712%28VS.85%29.aspx
-fn LoadDLL(name: str)!: &DLL {
+fn LoadDLL(name: string)!: &DLL {
 	h := LoadLibraryEx(name, 0, 0)?
 	ret &DLL{Name: name, Handle: h}
 }
 
 // Like LoadDLL but panics if load operation fails.
-fn MustLoadDLL(name: str): &DLL {
+fn MustLoadDLL(name: string): &DLL {
 	ret LoadDLL(name)!
 }

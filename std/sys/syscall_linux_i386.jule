@@ -586,7 +586,7 @@ const (
 	_HIDIOCGRAWUNIQ                  = 0x80404808
 )
 
-fn Fstatat(fd: int, path: str, mut &stat: *SysStat, flags: int)! {
+fn Fstatat(fd: int, path: string, mut &stat: *SysStat, flags: int)! {
 	cpath := integ::BytesFromStr(path)
 	_, e := syscall(SYS_FSTATAT64, uintptr(fd), uintptr(&cpath[0]), uintptr(stat), uintptr(flags), 0, 0)
 	if e != _NO_ERROR {
@@ -594,7 +594,7 @@ fn Fstatat(fd: int, path: str, mut &stat: *SysStat, flags: int)! {
 	}
 }
 
-fn Stat(path: str, mut &stat: *SysStat)! {
+fn Stat(path: string, mut &stat: *SysStat)! {
 	cpath := integ::BytesFromStr(path)
 	_, e := syscall(SYS_STAT64, uintptr(&cpath[0]), uintptr(stat), 0, 0, 0, 0)
 	if e != _NO_ERROR {
@@ -602,7 +602,7 @@ fn Stat(path: str, mut &stat: *SysStat)! {
 	}
 }
 
-fn Lstat(path: str, mut &stat: *SysStat)! {
+fn Lstat(path: string, mut &stat: *SysStat)! {
 	cpath := integ::BytesFromStr(path)
 	_, e := syscall(SYS_LSTAT64, uintptr(&cpath[0]), uintptr(stat), 0, 0, 0, 0)
 	if e != _NO_ERROR {
