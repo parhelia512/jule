@@ -38,7 +38,7 @@ const (
 
 // Returns the potentially ill-formed UTF-16 encoding of s.
 #disable boundary
-fn encodeWTF16(s: str, mut buf: []u16): []u16 {
+fn encodeWTF16(s: string, mut buf: []u16): []u16 {
 	mut i := 0
 	for i < len(s) {
 		// Cannot use 'for range s' because it expects valid
@@ -95,7 +95,7 @@ fn decodeWTF16(s: []u16, mut buf: []byte): []byte {
 // Returns the UTF-16 encoding of the UTF-8 string
 // s, with a terminating NULL added. If s includes NULL
 // character at any location, ignores followed characters.
-fn UTF16FromStr(mut s: str): []u16 {
+fn UTF16FromStr(mut s: string): []u16 {
 	// In the worst case all characters require two u16.
 	// Also account for the terminating NULL character.
 	// See: C Strings and Windows UTF16.
@@ -120,7 +120,7 @@ fn UTF16FromStr(mut s: str): []u16 {
 // Returns the UTF-8 encoding of the UTF-16 sequence s,
 // with a terminating NULL removed. Returns empty string
 // if s is nil.
-fn UTF16ToStr(s: []u16): str {
+fn UTF16ToStr(s: []u16): string {
 	mut maxLen := 0
 	for i, v in s {
 		if v == 0 {
@@ -148,7 +148,7 @@ fn UTF16ToStr(s: []u16): str {
 
 // Returns the UTF-8 encoding of the UTF-16 sequence s in *u16 form,
 // with a terminating NULL removed. Returns empty string if s is nil.
-fn UTF16PtrToStr(s: *u16): str {
+fn UTF16PtrToStr(s: *u16): string {
 	if s == nil {
 		ret ""
 	}
@@ -168,7 +168,7 @@ fn UTF16PtrToStr(s: *u16): str {
 // Returns the string of s, with a terminating NULL removed.
 // Returns empty string if pointer is nil.
 #disable boundary
-fn BytePtrToStr(s: *byte): str {
+fn BytePtrToStr(s: *byte): string {
 	if s == nil {
 		ret ""
 	}
@@ -187,13 +187,13 @@ fn BytePtrToStr(s: *byte): str {
 			buf[n] = s[n]
 		}
 	}
-	ret str(buf)
+	ret string(buf)
 }
 
 // Returns s as NULL terminated byte slice which is able to be used safely as
 // NULL terminated string pointer. If s contains NULL termination at any location,
 // accepts NULL termination is the end of s and skips following bytes.
-fn BytesFromStr(s: str): []byte {
+fn BytesFromStr(s: string): []byte {
 	for i, c in []byte(s) {
 		if c == 0 {
 			mut bytes := make([]byte, i+1)
