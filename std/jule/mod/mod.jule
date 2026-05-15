@@ -7,9 +7,9 @@ type ID: int
 
 // A module.
 struct Mod {
-	ID:   ID  // Unique identity of the module.
-	Name: str // Name of the module.
-	Path: str // Path of the module. File is not included.
+	ID:   ID     // Unique identity of the module.
+	Name: string // Name of the module.
+	Path: string // Path of the module. File is not included.
 }
 
 impl Mod {
