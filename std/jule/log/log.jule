@@ -16,25 +16,25 @@ struct Log {
 	Kind:       int
 	Row:        int
 	Column:     int
-	Path:       str
-	Text:       str
-	Line:       str
-	Suggestion: str
+	Path:       string
+	Text:       string
+	Line:       string
+	Suggestion: string
 }
 
 // Returns formatted error message by fmt and args.
-fn Logf(fmt: str, args: ...any): str {
+fn Logf(fmt: string, args: ...any): string {
 	ret applyFmt(fmt, args...)
 }
 
-fn argToStr(arg: any): str {
+fn argToStr(arg: any): string {
 	match type arg {
-	| str:
-		ret arg.(str)
+	| string:
+		ret arg.(string)
 	| byte:
-		ret str(arg.(byte))
+		ret string(arg.(byte))
 	| rune:
-		ret str(arg.(rune))
+		ret string(arg.(rune))
 	| int:
 		ret conv::Itoa(arg.(int))
 	|:
@@ -42,7 +42,7 @@ fn argToStr(arg: any): str {
 	}
 }
 
-fn findNextFmt(fmt: str): int {
+fn findNextFmt(fmt: string): int {
 	for i, b in fmt {
 		if b == '@' {
 			ret i
@@ -51,7 +51,7 @@ fn findNextFmt(fmt: str): int {
 	ret -1
 }
 
-fn applyFmt(mut fmt: str, args: ...any): str {
+fn applyFmt(mut fmt: string, args: ...any): string {
 	mut s := strings::Builder{}
 	s.Grow(1 << 5)
 	for _, arg in args {
