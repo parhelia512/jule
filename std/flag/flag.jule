@@ -10,13 +10,13 @@ const bitSize = 0b1000000
 // Common behaviors of flags.
 trait CommonFlag {
 	// Returns name of flag.
-	fn Name(*self): str
+	fn Name(*self): string
 
 	// Returns short name of flag.
 	fn Short(*self): rune
 
 	// Returns description of flag.
-	fn What(*self): str
+	fn What(*self): string
 
 	// Resets data to default.
 	fn Reset(mut *self)
@@ -24,16 +24,16 @@ trait CommonFlag {
 
 // A Flag for FlagSet.
 struct Flag[T] {
-	name:    str
+	name:    string
 	short:   rune
 	default: T
-	what:    str
+	what:    string
 	data:    &T
 }
 
 impl CommonFlag for Flag {
-	fn Name(*self): str { ret self.name }
-	fn What(*self): str { ret self.what }
+	fn Name(*self): string { ret self.name }
+	fn What(*self): string { ret self.what }
 	fn Reset(mut *self) { *self.data = self.default }
 	fn Short(*self): rune { ret self.short }
 }
@@ -50,8 +50,8 @@ type FloatFlag = &Flag[f64]
 // Flag for bool type.
 type BoolFlag = &Flag[bool]
 
-// Flag for str type
-type StrFlag = &Flag[str]
+// Flag for string type
+type StrFlag = &Flag[string]
 
 // Flag parser for command-line arguments.
 //
@@ -86,7 +86,7 @@ impl FlagSet {
 
 impl FlagSet {
 	// Returns flag by name, returns nil if not exist.
-	fn FindFlag(mut *self, name: str): CommonFlag {
+	fn FindFlag(mut *self, name: string): CommonFlag {
 		for (_, mut flag) in self.flags {
 			if flag.Name() == name {
 				ret flag
@@ -113,7 +113,7 @@ impl FlagSet {
 	// Parse arguments and process flags.
 	// Returns non-flag content.
 	// Error is always string and holds error message.
-	fn Parse(mut *self, args: []str)!: []str {
+	fn Parse(mut *self, args: []string)!: []string {
 		mut ap := argParser{
 			set:  *self,
 			args: unsafe { *(&args) },
@@ -129,13 +129,13 @@ impl FlagSet {
 		}
 	}
 
-	fn addFlagCommon[T](mut *self, name: str, short: rune, what: str): &Flag[T] {
+	fn addFlagCommon[T](mut *self, name: string, short: rune, what: string): &Flag[T] {
 		if self.FindFlag(name) != nil {
 			panic("flag: FlagSet.Add[T]: flag is already exist in this name: " + name)
 		}
 
 		if short != 0 && self.FindFlagShort(short) != nil {
-			panic("flag: FlagSet.Add[T]: flag is already exist in this short name: " + str(short))
+			panic("flag: FlagSet.Add[T]: flag is already exist in this short name: " + string(short))
 		}
 
 		mut flag := &Flag[T]{
@@ -151,14 +151,14 @@ impl FlagSet {
 	// Panics if name or short name is alreadys exist.
 	// Zero (0) short names will be ignored.
 	// Panics if used unsupported type.
-	fn Add[T: ~i64 | ~u64 | ~f64 | ~bool | ~str](mut *self, name: str, short: rune, default: T, what: str): &T {
+	fn Add[T: ~i64 | ~u64 | ~f64 | ~bool | ~string](mut *self, name: string, short: rune, default: T, what: string): &T {
 		mut flag := self.addFlagCommon[T](name, short, what)
 		flag.data = new(T, default)
 		ret flag.data
 	}
 
 	// Same with the Add method but do not allocates new reference, uses existing.
-	fn AddVar[T: ~i64 | ~u64 | ~f64 | ~bool | ~str](mut *self, mut var: &T, name: str, short: rune, what: str) {
+	fn AddVar[T: ~i64 | ~u64 | ~f64 | ~bool | ~string](mut *self, mut var: &T, name: string, short: rune, what: string) {
 		if var == nil {
 			panic("flag: FlatSet.AddVar[T]: variable is nil")
 		}
@@ -170,13 +170,13 @@ impl FlagSet {
 
 struct argParser {
 	set:     FlagSet
-	args:    []str
-	content: []str
+	args:    []string
+	content: []string
 	i:       int
 }
 
 impl argParser {
-	fn parseInteger[T](*self, s: str, parser: fn(s: str, base: int): (T, bool)): (x: T, ok: bool) {
+	fn parseInteger[T](*self, s: string, parser: fn(s: string, base: int): (T, bool)): (x: T, ok: bool) {
 		match {
 		| s == "":
 			ret 0, false
@@ -195,7 +195,7 @@ impl argParser {
 		ret
 	}
 
-	fn getData(mut *self): str {
+	fn getData(mut *self): string {
 		if self.i+1 >= len(self.args) {
 			ret ""
 		}
@@ -245,7 +245,7 @@ impl argParser {
 		}
 	}
 
-	fn singleDash(mut *self, arg: str)! {
+	fn singleDash(mut *self, arg: string)! {
 		if len(arg) == 1 { // Just dash.
 			throw arg + ": missing argument"
 		}
@@ -253,13 +253,13 @@ impl argParser {
 		for _, r in arg[1:] {
 			mut flag := self.set.FindFlagShort(r)
 			if flag == nil {
-				throw arg + ": flag is not exist: " + str(r)
+				throw arg + ": flag is not exist: " + string(r)
 			}
 			self.processFlag(flag)?
 		}
 	}
 
-	fn doubleDash(mut *self, arg: str)! {
+	fn doubleDash(mut *self, arg: string)! {
 		if len(arg) == 2 { // Just dash.
 			throw arg + ": missing argument"
 		}
