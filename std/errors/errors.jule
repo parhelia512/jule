@@ -3,17 +3,17 @@
 // license that can be found in the LICENSE file.
 
 // Internal type for anonymous errors.
-type Error: str
+type Error: string
 
 impl Error {
 	// Returns error as string.
-	fn Str(*self): str {
-		ret str(*self)
+	fn Str(*self): string {
+		ret string(*self)
 	}
 }
 
 // Returns an error instance with message.
 // The returned type is an anonymous, meaning it cannot obtain any underlying type.
-fn New(err: str): &Error {
+fn New(err: string): &Error {
 	ret new(Error, Error(err))
 }
