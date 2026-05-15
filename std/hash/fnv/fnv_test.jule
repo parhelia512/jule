@@ -8,7 +8,7 @@ use "std/unsafe"
 
 struct case {
 	out:   []byte
-	input: str
+	input: string
 }
 
 let case32: []case = [
@@ -65,7 +65,7 @@ async fn testCase(t: &testing::T, mut h: hash::Hash, cases: []case) {
 			continue
 		}
 		actual := h.Sum(nil)
-		if str(c.out) != str(actual) {
+		if string(c.out) != string(actual) {
 			t.Errorf("hash({}) = {} want {}", c.input, actual, c.out)
 		}
 	}
