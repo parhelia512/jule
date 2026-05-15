@@ -5,7 +5,7 @@
 use "std/internal/runtime"
 use "std/internal/runtime/atomic"
 
-type eventpollError: str
+type eventpollError: string
 
 const (
 	pollNoError:        eventpollError = ""

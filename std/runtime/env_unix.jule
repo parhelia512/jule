@@ -5,8 +5,8 @@
 use "std/unsafe"
 
 #disable boundary
-fn args(): []str {
-	mut args := make([]str, argc)
+fn args(): []string {
+	mut args := make([]string, argc)
 	for i in args {
 		unsafe {
 			mut arg := argv[i]
@@ -16,9 +16,9 @@ fn args(): []str {
 	ret args
 }
 
-fn env(): []str {
+fn env(): []string {
 	const avgEnvVars = 20
-	mut env := make([]str, 0, avgEnvVars)
+	mut env := make([]string, 0, avgEnvVars)
 	mut it := envp
 	unsafe {
 		for *it != nil; it++ {

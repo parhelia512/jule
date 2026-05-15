@@ -17,7 +17,7 @@ fn ptrEqual(a: *unsafe, b: *unsafe): bool {
 // The returned string uses n as length.
 // Will not perform garbage collection.
 #export "__jule_strBytePtr"
-unsafe fn strBytePtr(b: *byte, n: int): str {
+unsafe fn strBytePtr(b: *byte, n: int): string {
 	mut s := ""
 	mut sb := (*runtime::Str)(&s)
 	sb.Buffer.Ptr = *(&b)
@@ -30,7 +30,7 @@ unsafe fn strBytePtr(b: *byte, n: int): str {
 // Equals to sliceBytePtr(&s[0], len(s), len(s)) call.
 // Returns nil slice for empty string.
 #export "__jule_strAsSlice"
-fn strAsSlice(s: str): []byte {
+fn strAsSlice(s: string): []byte {
 	if len(s) == 0 {
 		ret nil
 	}
@@ -44,11 +44,11 @@ fn sliceBytePtr(mut b: *byte, len: int, cap: int): []byte {
 	ret unsafe::Slice(b, len, cap)
 }
 
-// Returns byte slice as str.
+// Returns byte slice as string.
 // Equals to strBytePtr(&b[0], len(b)) call.
 // Returns empty string if len(b) == 0.
 #export "__jule_sliceAsStr"
-fn sliceAsStr(b: []byte): str {
+fn sliceAsStr(b: []byte): string {
 	if len(b) == 0 {
 		ret ""
 	}

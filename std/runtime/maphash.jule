@@ -74,7 +74,7 @@ fn arrayhash[A](&a: *A, mut seed: uintptr): uintptr {
 }
 
 #disable nilptr
-fn strhash(&s: *str, seed: uintptr): uintptr {
+fn strhash(&s: *string, seed: uintptr): uintptr {
 	unsafe {
 		sp := (*runtime::Str)(s)
 		ret memhash(sp.Slice, seed, uintptr(sp.Len))
@@ -137,7 +137,7 @@ fn maphash[K](&k: *K, seed: uintptr): uintptr {
 			ret sys::Addrcall[uintptr](uintptr(dt.Type.Hash), &dt.Data, seed)
 		}
 	| comptime::Str:
-		ret unsafe { strhash(&(*(*str)(k)), seed) }
+		ret unsafe { strhash(&(*(*string)(k)), seed) }
 	| comptime::Uintptr:
 		ret unsafe { memhash(k, seed, runtime::PtrSize) }
 	| comptime::Ptr | comptime::Smartptr:

@@ -11,7 +11,7 @@ extern use "<mach-o/dyld.h>"
 extern unsafe fn _NSGetExecutablePath(b: *c::Char, *u32): bool
 extern unsafe fn realpath(path: *c::Char, resolved: *c::Char): *c::Char
 
-fn executable(): str {
+fn executable(): string {
 	let mut buf: [sys::PATH_MAX]byte
 	size := u32(len(buf))
 	mut p := &buf[0]

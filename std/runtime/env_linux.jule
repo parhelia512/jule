@@ -5,7 +5,7 @@
 use "std/sys"
 use "std/unsafe"
 
-fn executable(): str {
+fn executable(): string {
 	mut buf := make([]byte, sys::PATH_MAX)
 	n := sys::Readlink("/proc/self/exe", buf) else {
 		panic("runtime: executable path read error")

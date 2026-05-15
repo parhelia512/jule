@@ -9,7 +9,7 @@ use "std/unsafe"
 
 // Returns pointer in string form.
 #export "__jule_ptrToStr"
-fn ptrToStr(p: *unsafe): str {
+fn ptrToStr(p: *unsafe): string {
 	if p == nil {
 		ret "<nil>"
 	}
@@ -33,7 +33,7 @@ fn ptrToStr(p: *unsafe): str {
 
 // Returns boolean in string form.
 #export "__jule_boolToStr"
-fn boolToStr(b: bool): str {
+fn boolToStr(b: bool): string {
 	if b {
 		ret "true"
 	}
@@ -42,7 +42,7 @@ fn boolToStr(b: bool): str {
 
 // Returns x in decimal string format.
 #export "__jule_i64ToStr"
-fn i64ToStr(x: i64): str {
+fn i64ToStr(x: i64): string {
 	if x < 0 {
 		ret "-" + u64ToStr(u64(-x))
 	}
@@ -51,7 +51,7 @@ fn i64ToStr(x: i64): str {
 
 // Returns x in decimal string format.
 #export "__jule_u64ToStr"
-fn u64ToStr(mut x: u64): str {
+fn u64ToStr(mut x: u64): string {
 	mut buf := make([]byte, 20) // big enough for 64bit value base 10
 	n := u64ToBuf(buf, x)
 	buf = buf[:n]
@@ -90,7 +90,7 @@ fn u64ToBuf(mut buf: []byte, mut x: u64): int {
 // Returns x in decimal string format.
 #disable boundary
 #export "__jule_f64ToStr"
-fn f64ToStr(mut v: f64): str {
+fn f64ToStr(mut v: f64): string {
 	match {
 	| v != v:
 		ret "NaN"
@@ -161,7 +161,7 @@ fn f64ToStr(mut v: f64): str {
 	ret unsafe::StrFromBytes(buf[:])
 }
 
-fn cmplx128ToStr(c: cmplx128): str {
+fn cmplx128ToStr(c: cmplx128): string {
 	mut buf := make([]byte, 0, 2+7*2+1) // enough size for; (1.0 + 1.0i)
 	buf = append(buf, '(')
 	buf = append(buf, f64ToStr(real(c))...)
@@ -173,7 +173,7 @@ fn cmplx128ToStr(c: cmplx128): str {
 
 // Returns x in string form with default format.
 // Compatible with slices.
-fn arrToStr[T](x: T): str {
+fn arrToStr[T](x: T): string {
 	mut buf := make([]byte, 0, 20)
 	buf = append(buf, '[')
 	for i, z in x {
@@ -187,7 +187,7 @@ fn arrToStr[T](x: T): str {
 }
 
 // Returns x in string form with default format.
-fn mapToStr[T](x: T): str {
+fn mapToStr[T](x: T): string {
 	mut buf := make([]byte, 0, 20)
 	buf = append(buf, '{')
 	mut written := false
@@ -206,7 +206,7 @@ fn mapToStr[T](x: T): str {
 }
 
 // Tries to call reserved Str method for type.
-fn tryToCallStr[T](x: T): (str, ok: bool) {
+fn tryToCallStr[T](x: T): (string, ok: bool) {
 	const t = comptime::TypeOf(T)
 	const for _, method in t.Decl().Methods() {
 		const match method.Name() {
@@ -228,7 +228,7 @@ fn tryToCallStr[T](x: T): (str, ok: bool) {
 }
 
 // Returns x in string form with default format.
-fn structToStr[T](x: T): str {
+fn structToStr[T](x: T): string {
 	r, ok := tryToCallStr(x)
 	if ok {
 		ret r
@@ -255,7 +255,7 @@ fn structToStr[T](x: T): str {
 
 // Implementation of the toStr function, but only for Jule types.
 // Any external type must not be passed to this function.
-fn juleToStr[T](x: T): str {
+fn juleToStr[T](x: T): string {
 	const t = comptime::TypeOf(T)
 	const match {
 	| t.CanNil():
@@ -266,7 +266,7 @@ fn juleToStr[T](x: T): str {
 
 	const match t.Kind() {
 	| comptime::Str:
-		ret str(x)
+		ret string(x)
 	| comptime::Int | comptime::I8 | comptime::I16 | comptime::I32 | comptime::I64:
 		ret i64ToStr(i64(x))
 	| comptime::Uint | comptime::U8 | comptime::U16 | comptime::U32 | comptime::U64:
@@ -280,7 +280,7 @@ fn juleToStr[T](x: T): str {
 	| comptime::Any | comptime::TypeEnum | comptime::Trait:
 		unsafe {
 			dt := (*runtime::DynamicType)(&x)
-			ret sys::Addrcall[str](uintptr(dt.Type.ToStr), (*unsafe)(dt.Data.Ptr))
+			ret sys::Addrcall[string](uintptr(dt.Type.ToStr), (*unsafe)(dt.Data.Ptr))
 		}
 	| comptime::Func:
 		ret unsafe { ptrToStr((*runtime::Func)(&x).Addr) }
@@ -318,7 +318,7 @@ fn juleToStr[T](x: T): str {
 
 // Returns x in string form with default format.
 // It designed for general-purpose string conversion for built-in behavior.
-fn toStr[T](x: T): str {
+fn toStr[T](x: T): string {
 	const t = comptime::TypeOf(T)
 	// Check strict case first.
 	// Because type may have custom string conversion function.
