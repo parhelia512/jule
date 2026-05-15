@@ -18,7 +18,7 @@ let nextStdChunkTests = [
 ]
 
 // Maps from nextStdChunk results to the matched strings.
-let stdChunkNames: map[int]str = {
+let stdChunkNames: map[int]string = {
 	0:                                           "",
 	time::StdLongMonth:                          "January",
 	time::StdMonth:                              "Jan",
@@ -84,7 +84,7 @@ fn testNextStdChunk(t: &testing::T) {
 	// markChunks returns format with each detected
 	// 'format chunk' parenthesized.
 	// For example showChunks("2006-01-02") == "(2006)-(01)-(02)".
-	markChunks := fn(format: str): str {
+	markChunks := fn(format: string): string {
 		mut out := ""
 		mut s := format
 		for s != "" {
@@ -119,7 +119,7 @@ fn testNextStdChunk(t: &testing::T) {
 
 struct timeFormatTest {
 	time:           time::Time
-	formattedValue: str
+	formattedValue: string
 }
 
 let rfc3339Formats = []timeFormatTest([
@@ -143,7 +143,7 @@ fn testRFC3339Conversion(t: &testing::T) {
 struct appendIntTest {
 	input: int
 	width: int
-	want:  str
+	want:  string
 }
 
 let appendIntTests = []appendIntTest([
@@ -183,16 +183,16 @@ fn testAppendInt(t: &testing::T) {
 	let mut got: []byte
 	for _, tt in appendIntTests {
 		got = time::AppendInt(got[:0], tt.input, tt.width)
-		if str(got) != tt.want {
+		if string(got) != tt.want {
 			t.Errorf("appendInt({}, {}) = {}, want {}", tt.input, tt.width, got, tt.want)
 		}
 	}
 }
 
 struct formatTest {
-	name:   str
-	format: str
-	result: str
+	name:   string
+	format: string
+	result: string
 }
 
 let formatTests = []formatTest([
@@ -251,9 +251,9 @@ fn testFormatSingleDigits(t: &testing::T) {
 }
 
 struct parseTest {
-	name:       str
-	format:     str
-	value:      str
+	name:       string
+	format:     string
+	value:      string
 	hasTZ:      int  // contains a time zone with offset, -1: yes, negative, 0: no, 1: yes, positive
 	hasWD:      bool // contains a weekday
 	yearSign:   int  // sign of year, -1 indicates the year is not present in the format
@@ -419,7 +419,7 @@ fn testRubyParse(t: &testing::T) {
 }
 
 struct parseTimeZoneTest {
-	value:  str
+	value:  string
 	length: int
 	ok:     bool
 }
@@ -488,7 +488,7 @@ fn testFormatFractionalSecondSeparators(t: &testing::T) {
 }
 
 struct longFractionalDigitTest {
-	value: str
+	value: string
 	want:  int
 }
 
@@ -533,8 +533,8 @@ fn testParseFractionalSecondsLongerThanNineDigits(t: &testing::T) {
 }
 
 struct quoteTest {
-	s:    str
-	want: str
+	s:    string
+	want: string
 }
 
 #test

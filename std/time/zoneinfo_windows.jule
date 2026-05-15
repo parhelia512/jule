@@ -35,18 +35,18 @@ struct timezoneinformation {
 }
 
 // Extracts capital letters from description desc.
-fn extractCAPS(desc: str): str {
+fn extractCAPS(desc: string): string {
 	let mut short: []rune
 	for _, c in desc {
 		if 'A' <= c && c <= 'Z' {
 			short = append(short, c)
 		}
 	}
-	ret str(short)
+	ret string(short)
 }
 
 // Returns the abbreviations to use for the given zone z.
-fn abbrev(&z: *timezoneinformation): (std: str, dst: str) {
+fn abbrev(&z: *timezoneinformation): (std: string, dst: string) {
 	stdNameU16 := unsafe::Slice(&z.StandardName[0], len(z.StandardName), len(z.StandardName))
 	stdName := integ::UTF16ToStr(stdNameU16)
 	mut a, mut ok := abbrs[stdName]

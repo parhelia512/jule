@@ -228,7 +228,7 @@ let std0x: [...]int = [stdZeroMonth, stdZeroDay, stdZeroHour12, stdZeroMinute, s
 impl Time {
 	// Like [Time.Format] but appends the textual
 	// representation to b and returns the extended buffer.
-	fn AppendFormat(*self, mut b: []byte, layout: str): []byte {
+	fn AppendFormat(*self, mut b: []byte, layout: string): []byte {
 		// Optimize for RFC3339 as it accounts for over half of all representations.
 		match layout {
 		| RFC3339:
@@ -246,7 +246,7 @@ impl Time {
 	//
 	// The executable example for [Time.Format] demonstrates the working
 	// of the layout string in detail and is a good reference.
-	fn Format(*self, layout: str): str {
+	fn Format(*self, layout: string): string {
 		const bufSize = 64
 		let mut b: []byte
 		max := len(layout) + 10
@@ -262,7 +262,7 @@ impl Time {
 	// Returns the time formatted using the format string
 	//
 	//	"2006-01-02 15:04:05.999999999 -0700 MST"
-	fn Str(*self): str {
+	fn Str(*self): string {
 		ret self.Format("2006-01-02 15:04:05.999999999 -0700 MST")
 	}
 }
@@ -370,7 +370,7 @@ fn appendNano(mut b: []byte, nanosec: int, std: int): []byte {
 
 // Finds the first occurrence of a std string in
 // layout and returns the text before, the std string, and the text after.
-fn nextStdChunk(layout: str): (prefix: str, std: int, suffix: str) {
+fn nextStdChunk(layout: string): (prefix: string, std: int, suffix: string) {
 	mut i := 0
 	for i < len(layout); i++ {
 		c := int(layout[i])
@@ -494,7 +494,7 @@ fn nextStdChunk(layout: str): (prefix: str, std: int, suffix: str) {
 	ret layout, 0, ""
 }
 
-fn appendFormat(&t: *Time, mut b: []byte, mut layout: str): []byte {
+fn appendFormat(&t: *Time, mut b: []byte, mut layout: string): []byte {
 	name, offset, abs := t.locabs()
 	days := abs.days()
 
@@ -684,7 +684,7 @@ fn appendFormat(&t: *Time, mut b: []byte, mut layout: str): []byte {
 
 // Reports whether the string has a lower-case letter at the beginning.
 // Its purpose is to prevent matching strings like "Month" when looking for "Mon".
-fn startsWithLowerCase(s: str): bool {
+fn startsWithLowerCase(s: string): bool {
 	if len(s) == 0 {
 		ret false
 	}
@@ -693,7 +693,7 @@ fn startsWithLowerCase(s: str): bool {
 }
 
 // Reports whether s[i] is in range and is a decimal digit.
-fn isDigit[bytes: []byte | str](s: bytes, i: int): bool {
+fn isDigit[bytes: []byte | string](s: bytes, i: int): bool {
 	if len(s) <= i {
 		ret false
 	}
@@ -711,7 +711,7 @@ const (
 	runeError = '\uFFFD'
 )
 
-fn quote(s: str): str {
+fn quote(s: string): string {
 	mut buf := make([]byte, 1, len(s)+2) // slice will be at least len(s) + quotes
 	buf[0] = '"'
 	for i, c in s {
@@ -725,11 +725,11 @@ fn quote(s: str): str {
 			let mut width: int
 			if c == runeError {
 				width = 1
-				if i+2 < len(s) && s[i:i+3] == str(runeError) {
+				if i+2 < len(s) && s[i:i+3] == string(runeError) {
 					width = 3
 				}
 			} else {
-				width = len(str(c))
+				width = len(string(c))
 			}
 			mut j := 0
 			for j < width; j++ {
@@ -741,7 +741,7 @@ fn quote(s: str): str {
 			if c == '"' || c == '\\' {
 				buf = append(buf, '\\')
 			}
-			buf = append(buf, str(c)...)
+			buf = append(buf, string(c)...)
 		}
 	}
 	buf = append(buf, '"')
@@ -750,15 +750,15 @@ fn quote(s: str): str {
 
 // Describes a problem parsing a time string.
 struct ParseError {
-	Layout:     str
-	Value:      str
-	LayoutElem: str
-	ValueElem:  str
-	Message:    str
+	Layout:     string
+	Value:      string
+	LayoutElem: string
+	ValueElem:  string
+	Message:    string
 }
 
 impl ParseError {
-	fn Str(*self): str {
+	fn Str(*self): string {
 		if self.Message == "" {
 			ret "parsing time " +
 				quote(self.Value) + " as " +
@@ -773,7 +773,7 @@ impl ParseError {
 
 // Creates a new ParseError.
 // The provided value and valueElem are cloned to avoid escaping their values.
-fn newParseError(layout: str, value: str, layoutElem: str, valueElem: str, message: str): &ParseError {
+fn newParseError(layout: string, value: string, layoutElem: string, valueElem: string, message: string): &ParseError {
 	valueCopy := stringslite::Clone(value)
 	valueElemCopy := stringslite::Clone(valueElem)
 	ret &ParseError{layout, valueCopy, layoutElem, valueElemCopy, message}
@@ -821,7 +821,7 @@ fn newParseError(layout: str, value: str, layoutElem: str, valueElem: str, messa
 // same layout losslessly, but the exact instant used in the representation will
 // differ by the actual zone offset. To avoid such problems, prefer time layouts
 // that use a numeric zone offset, or use [ParseInLocation].
-fn Parse(layout: str, value: str)!: Time {
+fn Parse(layout: string, value: string)!: Time {
 	// Optimize for RFC3339 as it accounts for over half of all representations.
 	if layout == RFC3339 || layout == RFC3339Nano {
 		t, ok := parseRFC3339(value, unsafe { *(&Local) })
@@ -837,7 +837,7 @@ fn Parse(layout: str, value: str)!: Time {
 // ParseInLocation interprets the time as in the given location.
 // Second, when given a zone offset or abbreviation, Parse tries to match it
 // against the Local location; ParseInLocation uses the given location.
-fn ParseInLocation(layout: str, value: str, loc: &Location)!: Time {
+fn ParseInLocation(layout: string, value: string, loc: &Location)!: Time {
 	// Optimize for RFC3339 as it accounts for over half of all representations.
 	if layout == RFC3339 || layout == RFC3339Nano {
 		t, ok := parseRFC3339(value, unsafe { *(&loc) })
@@ -848,7 +848,7 @@ fn ParseInLocation(layout: str, value: str, loc: &Location)!: Time {
 	ret parse(layout, value, unsafe { *(&loc) }, unsafe { *(&loc) })?
 }
 
-fn parse(mut layout: str, mut value: str, defaultLocation: &Location, mut local: &Location)!: Time {
+fn parse(mut layout: string, mut value: string, defaultLocation: &Location, mut local: &Location)!: Time {
 	alayout, avalue := layout, value
 	mut rangeErrStr := "" // set if a value is out of range
 	mut amSet := false    // do we need to subtract 12 from the hour for midnight?
@@ -1206,7 +1206,7 @@ fn commaOrPeriod(b: byte): bool {
 	ret b == '.' || b == ','
 }
 
-fn parseNanoseconds[bytes: []byte | str](value: bytes, mut nbytes: int)!: (ns: int, rangeErrStr: str) {
+fn parseNanoseconds[bytes: []byte | string](value: bytes, mut nbytes: int)!: (ns: int, rangeErrStr: string) {
 	if !commaOrPeriod(value[0]) {
 		throw errBad
 	}
@@ -1241,7 +1241,7 @@ fn parseNanoseconds[bytes: []byte | str](value: bytes, mut nbytes: int)!: (ns: i
 // If there are 3, it's a time zone.
 // Otherwise, other than special cases, it's not a time zone.
 // GMT is special because it can have an hour offset.
-fn parseTimeZone(value: str): (length: int, ok: bool) {
+fn parseTimeZone(value: string): (length: int, ok: bool) {
 	if len(value) < 3 {
 		ret 0, false
 	}
@@ -1292,7 +1292,7 @@ fn parseTimeZone(value: str): (length: int, ok: bool) {
 // Parses a GMT time zone. The input string is known to start "GMT".
 // The function checks whether that is followed by a sign and a number in the
 // range -23 through +23 excluding zero.
-fn parseGMT(mut value: str): int {
+fn parseGMT(mut value: string): int {
 	value = value[3:]
 	if len(value) == 0 {
 		ret 3
@@ -1304,7 +1304,7 @@ fn parseGMT(mut value: str): int {
 // Parses a signed timezone offset (e.g. "+03" or "-04").
 // The function checks for a signed number in the range -23 through +23 excluding zero.
 // Returns length of the found offset string or 0 otherwise.
-fn parseSignedOffset(value: str): int {
+fn parseSignedOffset(value: string): int {
 	sign := value[0]
 	if sign != '-' && sign != '+' {
 		ret 0
@@ -1324,7 +1324,7 @@ fn parseSignedOffset(value: str): int {
 // Parses s[0:1] or s[0:2] (fixed forces s[0:2])
 // as a decimal integer and returns the integer and the
 // remainder of the string.
-fn getnum(s: str, fixed: bool)!: (int, str) {
+fn getnum(s: string, fixed: bool)!: (int, string) {
 	if !isDigit(s, 0) {
 		throw errBad
 	}
@@ -1340,7 +1340,7 @@ fn getnum(s: str, fixed: bool)!: (int, str) {
 // Parses s[0:1], s[0:2], or s[0:3] (fixed forces s[0:3])
 // as a decimal integer and returns the integer and the remainder
 // of the string.
-fn getnum3(s: str, fixed: bool)!: (int, str) {
+fn getnum3(s: string, fixed: bool)!: (int, string) {
 	mut i := 0
 	mut n := 0
 	for i < 3 && isDigit(s, i); i++ {
@@ -1355,7 +1355,7 @@ fn getnum3(s: str, fixed: bool)!: (int, str) {
 let mut errLeadingInt = errors::New("time: bad [0-9]*") // never printed
 
 // Consumes the leading [0-9]* from s.
-fn leadingInt[bytes: []byte | str](s: bytes)!: (x: u64, rem: bytes) {
+fn leadingInt[bytes: []byte | string](s: bytes)!: (x: u64, rem: bytes) {
 	mut i := 0
 	for i < len(s); i++ {
 		c := s[i]
@@ -1379,7 +1379,7 @@ fn leadingInt[bytes: []byte | str](s: bytes)!: (x: u64, rem: bytes) {
 let mut errAtoi = errors::New("time: invalid number")
 
 // Duplicates functionality in strconv, but avoids dependency.
-fn atoi[bytes: []byte | str](s: bytes)!: (x: int) {
+fn atoi[bytes: []byte | string](s: bytes)!: (x: int) {
 	mut neg := false
 	if len(s) > 0 && (s[0] == '-' || s[0] == '+') {
 		neg = s[0] == '-'
@@ -1396,7 +1396,7 @@ fn atoi[bytes: []byte | str](s: bytes)!: (x: int) {
 	ret x
 }
 
-fn cutspace(mut s: str): str {
+fn cutspace(mut s: string): string {
 	for len(s) > 0 && s[0] == ' ' {
 		s = s[1:]
 	}
@@ -1405,7 +1405,7 @@ fn cutspace(mut s: str): str {
 
 // Removes the given prefix from value,
 // treating runs of space characters as equivalent.
-fn skip(mut value: str, mut prefix: str)!: str {
+fn skip(mut value: string, mut prefix: string)!: string {
 	for len(prefix) > 0 {
 		if prefix[0] == ' ' {
 			if len(value) > 0 && value[0] != ' ' {
@@ -1426,7 +1426,7 @@ fn skip(mut value: str, mut prefix: str)!: str {
 
 // Reports whether s1 and s2 match ignoring case.
 // It is assumed s1 and s2 are the same length.
-fn _match(s1: str, s2: str): bool {
+fn _match(s1: string, s2: string): bool {
 	mut i := 0
 	for i < len(s1); i++ {
 		mut c1 := s1[i]
@@ -1443,7 +1443,7 @@ fn _match(s1: str, s2: str): bool {
 	ret true
 }
 
-fn lookup(tab: []str, val: str)!: (int, str) {
+fn lookup(tab: []string, val: string)!: (int, string) {
 	for i, v in tab {
 		if len(val) >= len(v) && _match(val[:len(v)], v) {
 			ret i, val[len(v):]
@@ -1455,7 +1455,7 @@ fn lookup(tab: []str, val: str)!: (int, str) {
 // leadingFraction consumes the leading [0-9]* from s.
 // It is used only for fractions, so does not return an error on overflow,
 // it just stops accumulating precision.
-fn leadingFraction(s: str): (x: u64, scale: f64, rem: str) {
+fn leadingFraction(s: string): (x: u64, scale: f64, rem: string) {
 	mut i := 0
 	scale = 1
 	mut overflow := false
@@ -1483,7 +1483,7 @@ fn leadingFraction(s: str): (x: u64, scale: f64, rem: str) {
 	ret x, scale, s[i:]
 }
 
-let unitMap: map[str]u64 = {
+let unitMap: map[string]u64 = {
 	"ns": u64(Nanosecond),
 	"us": u64(Microsecond),
 	"µs": u64(Microsecond), // U+00B5 = micro symbol
@@ -1499,7 +1499,7 @@ let unitMap: map[str]u64 = {
 // decimal numbers, each with optional fraction and a unit suffix,
 // such as "300ms", "-1.5h" or "2h45m".
 // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-fn ParseDuration(mut s: str): (Duration, bool) {
+fn ParseDuration(mut s: string): (Duration, bool) {
 	// [-+]?([0-9]*(\.[0-9]*)?[a-z]+)+
 	mut d := u64(0)
 	mut neg := false

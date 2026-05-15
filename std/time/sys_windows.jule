@@ -4,7 +4,7 @@
 
 use "std/sys"
 
-fn open(name: str): (uintptr, ok: bool) {
+fn open(name: string): (uintptr, ok: bool) {
 	f := sys::Open(name, sys::O_RDONLY, 0) else {
 		ret 0, false
 	}

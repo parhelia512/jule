@@ -13,7 +13,7 @@ use "std/sync"
 // calculations involving intervals that may cross daylight savings time
 // boundaries.
 struct Location {
-	name: str
+	name: string
 	zone: []zone
 	tx:   []zoneTrans
 
@@ -22,7 +22,7 @@ struct Location {
 	// The format is the TZ environment variable without a colon; see
 	// https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html.
 	// Example string, for America/Los_Angeles: PST8PDT,M3.2.0,M11.1.0
-	extend: str
+	extend: string
 
 	// Most lookups will be for the current time.
 	// To avoid the binary search through tx, keep a
@@ -42,7 +42,7 @@ let localOnce = sync::Once.New()
 
 impl Location {
 	// Returns a descriptive name for the time zone information.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		ret unsafe { (&Location)(*(&self)).get().name }
 	}
 
@@ -63,7 +63,7 @@ impl Location {
 	// the start and end times bracketing sec when that zone is in effect,
 	// the offset in seconds east of UTC (such as -5*60*60), and whether
 	// the daylight savings is being observed at that time.
-	fn lookup(mut &self, sec: i64): (name: str, offset: int, start: i64, end: i64, isDST: bool) {
+	fn lookup(mut &self, sec: i64): (name: string, offset: int, start: i64, end: i64, isDST: bool) {
 		mut l := self.get()
 
 		if len(l.zone) == 0 {
@@ -136,7 +136,7 @@ impl Location {
 	// Returns information about the time zone with
 	// the given name (such as "EST") at the given pseudo-Unix time
 	// (what the given time of day would be in UTC).
-	fn lookupName(mut &self, name: str, unix: i64): (offset: int, ok: bool) {
+	fn lookupName(mut &self, name: string, unix: i64): (offset: int, ok: bool) {
 		mut l := self.get()
 
 		// First try for a zone with the right name that was actually
@@ -223,9 +223,9 @@ impl Location {
 
 // Represents a single time zone such as CET.
 struct zone {
-	name:   str  // abbreviated name, "CET"
-	offset: int  // seconds east of UTC
-	isDST:  bool // is this zone Daylight Savings Time?
+	name:   string // abbreviated name, "CET"
+	offset: int    // seconds east of UTC
+	isDST:  bool   // is this zone Daylight Savings Time?
 }
 
 // Represents a single time zone transition.
@@ -268,7 +268,7 @@ let mut localLoc = Location{}
 
 // Returns the timezone name at the start of the tzset string s,
 // and the remainder of s, and reports whether the parsing is OK.
-fn tzsetName(s: str): (str, str, bool) {
+fn tzsetName(s: string): (string, string, bool) {
 	if len(s) == 0 {
 		ret "", "", false
 	}
@@ -299,7 +299,7 @@ fn tzsetName(s: str): (str, str, bool) {
 // Returns the timezone offset at the start of the tzset string s,
 // and the remainder of s, and reports whether the parsing is OK.
 // The timezone offset is returned as a number of seconds.
-fn tzsetOffset(mut s: str): (offset: int, rest: str, ok: bool) {
+fn tzsetOffset(mut s: string): (offset: int, rest: string, ok: bool) {
 	if len(s) == 0 {
 		ret 0, "", false
 	}
@@ -355,7 +355,7 @@ fn tzsetOffset(mut s: str): (offset: int, rest: str, ok: bool) {
 // Parses a number from a tzset string.
 // It returns the number, and the remainder of the string, and reports success.
 // The number must be between min and max.
-fn tzsetNum(s: str, min: int, max: int): (num: int, rest: str, ok: bool) {
+fn tzsetNum(s: string, min: int, max: int): (num: int, rest: string, ok: bool) {
 	if len(s) == 0 {
 		ret 0, "", false
 	}
@@ -430,7 +430,7 @@ fn tzruleTime(year: int, r: rule, off: int): int {
 
 // Parses a rule from a tzset string.
 // It returns the rule, and the remainder of the string, and reports success.
-fn tzsetRule(mut s: str): (rule, str, bool) {
+fn tzsetRule(mut s: string): (rule, string, bool) {
 	let mut r: rule
 	if len(s) == 0 {
 		ret rule{}, "", false
@@ -500,9 +500,9 @@ const (
 // We call this a tzset string since in C the function tzset reads TZ.
 // The return values are as for lookup, plus ok which reports whether the
 // parse succeeded.
-fn tzset(mut s: str, lastTxSec: i64, sec: i64): (name: str, offset: int, start: i64, end: i64, isDST: bool, ok: bool) {
-	let mut stdName: str
-	let mut dstName: str
+fn tzset(mut s: string, lastTxSec: i64, sec: i64): (name: string, offset: int, start: i64, end: i64, isDST: bool, ok: bool) {
+	let mut stdName: string
+	let mut dstName: string
 	let mut stdOffset: int
 	let mut dstOffset: int
 
@@ -596,7 +596,7 @@ let mut unnamedFixedZonesOnce = sync::Once.New()
 
 // Returns a [Location] that always uses
 // the given zone name and offset (seconds east of UTC).
-fn FixedZone(name: str, offset: int): &Location {
+fn FixedZone(name: string, offset: int): &Location {
 	// Most calls to FixedZone have an unnamed zone with an offset by the hour.
 	// Optimize for that case by returning the same *Location for a given hour.
 	const (
@@ -617,7 +617,7 @@ fn FixedZone(name: str, offset: int): &Location {
 	ret fixedZone(name, offset)
 }
 
-fn fixedZone(name: str, offset: int): &Location {
+fn fixedZone(name: string, offset: int): &Location {
 	mut l := &Location{
 		name:       name,
 		zone:       [{name, offset, false}],

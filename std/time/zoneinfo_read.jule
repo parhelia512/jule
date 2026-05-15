@@ -10,13 +10,13 @@ use "std/unsafe"
 // with the given name, from a given source. A source may be a
 // timezone database directory, tzdata database file or an uncompressed
 // zip file, containing the contents of such a directory.
-fn loadTzinfo(name: str, source: str): ([]byte, ok: bool) {
+fn loadTzinfo(name: string, source: string): ([]byte, ok: bool) {
 	ret loadTzinfoFromDirOrZip(source, name)
 }
 
 // Returns the contents of the file with the given name
 // in dir. dir can either be an uncompressed zip file, or a directory.
-fn loadTzinfoFromDirOrZip(dir: str, mut name: str): ([]byte, ok: bool) {
+fn loadTzinfoFromDirOrZip(dir: string, mut name: string): ([]byte, ok: bool) {
 	if len(dir) > 4 && dir[len(dir)-4:] == ".zip" {
 		ret loadTzinfoFromZip(dir, name)
 	}
@@ -30,7 +30,7 @@ fn loadTzinfoFromDirOrZip(dir: str, mut name: str): ([]byte, ok: bool) {
 // the specified sources. See loadTzinfo for a list of supported sources.
 // The first timezone data matching the given name that is successfully loaded
 // and parsed is returned as a Location.
-fn loadLocation(name: str, sources: []str): (z: &Location, ok: bool) {
+fn loadLocation(name: string, sources: []string): (z: &Location, ok: bool) {
 	for _, source in sources {
 		mut zoneData, ok2 := loadTzinfo(name, source)
 		if ok2 {
@@ -101,13 +101,13 @@ impl dataIO {
 // initialized from the IANA Time Zone database-formatted data.
 // The data should be in the format of a standard IANA time zone file
 // (for example, the content of /etc/localtime on Unix systems).
-fn LoadLocationFromTZData(name: str, mut data: []byte): (&Location, ok: bool) {
+fn LoadLocationFromTZData(name: string, mut data: []byte): (&Location, ok: bool) {
 	mut d := dataIO{data, false}
 
 	// 4-byte magic "TZif"
 	{
 		magic := d.read(4)
-		if str(magic) != "TZif" {
+		if string(magic) != "TZif" {
 			ret
 		}
 	}
@@ -226,10 +226,10 @@ fn LoadLocationFromTZData(name: str, mut data: []byte): (&Location, ok: bool) {
 		ret
 	}
 
-	let mut extend: str
+	let mut extend: string
 	rest := d.rest()
 	if len(rest) > 2 && rest[0] == '\n' && rest[len(rest)-1] == '\n' {
-		extend = str(rest[1 : len(rest)-1])
+		extend = string(rest[1 : len(rest)-1])
 	}
 
 	// Now we can build up a useful data structure.
@@ -348,7 +348,7 @@ fn LoadLocationFromTZData(name: str, mut data: []byte): (&Location, ok: bool) {
 }
 
 // Returns the contents of the file with the given name in the given uncompressed zip file.
-fn loadTzinfoFromZip(zipfile: str, name: str): ([]byte, bool) {
+fn loadTzinfoFromZip(zipfile: string, name: string): ([]byte, bool) {
 	fd, ok := open(zipfile)
 	if !ok {
 		ret nil, false
@@ -414,7 +414,7 @@ fn loadTzinfoFromZip(zipfile: str, name: str): ([]byte, bool) {
 		off = get4(buf[42:])
 		zname := buf[46 : 46+namelen]
 		buf = buf[46+namelen+xlen+fclen:]
-		if str(zname) != name {
+		if string(zname) != name {
 			continue
 		}
 		if meth != 0 {
@@ -443,7 +443,7 @@ fn loadTzinfoFromZip(zipfile: str, name: str): ([]byte, bool) {
 			get4(buf) != zheader ||
 			get2(buf[8:]) != meth ||
 			get2(buf[26:]) != namelen ||
-			str(buf[30:30+namelen]) != name {
+			string(buf[30:30+namelen]) != name {
 			closefd(fd)
 			ret nil, false
 		}
@@ -463,7 +463,7 @@ fn loadTzinfoFromZip(zipfile: str, name: str): ([]byte, bool) {
 	ret nil, false
 }
 
-fn findZone(zones: []zone, name: str, offset: int, isDST: bool): int {
+fn findZone(zones: []zone, name: string, offset: int, isDST: bool): int {
 	for i, z in zones {
 		if z.name == name && z.offset == offset && z.isDST == isDST {
 			ret i
@@ -473,12 +473,12 @@ fn findZone(zones: []zone, name: str, offset: int, isDST: bool): int {
 }
 
 // Make a string by stopping at the first NUL
-fn byteStr(mut p: []byte): str {
+fn byteStr(mut p: []byte): string {
 	i := byteslite::IndexByte(p, 0)
 	if i != -1 {
 		p = p[:i]
 	}
-	ret str(p)
+	ret string(p)
 }
 
 // There are 500+ zoneinfo files. Rather than distribute them all
@@ -512,7 +512,7 @@ const maxFileSize = 10 << 20
 // It is a trivial implementation of os::File.Read, reimplemented
 // here to avoid depending.
 // It reports false if name exceeds maxFileSize bytes.
-fn readFile(name: str): ([]byte, ok: bool) {
+fn readFile(name: string): ([]byte, ok: bool) {
 	f, ok := open(name)
 	if !ok {
 		ret nil, false

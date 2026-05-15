@@ -21,13 +21,13 @@ type Month: int
 
 impl Month {
 	// Returns the English name of the month ("January", "February", ...).
-	fn Str(*self): str {
+	fn Str(*self): string {
 		if January <= *self && *self <= December {
 			ret longMonthNames[*self-1]
 		}
 		mut buf := make([]byte, 20)
 		n := formatInt(buf, u64(*self))
-		ret "%!Month(" + str(buf[n:]) + ")"
+		ret "%!Month(" + string(buf[n:]) + ")"
 	}
 }
 
@@ -86,13 +86,13 @@ type Weekday: int
 
 impl Weekday {
 	// Returns the English name of the day ("Sunday", "Monday", ...).
-	fn Str(*self): str {
+	fn Str(*self): string {
 		if Sunday <= *self && *self <= Saturday {
 			ret longDayNames[*self]
 		}
 		mut buf := make([]byte, 20)
 		mut n := formatInt(buf, u64(*self))
-		ret "%!Weekday(" + str(buf[n:]) + ")"
+		ret "%!Weekday(" + string(buf[n:]) + ")"
 	}
 }
 
@@ -209,7 +209,7 @@ impl Time {
 
 	// Combination of the Zone and absSec methods,
 	// extracting both return values from a single zone lookup.
-	fn locabs(*self): (name: str, offset: int, abs: absSeconds) {
+	fn locabs(*self): (name: string, offset: int, abs: absSeconds) {
 		mut l := self.loc
 		if l == nil || uintptr(l) == uintptr(&localLoc) {
 			l = l.get()
@@ -246,7 +246,7 @@ impl Time {
 
 	// Computes the time zone in effect at time specification, returning the abbreviated
 	// name of the zone (such as "CET") and its offset in seconds east of UTC.
-	fn Zone(*self): (name: str, offset: int) {
+	fn Zone(*self): (name: string, offset: int) {
 		name, offset, _, _, _ = self.loc.lookup(self.sec)
 		ret
 	}

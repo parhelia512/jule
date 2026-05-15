@@ -5,11 +5,11 @@
 // Based on information from https://raw.githubusercontent.com/unicode-org/cldr/main/common/supplemental/windowsZones.xml
 
 struct abbr {
-	std: str
-	dst: str
+	std: string
+	dst: string
 }
 
-let abbrs: map[str]abbr = {
+let abbrs: map[string]abbr = {
 	"Egypt Standard Time":             {"EET", "EEST"},    // Africa/Cairo
 	"Morocco Standard Time":           {"+00", "+01"},     // Africa/Casablanca
 	"South Africa Standard Time":      {"SAST", "SAST"},   // Africa/Johannesburg
