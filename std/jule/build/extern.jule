@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Valid extensions of C++ headers.
-let CppHeaderExts: [...]str = [
+let CppHeaderExts: [...]string = [
 	".h",
 	".hpp",
 	".hxx",
@@ -11,30 +11,30 @@ let CppHeaderExts: [...]str = [
 ]
 
 // Valid extensions of C++ source files.
-let CppExts: [...]str = [
+let CppExts: [...]string = [
 	".cpp",
 	".cc",
 	".cxx",
 ]
 
 // Valid extensions of Assembly source files.
-let AssemblyExts: [...]str = [
+let AssemblyExts: [...]string = [
 	".s",
 	".S",
 ]
 
 // Valid extensions of Objective-C++ source files.
-let ObjectiveCppExts: [...]str = [
+let ObjectiveCppExts: [...]string = [
 	".mm",
 ]
 
 // Reports whether path is C++ std library path.
-fn IsStdHeaderPath(p: str): bool {
+fn IsStdHeaderPath(p: string): bool {
 	ret p[0] == '<' && p[len(p)-1] == '>'
 }
 
 // Reports whether C++ header extension is valid.
-fn IsValidHeaderExt(ext: str): bool {
+fn IsValidHeaderExt(ext: string): bool {
 	for _, validExt in CppHeaderExts {
 		if ext == validExt {
 			ret true
@@ -44,7 +44,7 @@ fn IsValidHeaderExt(ext: str): bool {
 }
 
 // Reports whether C++ extension is valid.
-fn IsValidCppExt(ext: str): bool {
+fn IsValidCppExt(ext: string): bool {
 	if ext == ".c" {
 		ret true
 	}
@@ -62,7 +62,7 @@ fn IsValidCppExt(ext: str): bool {
 }
 
 // Reports whether Assembly extension is valid.
-fn IsValidAssemblyExt(ext: str): bool {
+fn IsValidAssemblyExt(ext: string): bool {
 	for _, e in AssemblyExts {
 		if ext == e {
 			ret true
