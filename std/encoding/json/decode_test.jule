@@ -67,12 +67,12 @@ fn testDecodeStr(t: &testing::T) {
 		}
 
 		type String: string
-		mut s2 := Str("")
+		mut s2 := String("")
 		Decode(case.output, &s2) else {
 			t.Errorf("Decode(case.output, \"{}\") failed", s2)
 			ret
 		}
-		if s2 != Str(case.input) {
+		if s2 != String(case.input) {
 			t.Errorf("expected \"{}\" for {}, found \"{}\"", string(case.input), string(case.output), s2)
 		}
 	}
