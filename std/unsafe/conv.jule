@@ -7,7 +7,7 @@ use "std/internal/runtime"
 // Returns string based on b, the parameter b means first byte of string.
 // The returned string uses n as length.
 // Will not perform garbage collection.
-fn Str(b: *byte, n: int): str {
+fn Str(b: *byte, n: int): string {
 	mut s := ""
 	unsafe {
 		mut sp := (*runtime::Str)(&s)
@@ -39,7 +39,7 @@ fn Bytes(mut b: *byte, n: int): []byte {
 
 // Alias for Slice(&s[0], len(s), len(s)).
 // Returns nil if len(s) == 0.
-fn StrBytes(s: str): []byte {
+fn StrBytes(s: string): []byte {
 	if len(s) == 0 {
 		ret nil
 	}
@@ -48,7 +48,7 @@ fn StrBytes(s: str): []byte {
 
 // Alias for Str(&b[0], len(b), len(b)).
 // Returns empty string if len(b) == 0.
-fn BytesStr(b: []byte): str {
+fn BytesStr(b: []byte): string {
 	if len(b) == 0 {
 		ret ""
 	}
@@ -56,13 +56,13 @@ fn BytesStr(b: []byte): str {
 }
 
 // Same as [BytesStr] but keeps garbage collection.
-fn StrFromBytes(b: []byte): str { ret unsafe { *(*str)(&b) } }
+fn StrFromBytes(b: []byte): string { ret unsafe { *(*string)(&b) } }
 
 // Same as [StrBytes] but keeps garbage collection.
-fn BytesFromStr(s: str): []byte {
+fn BytesFromStr(s: string): []byte {
 	let mut b: []byte
 	unsafe {
-		*(*str)(&b) = s
+		*(*string)(&b) = s
 		mut sp := (*runtime::Slice[byte])(&b)
 		sp.Cap = sp.Len
 	}
