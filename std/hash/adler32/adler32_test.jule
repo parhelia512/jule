@@ -8,7 +8,7 @@ use "std/unsafe"
 
 struct case {
 	out:   u32
-	input: str
+	input: string
 }
 
 let cases: []case = [
