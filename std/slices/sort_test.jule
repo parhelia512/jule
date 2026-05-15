@@ -83,7 +83,7 @@ fn testF64sFunc(t: &testing::T) {
 
 #test
 fn testStrsFunc(t: &testing::T) {
-	cmp := fn(a: str, b: str): int { ret compare(a, b) }
+	cmp := fn(a: string, b: string): int { ret compare(a, b) }
 	mut case := cloneSlice(caseStrs)
 	SortFunc(case, cmp)
 	if !IsSorted(case) {
