@@ -128,7 +128,7 @@ impl float {
 		}
 	}
 
-	fn validate0(*self): str {
+	fn validate0(*self): string {
 		if self.form != finite {
 			ret ""
 		}

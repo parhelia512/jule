@@ -324,12 +324,12 @@ fn divisors(m: int, b: Word, ndigits: int, bb: Word): []divisor {
 }
 
 struct strScan {
-	s: str
+	s: string
 	i: int
 }
 
 impl strScan {
-	fn new(s: str): strScan {
+	fn new(s: string): strScan {
 		ret strScan{s: s}
 	}
 
@@ -536,7 +536,7 @@ fn scanW(mut z: []Word, mut &r: *strScan, base: int, mut fracOk: bool): ([]Word,
 	ret z, b, count, ok
 }
 
-fn fromStrW(s: str): []Word {
+fn fromStrW(s: string): []Word {
 	mut r := strScan.new(s)
 	mut x, _, _, ok := scanW(nil, &r, 0, false)
 	if !ok {

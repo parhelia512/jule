@@ -192,7 +192,7 @@ fn testProbablyPrime(t: &testing::T) {
 struct binomialCase {
 	n:    i64
 	k:    i64
-	want: str
+	want: string
 }
 
 let binomialCases: []binomialCase = [

@@ -1001,7 +1001,7 @@ impl Int {
 	// Incorrect placement of underscores is reported as an error if there
 	// are no other errors. If base != 0, underscores are not recognized
 	// and act like any other character that is not a valid digit.
-	fn SetStr(mut *self, mut s: str, base: int): (ok: bool) {
+	fn SetStr(mut *self, mut s: string, base: int): (ok: bool) {
 		// determine sign
 		mut neg := false
 		if len(s) > 0 {
@@ -1059,7 +1059,7 @@ impl Int {
 	}
 
 	// Returns string representation of x(self) in decimal format.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		ret self.Format(10)
 	}
 
@@ -1068,7 +1068,7 @@ impl Int {
 	// lower-case letters 'a' to 'z' for digit values 10 to 35, and
 	// the upper-case letters 'A' to 'Z' for digit values 36 to 61.
 	// No prefix (such as "0x") is added to the string.
-	fn Format(*self, b: int): str {
+	fn Format(*self, b: int): string {
 		ret unsafe::StrFromBytes(itoaW(self.abs, self.neg, b))
 	}
 

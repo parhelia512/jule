@@ -184,9 +184,9 @@ fn testShiftRight(t: &testing::T) {
 }
 
 struct modWTest {
-	input:    str
-	dividend: str
-	out:      str
+	input:    string
+	dividend: string
+	out:      string
 }
 
 let modWTests32: []modWTest = [
@@ -221,10 +221,10 @@ fn testModW(t: &testing::T) {
 }
 
 struct expWWTest {
-	x:   str
-	y:   str
-	m:   str
-	out: str
+	x:   string
+	y:   string
+	m:   string
+	out: string
 }
 
 let expWWTests: []expWWTest = [
@@ -393,7 +393,7 @@ fn testDivBasicEstimate(t: &testing::T) {
 	mut q := makeW(nil, 8)
 	divBasic(&q, &u, v)
 	q = normW(q)
-	s := str(utoaW(q, 16))
+	s := string(utoaW(q, 16))
 	if s != "fffffffffffffffffffffffffffffffffffffffffffffffb" {
 		t.Errorf("incorrect quotient: {}", s)
 	}
@@ -455,7 +455,7 @@ fn testSqrtW(t: &testing::T) {
 struct mulRangeCase {
 	a: u64
 	b: u64
-	r: str
+	r: string
 }
 
 let mulRanges: []mulRangeCase = [
@@ -487,7 +487,7 @@ fn testMulRange(t: &testing::T) {
 	for i, c in mulRanges {
 		mut z := []Word(nil)
 		mulRangeW(&z, c.a, c.b)
-		r := str(utoaW(z, 10))
+		r := string(utoaW(z, 10))
 		if r != c.r {
 			t.Errorf("{}: got {}; want {}", i, r, c.r)
 		}

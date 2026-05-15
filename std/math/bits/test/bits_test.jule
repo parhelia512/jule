@@ -443,7 +443,7 @@ struct addSubUintTest {
 
 #test
 fn testAddSubUint(t: &testing::T) {
-	test := fn(msg: str, f: fn(x: uint, y: uint, c: uint): (z: uint, cout: uint), x: uint, y: uint, c: uint, z: uint, cout: uint) {
+	test := fn(msg: string, f: fn(x: uint, y: uint, c: uint): (z: uint, cout: uint), x: uint, y: uint, c: uint, z: uint, cout: uint) {
 		z1, cout1 := f(x, y, c)
 		if z1 != z || cout1 != cout {
 			t.Errorf("{}: got z:cout = {}:{}; want {}:{}", msg, z1, cout1, z, cout)
@@ -485,7 +485,7 @@ struct addSubU32Test {
 
 #test
 fn testAddSubUint32(t: &testing::T) {
-	test := fn(msg: str, f: fn(x: u32, y: u32, c: u32): (z: u32, cout: u32), x: u32, y: u32, c: u32, z: u32, cout: u32) {
+	test := fn(msg: string, f: fn(x: u32, y: u32, c: u32): (z: u32, cout: u32), x: u32, y: u32, c: u32, z: u32, cout: u32) {
 		z1, cout1 := f(x, y, c)
 		if z1 != z || cout1 != cout {
 			t.Errorf("{}: got z:cout = {}:{}; want {}:{}", msg, z1, cout1, z, cout)
@@ -521,7 +521,7 @@ struct addSubU64Test {
 
 #test
 fn testAddSubUint64(t: &testing::T) {
-	test := fn(msg: str, f: fn(x: u64, y: u64, c: u64): (z: u64, cout: u64), x: u64, y: u64, c: u64, z: u64, cout: u64) {
+	test := fn(msg: string, f: fn(x: u64, y: u64, c: u64): (z: u64, cout: u64), x: u64, y: u64, c: u64, z: u64, cout: u64) {
 		z1, cout1 := f(x, y, c)
 		if z1 != z || cout1 != cout {
 			t.Errorf("{}: got z:cout = {}:{}; want {}:{}", msg, z1, cout1, z, cout)
@@ -563,13 +563,13 @@ struct mulDivTest {
 
 #test
 fn testMulDiv(t: &testing::T) {
-	testMul := fn(msg: str, f: fn(x: uint, y: uint): (hi: uint, lo: uint), x: uint, y: uint, hi: uint, lo: uint) {
+	testMul := fn(msg: string, f: fn(x: uint, y: uint): (hi: uint, lo: uint), x: uint, y: uint, hi: uint, lo: uint) {
 		hi1, lo1 := f(x, y)
 		if hi1 != hi || lo1 != lo {
 			t.Errorf("{}: got hi:lo = {}:{}; want {}:{}", msg, hi1, lo1, hi, lo)
 		}
 	}
-	testDiv := fn(msg: str, f: fn(hi: uint, lo: uint, y: uint): (q: uint, r: uint), hi: uint, lo: uint, y: uint, q: uint, r: uint) {
+	testDiv := fn(msg: string, f: fn(hi: uint, lo: uint, y: uint): (q: uint, r: uint), hi: uint, lo: uint, y: uint, q: uint, r: uint) {
 		q1, r1 := f(hi, lo, y)
 		if q1 != q || r1 != r {
 			t.Errorf("{}: got q:r = {}:{}; want {}:{}", msg, q1, r1, q, r)
@@ -602,13 +602,13 @@ struct mulDivTestU32 {
 
 #test
 fn testMulDiv32(t: &testing::T) {
-	testMul := fn(msg: str, f: fn(x: u32, y: u32): (hi: u32, lo: u32), x: u32, y: u32, hi: u32, lo: u32) {
+	testMul := fn(msg: string, f: fn(x: u32, y: u32): (hi: u32, lo: u32), x: u32, y: u32, hi: u32, lo: u32) {
 		hi1, lo1 := f(x, y)
 		if hi1 != hi || lo1 != lo {
 			t.Errorf("{}: got hi:lo = {}:{}; want {}:{}", msg, hi1, lo1, hi, lo)
 		}
 	}
-	testDiv := fn(msg: str, f: fn(hi: u32, lo: u32, y: u32): (q: u32, r: u32), hi: u32, lo: u32, y: u32, q: u32, r: u32) {
+	testDiv := fn(msg: string, f: fn(hi: u32, lo: u32, y: u32): (q: u32, r: u32), hi: u32, lo: u32, y: u32, q: u32, r: u32) {
 		q1, r1 := f(hi, lo, y)
 		if q1 != q || r1 != r {
 			t.Errorf("{}: got q:r = {}:{}; want {}:{}", msg, q1, r1, q, r)
@@ -636,13 +636,13 @@ struct mulDivTestU64 {
 
 #test
 fn testMulDiv64(t: &testing::T) {
-	testMul := fn(msg: str, f: fn(x: u64, y: u64): (hi: u64, lo: u64), x: u64, y: u64, hi: u64, lo: u64) {
+	testMul := fn(msg: string, f: fn(x: u64, y: u64): (hi: u64, lo: u64), x: u64, y: u64, hi: u64, lo: u64) {
 		hi1, lo1 := f(x, y)
 		if hi1 != hi || lo1 != lo {
 			t.Errorf("{}: got hi:lo = {}:{}; want {}:{}", msg, hi1, lo1, hi, lo)
 		}
 	}
-	testDiv := fn(msg: str, f: fn(hi: u64, lo: u64, y: u64): (q: u64, r: u64), hi: u64, lo: u64, y: u64, q: u64, r: u64) {
+	testDiv := fn(msg: string, f: fn(hi: u64, lo: u64, y: u64): (q: u64, r: u64), hi: u64, lo: u64, y: u64, q: u64, r: u64) {
 		q1, r1 := f(hi, lo, y)
 		if q1 != q || r1 != r {
 			t.Errorf("{}: got q:r = {}:{}; want {}:{}", msg, q1, r1, q, r)

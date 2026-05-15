@@ -37,7 +37,7 @@ impl float {
 	// the smallest number of decimal digits necessary to identify the value x uniquely
 	// using x.Prec() mantissa bits.
 	// The prec value is ignored for the 'b' and 'p' formats.
-	fn Format(*self, format: byte, prec: int): str {
+	fn Format(*self, format: byte, prec: int): string {
 		mut cap := 10 // TODO: determine a good/better value here
 		if prec > 0 {
 			cap += prec
@@ -247,7 +247,7 @@ impl float {
 
 		hm := utoaW(m, 16)
 		if debugFloat && hm[0] != '1' {
-			panic("incorrect mantissa: " + str(hm))
+			panic("incorrect mantissa: " + string(hm))
 		}
 		buf = append(buf, "0x1"...)
 		if len(hm) > 1 {
