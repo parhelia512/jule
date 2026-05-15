@@ -117,12 +117,12 @@ struct eval {
 }
 
 impl eval {
-	fn pushErr(mut *self, token: &token::Token, fmt: str, args: ...any) {
+	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.s.pushErr(token, fmt, args...)
 	}
 
 	// Push suggestion to last log.
-	fn pushSuggestion(mut *self, fmt: str, args: ...any) {
+	fn pushSuggestion(mut *self, fmt: string, args: ...any) {
 		self.s.pushSuggestion(fmt, args...)
 	}
 
@@ -345,7 +345,7 @@ impl eval {
 		}
 	}
 
-	fn findBuiltins(mut *self, name: str): any {
+	fn findBuiltins(mut *self, name: string): any {
 		if mod::IsPub(name) {
 			match type self.lookup {
 			| &ImportInfo:
@@ -372,7 +372,7 @@ impl eval {
 		ret findBuiltinDef(name)
 	}
 
-	fn getDef(mut *self, name: str, _extern: bool): any {
+	fn getDef(mut *self, name: string, _extern: bool): any {
 		// Return nil for blank identifiers.
 		if jule::IsBlank(name) {
 			ret nil
@@ -1623,11 +1623,11 @@ impl eval {
 			if c != nil {
 				match {
 				| prim.IsU8():
-					v.Constant = constant::NewStr(str(byte(c.AsU64())))
+					v.Constant = constant::NewStr(string(byte(c.AsU64())))
 					v.Model = v.Constant
 					v.Decl = true // Prevent model changing.
 				| prim.IsI32():
-					v.Constant = constant::NewStr(str(rune(c.AsI64())))
+					v.Constant = constant::NewStr(string(rune(c.AsI64())))
 					v.Model = v.Constant
 					v.Decl = true // Prevent model changing.
 				}
@@ -1836,7 +1836,7 @@ impl eval {
 					// For example:
 					//
 					//	enum Bar: type {
-					//		str,
+					//		string,
 					//	}
 					//	enum Foo: type {
 					//		Bar,
@@ -1844,15 +1844,15 @@ impl eval {
 					//	}
 					//	fn main() {
 					//		let x: Bar = ""
-					//		let y: Foo = str(x)
+					//		let y: Foo = string(x)
 					//		let z: Foo = Foo(x)
 					//		_ = y, z
 					//	}
 					//
 					//	In the example code above will be failed if value case
-					//	evaluated first. Because type destination will be str.
+					//	evaluated first. Because type destination will be string.
 					//	So type checker will expect the variable |x| should be
-					//	equal to any compatible type with str, which is not type-enum Bar.
+					//	equal to any compatible type with string, which is not type-enum Bar.
 					self.castTypeEnumT(t, v, errorToken)
 				| t.Ptr() != nil:
 					self.castPtr(t, v, errorToken)
@@ -2564,7 +2564,7 @@ impl eval {
 	}
 
 	fn evalIntTypeStatic(mut *self, name: &token::Token): &Value {
-		const kind: str = types::Int
+		const kind: string = types::Int
 		match name.Kind {
 		| "Max":
 			mut c := constant::NewI64(types::MaxI(kind))
@@ -2591,7 +2591,7 @@ impl eval {
 	}
 
 	fn evalUintTypeStatic(mut *self, name: &token::Token): &Value {
-		const kind: str = types::Uint
+		const kind: string = types::Uint
 		match name.Kind {
 		| "Max":
 			mut c := constant::NewU64(types::MaxU(kind))
@@ -2610,9 +2610,9 @@ impl eval {
 
 	fn evalI8TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::I8
-			min       = types::MinI8
-			max       = types::MaxI8
+			kind: string = types::I8
+			min          = types::MinI8
+			max          = types::MaxI8
 		)
 		match name.Kind {
 		| "Max":
@@ -2641,9 +2641,9 @@ impl eval {
 
 	fn evalI16TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::I16
-			min       = types::MinI16
-			max       = types::MaxI16
+			kind: string = types::I16
+			min          = types::MinI16
+			max          = types::MaxI16
 		)
 		match name.Kind {
 		| "Max":
@@ -2672,9 +2672,9 @@ impl eval {
 
 	fn evalI32TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::I32
-			min       = types::MinI32
-			max       = types::MaxI32
+			kind: string = types::I32
+			min          = types::MinI32
+			max          = types::MaxI32
 		)
 		match name.Kind {
 		| "Max":
@@ -2703,9 +2703,9 @@ impl eval {
 
 	fn evalI64TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::I64
-			min       = types::MinI64
-			max       = types::MaxI64
+			kind: string = types::I64
+			min          = types::MinI64
+			max          = types::MaxI64
 		)
 		match name.Kind {
 		| "Max":
@@ -2734,8 +2734,8 @@ impl eval {
 
 	fn evalU8TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::U8
-			max       = types::MaxU8
+			kind: string = types::U8
+			max          = types::MaxU8
 		)
 		match name.Kind {
 		| "Max":
@@ -2755,8 +2755,8 @@ impl eval {
 
 	fn evalU16TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::U16
-			max       = types::MaxU16
+			kind: string = types::U16
+			max          = types::MaxU16
 		)
 		match name.Kind {
 		| "Max":
@@ -2776,8 +2776,8 @@ impl eval {
 
 	fn evalU32TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::U32
-			max       = types::MaxU32
+			kind: string = types::U32
+			max          = types::MaxU32
 		)
 		match name.Kind {
 		| "Max":
@@ -2797,8 +2797,8 @@ impl eval {
 
 	fn evalU64TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind: str = types::U64
-			max       = types::MaxU64
+			kind: string = types::U64
+			max          = types::MaxU64
 		)
 		match name.Kind {
 		| "Max":
@@ -2818,10 +2818,10 @@ impl eval {
 
 	fn evalF32TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind:           str = types::F32
-			max                 = types::MaxF32
-			min                 = types::MinF32
-			smallestNonzero     = types::SmallestNonzeroF32
+			kind:           string = types::F32
+			max                    = types::MaxF32
+			min                    = types::MinF32
+			smallestNonzero        = types::SmallestNonzeroF32
 		)
 		match name.Kind {
 		| "Max":
@@ -2859,10 +2859,10 @@ impl eval {
 
 	fn evalF64TypeStatic(mut *self, name: &token::Token): &Value {
 		const (
-			kind:           str = types::F64
-			max                 = types::MaxF64
-			min                 = types::MinF64
-			smallestNonzero     = types::SmallestNonzeroF64
+			kind:           string = types::F64
+			max                    = types::MaxF64
+			min                    = types::MinF64
+			smallestNonzero        = types::SmallestNonzeroF64
 		)
 		match name.Kind {
 		| "Max":
@@ -4091,7 +4091,7 @@ impl binaryEval {
 	}
 
 	// Like the checkTypeCompatibility method, but tries to be compatible with
-	// constant operands. Such as; "ordinary str" == MyStr("strict typed string")
+	// constant operands. Such as; "ordinary string" == MyStr("strict typed string")
 	fn checkTypeCompatibility1(mut *self): bool {
 		if self.l.IsConst() && self.l.untyped {
 			self.l, self.r = self.r, self.l
@@ -5113,7 +5113,7 @@ impl binaryEval {
 }
 
 // Returns directive if exist.
-fn findDirective(mut directives: []&ast::Directive, d: str): &ast::Directive {
+fn findDirective(mut directives: []&ast::Directive, d: string): &ast::Directive {
 	for (_, mut dr) in directives {
 		if dr.Tag.Kind == d {
 			ret dr
@@ -5122,7 +5122,7 @@ fn findDirective(mut directives: []&ast::Directive, d: str): &ast::Directive {
 	ret nil
 }
 
-fn findBuiltinsImport(name: str, imp: &ImportInfo): any {
+fn findBuiltinsImport(name: string, imp: &ImportInfo): any {
 	ret findPackageBuiltinDef(imp.LinkPath, name)
 }
 
@@ -5152,7 +5152,7 @@ fn buildErrorVar(mut s: &Scope, mut fc: &ast::CallExpr): &Var {
 	}
 }
 
-fn findBuiltinsSema(name: str, mut s: &sema): any {
+fn findBuiltinsSema(name: string, mut s: &sema): any {
 	// If package is std, check for internal builtin defines.
 	mut ppath := s.file.File.Dir()
 	stdlib := build::PathStdlib()
@@ -5161,7 +5161,7 @@ fn findBuiltinsSema(name: str, mut s: &sema): any {
 		ppath = ppath[len(stdlib):]
 		// Add "std" to beginning without separator
 		// because path has separator at beginning.
-		ppath = "std" + strings::ReplaceAll(ppath, str(filepath::Separator), jule::ImportPathSep)
+		ppath = "std" + strings::ReplaceAll(ppath, string(filepath::Separator), jule::ImportPathSep)
 		ret findPackageBuiltinDef(ppath, name)
 	}
 
@@ -5313,7 +5313,7 @@ fn buildVoidValue(): &Value {
 }
 
 fn checkDataForIntegerIndex(mut s: &sema, mut v: &Value,
-	mut token: &token::Token, mut refers: &ReferenceStack): (errFmt: str) {
+	mut token: &token::Token, mut refers: &ReferenceStack): (errFmt: string) {
 	if v == nil {
 		ret ""
 	}
@@ -5505,7 +5505,7 @@ fn isVarCaptured(r: &scopeChecker, mut s: &scopeChecker, v: &Var): bool {
 	ret true
 }
 
-fn findNamespace(mut lookup: Lookup, namespace: str): &ImportInfo {
+fn findNamespace(mut lookup: Lookup, namespace: string): &ImportInfo {
 	ret lookup.SelectPackage(fn|imp| imp.Alias == namespace && !isImplicitImport(imp))
 }
 
@@ -5557,7 +5557,7 @@ fn checkValue(mut v: &Value, mut s: &sema, mut token: &token::Token, flags: int)
 	ret true
 }
 
-fn getUntypedCmpScore(k: str): int {
+fn getUntypedCmpScore(k: string): int {
 	if types::IsInt(k) {
 		ret 1
 	}

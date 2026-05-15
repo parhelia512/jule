@@ -6,7 +6,7 @@ use "std/jule/parser"
 use "std/jule/token"
 use "std/testing"
 
-fn checkSema(data: str): (err: bool) {
+fn checkSema(data: string): (err: bool) {
 	mut fs := token::FileSet.New("sema/test")
 	fs.Fill([]byte(data))
 	mut logs := token::ScanAll(fs, token::Standard)
@@ -22,7 +22,7 @@ fn checkSema(data: str): (err: bool) {
 }
 
 struct missingRetCheckerTest {
-	code: str
+	code: string
 	err:  bool
 }
 
@@ -486,7 +486,7 @@ Foo:
 		code: `
 fn foo()! {}
 
-fn test()!: str {
+fn test()!: string {
 	{
 		foo() else { goto Keep }
 		ret ""
@@ -501,7 +501,7 @@ fn test()!: str {
 		code: `
 fn foo()! {}
 
-fn test()!: str {
+fn test()!: string {
 	{
 		foo() else { goto Keep }
 		ret ""
@@ -516,7 +516,7 @@ Keep:
 		code: `
 fn foo()! {}
 
-fn test()!: str {
+fn test()!: string {
 	for {
 		{
 			foo() else { goto Keep }
@@ -532,7 +532,7 @@ fn test()!: str {
 		code: `
 fn foo()! {}
 
-fn test()!: str {
+fn test()!: string {
 	for {
 		foo() else { goto Keep }
 		ret ""

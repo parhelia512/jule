@@ -40,7 +40,7 @@ fn traitHasReferenceReceiver(t: &Trait): bool {
 	ret false
 }
 
-fn cmplxAssignable(kind: str, mut v: &Value): bool {
+fn cmplxAssignable(kind: string, mut v: &Value): bool {
 	if v.Constant.IsCmplx128() {
 		if kind == types::Cmplx128 {
 			ret true
@@ -71,7 +71,7 @@ fn _floatAssignable(f: f64): bool {
 	}
 }
 
-fn floatAssignable(kind: str, v: &Value): bool {
+fn floatAssignable(kind: string, v: &Value): bool {
 	if !v.Constant.IsInt() && !v.Constant.IsF64() {
 		ret false
 	}
@@ -93,7 +93,7 @@ fn floatAssignable(kind: str, v: &Value): bool {
 	ret _floatAssignable(f)
 }
 
-fn sigAssignable(kind: str, mut v: &Value): bool {
+fn sigAssignable(kind: string, mut v: &Value): bool {
 	min := types::MinI(kind)
 	max := types::MaxI(kind)
 	match {
@@ -117,7 +117,7 @@ fn sigAssignable(kind: str, mut v: &Value): bool {
 	ret false
 }
 
-fn unsigAssignable(kind: str, mut v: &Value): bool {
+fn unsigAssignable(kind: string, mut v: &Value): bool {
 	max := types::MaxU(kind)
 	if v.IsRune && kind == types::U8 {
 		ret lit::IsAscii(rune(v.Constant.ReadInt().U64()))
@@ -150,7 +150,7 @@ fn unsigAssignable(kind: str, mut v: &Value): bool {
 	ret false
 }
 
-fn intAssignable(kind: str, mut v: &Value): bool {
+fn intAssignable(kind: string, mut v: &Value): bool {
 	match {
 	| types::IsSigInt(kind):
 		ret sigAssignable(kind, v)
@@ -176,7 +176,7 @@ struct typeCompatibilityChecker {
 }
 
 impl typeCompatibilityChecker {
-	fn pushErr(mut *self, fmt: str, args: ...any) {
+	fn pushErr(mut *self, fmt: string, args: ...any) {
 		self.s.pushErr(self.errorToken, fmt, args...)
 	}
 
@@ -1234,12 +1234,12 @@ struct structLitChecker {
 }
 
 impl structLitChecker {
-	fn pushErr(mut *self, token: &token::Token, fmt: str, args: ...any) {
+	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.e.pushErr(token, fmt, args...)
 	}
 
 	// Push suggestion to last log.
-	fn pushSuggestion(mut *self, fmt: str, args: ...any) {
+	fn pushSuggestion(mut *self, fmt: string, args: ...any) {
 		self.e.pushSuggestion(fmt, args...)
 	}
 

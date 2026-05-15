@@ -330,7 +330,7 @@ struct RuneExpr {
 
 // Expression Model: for inline code emit to backend.
 struct BackendEmitExpr {
-	Code: str
+	Code: string
 
 	// Expression Model: for expression or type emit to backend from Jule source code.
 	Exprs: []Expr

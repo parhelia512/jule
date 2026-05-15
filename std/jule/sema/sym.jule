@@ -71,7 +71,7 @@ impl ReferenceStack {
 // Directive pass.
 struct Pass {
 	Token: &token::Token
-	Args:  []str
+	Args:  []string
 }
 
 fn buildType(mut t: &ast::Expr): &TypeSym {
@@ -294,7 +294,7 @@ fn buildImpl(mut decl: &ast::Impl): &Impl {
 // like struct's implemented traits.
 struct symBuilder {
 	owner:      &symBuilder
-	importPath: str // Import path, this symBuilder created for.
+	importPath: string // Import path, this symBuilder created for.
 	importer:   Importer
 	errors:     []log::Log
 	ast:        &ast::AST
@@ -310,23 +310,23 @@ impl symBuilder {
 		ret root
 	}
 
-	fn pushErr(mut *self, token: &token::Token, fmt: str, args: ...any) {
+	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.errors = append(self.errors, compilerErr(token, true, fmt, args...))
 	}
 
-	fn pushErrText(mut *self, token: &token::Token, fmt: str, args: ...any) {
+	fn pushErrText(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.errors = append(self.errors, compilerErr(token, false, fmt, args...))
 	}
 
 	// Push suggestion to last log.
-	fn pushSuggestion(mut *self, fmt: str, args: ...any) {
+	fn pushSuggestion(mut *self, fmt: string, args: ...any) {
 		unsafe { pushSuggestion(&self.errors[len(self.errors)-1], fmt, args...) }
 	}
 
 	// Checks and returns absolute path of import filepath.
 	// Designed for non-std package paths.
 	// Returns empty string if error occurs.
-	fn checkAbsPath(mut &self, mut filepath: str, mut decl: &ast::Use, mod: &mod::Mod): str {
+	fn checkAbsPath(mut &self, mut filepath: string, mut decl: &ast::Use, mod: &mod::Mod): string {
 		// Join filepath with the absolute module path and
 		// make sure we have an absolute path to the package.
 		filepath = filepath::Join(mod.Path, filepath)
@@ -339,7 +339,7 @@ impl symBuilder {
 	}
 
 	// Same as the [checkAbsPath] method but designed for std package paths.
-	fn checkStdAbsPath(mut &self, mut filepath: str, mut decl: &ast::Use): str {
+	fn checkStdAbsPath(mut &self, mut filepath: string, mut decl: &ast::Use): string {
 		if filepath == "" {
 			self.pushErr(decl.Path, "invalid import path: "+decl.Path.Kind)
 			ret ""
@@ -354,7 +354,7 @@ impl symBuilder {
 	}
 
 	// Checks import path and returns as filepath if no error exist.
-	fn checkImpPath(mut &self, mut decl: &ast::Use): (std: bool, filepath: str) {
+	fn checkImpPath(mut &self, mut decl: &ast::Use): (std: bool, filepath: string) {
 		path := decl.Path.Kind[1 : len(decl.Path.Kind)-1] // remove quotes
 		if decl.Extern && build::IsStdHeaderPath(path) {
 			ret false, path
@@ -475,7 +475,7 @@ impl symBuilder {
 		ret false
 	}
 
-	fn pushCycleError(mut &self, sb: &symBuilder, path: str, mut &message: *strings::Builder) {
+	fn pushCycleError(mut &self, sb: &symBuilder, path: string, mut &message: *strings::Builder) {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", conv::Quote(sb.importPath), conv::Quote(path))
 		message.WriteStr(strings::Repeat(" ", Padding))!
@@ -520,7 +520,7 @@ impl symBuilder {
 	//	- decl: relevant use declaration.
 	//	- mod: module that imports relevant package.
 	//	- path: path of package that importing.
-	fn checkPackageAccessibility(mut *self, decl: &ast::Use, mod: &mod::Mod, path: str) {
+	fn checkPackageAccessibility(mut *self, decl: &ast::Use, mod: &mod::Mod, path: string) {
 		if self.importer.GetMod().Equal(mod) {
 			ret
 		}
@@ -689,7 +689,7 @@ impl symBuilder {
 			ret
 		}
 
-		mut args := make([]str, len(d.Args))
+		mut args := make([]string, len(d.Args))
 		for i, arg in d.Args {
 			if arg.ID != token::STRING || arg.Kind[0] != '"' {
 				self.pushErr(arg, "invalid syntax")
@@ -748,7 +748,7 @@ fn isRuntimeInternal(imp: &ImportInfo): bool {
 // Takes filepath and returns module name from the path and submodule path if exist.
 // For example: "std/jule/sema" -> ("std", "jule/sema")
 // Returns empty if there is no submodule path.
-fn splitModuleNameFromFilepath(filepath: str): (modName: str, submodulePath: str) {
+fn splitModuleNameFromFilepath(filepath: string): (modName: string, submodulePath: string) {
 	i := strings::IndexByte(filepath, '/')
 	if i > 0 {
 		modName = filepath[:i]
@@ -768,7 +768,7 @@ fn splitModuleNameFromFilepath(filepath: str): (modName: str, submodulePath: str
 
 // Checks validity of the import path and returns it as filepath.
 // Returns empty string if path is invalid.
-fn checkImportPathValidity(path: str): (filepath: str) {
+fn checkImportPathValidity(path: string): (filepath: string) {
 	if strings::HasSuffix(path, jule::ImportPathSep) {
 		ret ""
 	}

@@ -160,7 +160,7 @@ struct Throw {
 
 // Label.
 struct Label {
-	Name:  str
+	Name:  string
 	Scope: &Scope // Owner scope.
 	Index: int    // Index of statement.
 }
@@ -176,7 +176,7 @@ const (
 
 // Goto statement.
 struct Goto {
-	Name:      str
+	Name:      string
 	Token:     &token::Token
 	Label:     &Label
 	Scope:     &Scope // Owner scope.
@@ -187,7 +187,7 @@ struct Goto {
 // Postfix assignment.
 struct Postfix {
 	Expr: Expr
-	Op:   str
+	Op:   string
 }
 
 // Assignment.
@@ -339,7 +339,7 @@ impl Lookup for scopeChecker {
 	//	- Current scope.
 	//	- Parent scopes.
 	//	- Sema.
-	fn FindVar(mut *self, name: str, _extern: bool): &Var {
+	fn FindVar(mut *self, name: string, _extern: bool): &Var {
 		const Closure = true // allow capturing variables from parent scope
 		if !_extern { // Local variables cannot be external.
 			mut v := self.findVar(name, Closure)
@@ -357,7 +357,7 @@ impl Lookup for scopeChecker {
 	//	- Current scope.
 	//	- Parent scopes.
 	//	- Sema.
-	fn FindTypeAlias(mut *self, name: str, _extern: bool): &TypeAlias {
+	fn FindTypeAlias(mut *self, name: string, _extern: bool): &TypeAlias {
 		// Search reverse for correct shadowing.
 		const Reverse = true
 		mut ta := self.table.findTypeAlias(name, _extern, Reverse)
@@ -382,7 +382,7 @@ impl Lookup for scopeChecker {
 	//
 	// Lookups:
 	//	- Sema.
-	fn FindStruct(mut *self, name: str, _extern: bool): &Struct {
+	fn FindStruct(mut *self, name: string, _extern: bool): &Struct {
 		ret self.s.FindStruct(name, _extern)
 	}
 
@@ -391,7 +391,7 @@ impl Lookup for scopeChecker {
 	//
 	// Lookups:
 	//	- Sema.
-	fn FindFunc(mut *self, name: str, _extern: bool): &Func {
+	fn FindFunc(mut *self, name: string, _extern: bool): &Func {
 		ret self.s.FindFunc(name, _extern)
 	}
 
@@ -400,7 +400,7 @@ impl Lookup for scopeChecker {
 	//
 	// Lookups:
 	//	- Sema.
-	fn FindTrait(mut *self, name: str): &Trait {
+	fn FindTrait(mut *self, name: string): &Trait {
 		ret self.s.FindTrait(name)
 	}
 
@@ -409,7 +409,7 @@ impl Lookup for scopeChecker {
 	//
 	// Lookups:
 	//	- Sema.
-	fn FindEnum(mut *self, name: str): &Enum {
+	fn FindEnum(mut *self, name: string): &Enum {
 		ret self.s.FindEnum(name)
 	}
 
@@ -418,7 +418,7 @@ impl Lookup for scopeChecker {
 	//
 	// Lookups:
 	//	- Sema.
-	fn FindTypeEnum(mut *self, name: str): &TypeEnum {
+	fn FindTypeEnum(mut *self, name: string): &TypeEnum {
 		ret self.s.FindTypeEnum(name)
 	}
 }
@@ -533,7 +533,7 @@ impl scopeChecker {
 	}
 
 	// Like [Lookup.FindVar] but designed for local variables only.
-	fn findVar(mut *self, name: str, closure: bool): &Var {
+	fn findVar(mut *self, name: string, closure: bool): &Var {
 		const Reverse = true // Search reverse for correct shadowing.
 		const Extern = false // Local variables cannot be external.
 		mut parent := unsafe { (&scopeChecker)(self) }
@@ -555,7 +555,7 @@ impl scopeChecker {
 	// Returns label by identifier.
 	// Returns nil if not exist any label in this identifier.
 	// Just lookups current scope.
-	fn findLabel(mut *self, name: str): &Label {
+	fn findLabel(mut *self, name: string): &Label {
 		for (_, mut st) in self.scope.Stmts {
 			mut label, ok := st.(&Label)
 			if ok && label.Name == name {
@@ -568,7 +568,7 @@ impl scopeChecker {
 	// Returns label by identifier.
 	// Returns nil if not exist any label in this identifier.
 	// Just lookups current scope.
-	fn findLabelScope(mut &self, name: str): &scopeLabel {
+	fn findLabelScope(mut &self, name: string): &scopeLabel {
 		mut label := self.findLabelAll(name)
 		if label != nil && label.node.Scope == self.scope {
 			ret label
@@ -579,7 +579,7 @@ impl scopeChecker {
 	// Returns label by identifier.
 	// Returns nil if not exist any label in this identifier.
 	// Lookups all labels.
-	fn findLabelAll(mut *self, name: str): &scopeLabel {
+	fn findLabelAll(mut *self, name: string): &scopeLabel {
 		for (_, mut lbl) in *self.labels {
 			if lbl.node.Name == name {
 				ret lbl
@@ -591,7 +591,7 @@ impl scopeChecker {
 	// Reports this identifier duplicated in scope.
 	// The "itself" parameter represents address of error identifier.
 	// If found identifier address equals to "itself", it will be skipped.
-	fn isDuplicatedName(mut *self, itself: uintptr, name: str): bool {
+	fn isDuplicatedName(mut *self, itself: uintptr, name: string): bool {
 		const Closure = false
 		shadowing := self.s.isFlag(Shadowing)
 		v := self.findVar(name, Closure)
@@ -1203,7 +1203,7 @@ impl scopeChecker {
 		})
 	}
 
-	fn isNewAssignIdent(mut *self, name: str): bool {
+	fn isNewAssignIdent(mut *self, name: string): bool {
 		if jule::IsBlank(name) || name == "" {
 			ret false
 		}
@@ -2748,7 +2748,7 @@ fn stmtIsDef(stmt: Stmt): bool {
 
 // Counts matched fields with name and returns the result.
 // If limit=0, counts all fields, otherwise the count is limited by the limit.
-fn countMatchEnum(m: &ast::Match, name: str, limit: int): int {
+fn countMatchEnum(m: &ast::Match, name: string, limit: int): int {
 	mut n := 0
 loop:
 	for _, c in m.Cases {
@@ -2794,7 +2794,7 @@ loop:
 // Returns label by identifier.
 // Returns nil if not exist any label in this identifier.
 // Lookups given scope and parent scopes.
-fn findLabelParent(name: str, mut scope: &scopeChecker): &scopeLabel {
+fn findLabelParent(name: string, mut scope: &scopeChecker): &scopeLabel {
 	mut label := scope.findLabelScope(name)
 	for label == nil {
 		if scope.parent == nil || scope.owner != nil {

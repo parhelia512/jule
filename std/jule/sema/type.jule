@@ -20,7 +20,7 @@ struct ConstraintMask {
 }
 
 impl ConstraintMask {
-	fn Str(*self): str {
+	fn Str(*self): string {
 		if self.Deep {
 			ret "~" + self.Type.Str()
 		}
@@ -43,20 +43,20 @@ struct TypeAlias {
 	Used:     bool
 	Generic:  bool
 	Token:    &token::Token
-	Name:     str
+	Name:     string
 	TypeSym:  &TypeSym
 	Generics: []&ast::Generic // See the developer reference (3).
 }
 
 // Kind of type declaration.
 trait Kind {
-	fn Str(*self): str
+	fn Str(*self): string
 	fn Equal(&self, other: &Type): bool
 }
 
 // Evaluated type declaration.
 struct Type {
-	Provider: str // Identifier of the type alias, if type provided by a type alias.
+	Provider: string // Identifier of the type alias, if type provided by a type alias.
 	Generic:  bool
 	Variadic: bool
 	Kind:     Kind
@@ -64,7 +64,7 @@ struct Type {
 
 impl Kind for Type {
 	// Returns kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		// Use the provider identifier as type.
 		// If type source is a generic, return the actual type.
 		// Because name of the generic type might be confusing,
@@ -466,12 +466,12 @@ impl TypeSym {
 
 // Primitive type.
 struct Prim {
-	Kind: str
+	Kind: string
 }
 
 impl Kind for Prim {
 	// Returns kind.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		ret self.Kind
 	}
 
@@ -539,7 +539,7 @@ impl Prim {
 	// Reports whether type is primitive bool.
 	fn IsBool(*self): bool { ret self.Kind == types::Bool }
 
-	// Reports whether type is primitive str.
+	// Reports whether type is primitive string.
 	fn IsStr(*self): bool { ret self.Kind == types::Str }
 
 	// Reports whether type is primitive any.
@@ -555,7 +555,7 @@ struct Chan {
 
 impl Kind for Chan {
 	// Returns smart pointer kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		if self.Recv && self.Send {
 			c, ok := self.Value.Kind.(&Chan)
 			if ok && c.Recv && !c.Send {
@@ -583,7 +583,7 @@ struct Sptr {
 
 impl Kind for Sptr {
 	// Returns smart pointer kind as string.
-	fn Str(*self): str { ret "&" + self.Value.Str() }
+	fn Str(*self): string { ret "&" + self.Value.Str() }
 
 	// Reports whether types are same.
 	fn Equal(&self, other: &Type): bool {
@@ -599,7 +599,7 @@ struct Slice {
 
 impl Kind for Slice {
 	// Returns slice kind as string.
-	fn Str(*self): str { ret "[]" + self.Value.Str() }
+	fn Str(*self): string { ret "[]" + self.Value.Str() }
 
 	// Reports whether types are same.
 	fn Equal(&self, other: &Type): bool {
@@ -615,7 +615,7 @@ struct Tuple {
 
 impl Kind for Tuple {
 	// Returns tuple kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		mut s := strings::Builder{}
 		s.Grow(1 << 4)
 		s.WriteByte('(')!
@@ -652,7 +652,7 @@ struct Map {
 
 impl Kind for Map {
 	// Returns map kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		mut s := strings::Builder{}
 		s.Grow(1 << 4)
 		s.WriteStr("map[")!
@@ -678,7 +678,7 @@ struct Array {
 
 impl Kind for Array {
 	// Returns array kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		mut s := strings::Builder{}
 		s.WriteByte('[')!
 		s.WriteStr(conv::Itoa(self.N))!
@@ -701,7 +701,7 @@ struct Ptr {
 
 impl Kind for Ptr {
 	// Returns pointer kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		if self.IsUnsafe() {
 			ret "*unsafe"
 		}
@@ -732,7 +732,7 @@ impl Ptr {
 
 struct referencer {
 	owner: any         // StructIns, TypeAlias.
-	name:  str         // Name of the owner.
+	name:  string      // Name of the owner.
 	tains: bool        // Whether owner is the TA-sensitive StructIns.
 	oself: bool        // Only self references. It used to caught type alias cycles.
 	prev:  &referencer // Previous referencer.
@@ -815,7 +815,7 @@ struct typeChecker {
 }
 
 impl typeChecker {
-	fn pushErr(mut *self, token: &token::Token, fmt: str, args: ...any) {
+	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.s.pushErr(token, fmt, args...)
 	}
 
@@ -827,7 +827,7 @@ impl typeChecker {
 		self.disBuiltin = true
 	}
 
-	fn isIgnoredGeneric(mut *self, name: str): bool {
+	fn isIgnoredGeneric(mut *self, name: string): bool {
 		for _, g in self.ignoreGenerics {
 			if g.Name == name {
 				ret true
@@ -894,7 +894,7 @@ impl typeChecker {
 
 	// Push runtime built-in type implementation instance.
 	// Such as map or channel implementations.
-	fn pushRuntimeImpl(mut *self, name: str, mut token: &token::Token, mut types: ...&Type) {
+	fn pushRuntimeImpl(mut *self, name: string, mut token: &token::Token, mut types: ...&Type) {
 		// Runtime metadata collection is disabled.
 		// Return immediately, there is not nothing we can do.
 		if self.s.meta.runtime == nil {
@@ -923,7 +923,7 @@ impl typeChecker {
 		self.pushReference(ins)
 	}
 
-	fn pushCycleError(*self, def1: str, def2: str, mut &message: *strings::Builder) {
+	fn pushCycleError(*self, def1: string, def2: string, mut &message: *strings::Builder) {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", def1, def2)
 		message.WriteStr(strings::Repeat(" ", Padding))!
@@ -2109,11 +2109,11 @@ impl typeChecker {
 struct identTypeLookup{}
 
 impl identTypeLookup {
-	fn prim(name: str, t: &Prim): bool {
+	fn prim(name: string, t: &Prim): bool {
 		ret t.Kind == name
 	}
 
-	fn exist(name: str, mut k: &Type): bool {
+	fn exist(name: string, mut k: &Type): bool {
 		match {
 		| k.Prim() != nil:
 			ret identTypeLookup.prim(name, k.Prim())
@@ -2182,7 +2182,7 @@ fn kindUsesGenerics(mut k: &Type, generics: []&ast::Generic): bool {
 }
 
 // Reports whether directive is exist.
-fn hasDirective(mut directives: []&ast::Directive, tag: str): bool {
+fn hasDirective(mut directives: []&ast::Directive, tag: string): bool {
 	for (_, mut dr) in directives {
 		if dr.Tag.Kind == tag {
 			ret true
@@ -2198,7 +2198,7 @@ fn isBuiltinStrConvertible(mut t: &Type): bool {
 	ret !t.Void() && t.Func() == nil && t.Tuple() == nil && !t.comptime()
 }
 
-fn buildPrimType(kind: str): &Prim {
+fn buildPrimType(kind: string): &Prim {
 	ret &Prim{
 		Kind: kind,
 	}
@@ -2236,7 +2236,7 @@ let mut pseudoSource = new(Type)
 
 // Initializes new structure for strict types.
 // See developer reference (9) for details.
-fn initNewStructType(name: str, mut source: &Type): &StructIns {
+fn initNewStructType(name: string, mut source: &Type): &StructIns {
 	mut s := new(Struct)
 	s.Name = name
 	mut ins := s.instance()

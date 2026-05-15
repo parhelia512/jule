@@ -16,7 +16,7 @@ struct tagChecker {
 }
 
 impl tagChecker {
-	fn getKey(mut *self, tag: str, mut &i: *int): str {
+	fn getKey(mut *self, tag: string, mut &i: *int): string {
 		j := *i
 		for k, r in tag[*i:] {
 			if unicode::IsSpace(r) {
@@ -34,13 +34,13 @@ impl tagChecker {
 		ret tag[j:]
 	}
 
-	fn getValue(mut *self, tag: str, mut &i: *int): str {
+	fn getValue(mut *self, tag: string, mut &i: *int): string {
 		{
 			r, _ := utf8::DecodeRuneStr(tag[*i:])
 			if r != '"' {
 				self.s.pushErrorFromLitError(self.f.Tag, lit::Error{
 					Offset: self.off + *i,
-					Text:   "invalid value sequence, expected '\"', found '" + str(r) + "'",
+					Text:   "invalid value sequence, expected '\"', found '" + string(r) + "'",
 				})
 				ret ""
 			}
@@ -77,7 +77,7 @@ impl tagChecker {
 		ret ""
 	}
 
-	fn parseTags(mut *self, tag: str): (ok: bool) {
+	fn parseTags(mut *self, tag: string): (ok: bool) {
 		mut i := 0
 		for i < len(tag); i++ {
 			keyPos := i
@@ -96,7 +96,7 @@ impl tagChecker {
 			if r != ':' {
 				self.s.pushErrorFromLitError(self.f.Tag, lit::Error{
 					Offset: self.off + i,
-					Text:   "missing value for the key, expected ':', found '" + str(r) + "'",
+					Text:   "missing value for the key, expected ':', found '" + string(r) + "'",
 				})
 				ret false
 			}
@@ -155,7 +155,7 @@ impl tagChecker {
 		// add offset for removed leading special runes
 		self.off++ // for quote of literal
 
-		self.f.Tags = map[str]str{}
+		self.f.Tags = map[string]string{}
 
 		ok = self.parseTags(tag)
 		ret

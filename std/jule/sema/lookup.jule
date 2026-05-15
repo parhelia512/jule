@@ -11,29 +11,29 @@ trait Lookup {
 
 	// Find variable by identifier and external state.
 	// Returns nil if did not found any match.
-	fn FindVar(mut *self, name: str, _extern: bool): &Var
+	fn FindVar(mut *self, name: string, _extern: bool): &Var
 
 	// Find type alias by identifier and external state.
 	// Returns nil if did not found any match.
-	fn FindTypeAlias(mut *self, name: str, _extern: bool): &TypeAlias
+	fn FindTypeAlias(mut *self, name: string, _extern: bool): &TypeAlias
 
 	// Find structure by identifier and external state.
 	// Returns nil if did not found any match.
-	fn FindStruct(mut *self, name: str, _extern: bool): &Struct
+	fn FindStruct(mut *self, name: string, _extern: bool): &Struct
 
 	// Find function by identifier and external state.
 	// Returns nil if did not found any match.
-	fn FindFunc(mut *self, name: str, _extern: bool): &Func
+	fn FindFunc(mut *self, name: string, _extern: bool): &Func
 
 	// Find trait by identifier.
 	// Returns nil if did not found any match.
-	fn FindTrait(mut *self, name: str): &Trait
+	fn FindTrait(mut *self, name: string): &Trait
 
 	// Find enum by identifier.
 	// Returns nil if did not found any match.
-	fn FindEnum(mut *self, name: str): &Enum
+	fn FindEnum(mut *self, name: string): &Enum
 
 	// Find type enum by identifier.
 	// Returns nil if did not found any match.
-	fn FindTypeEnum(mut *self, name: str): &TypeEnum
+	fn FindTypeEnum(mut *self, name: string): &TypeEnum
 }

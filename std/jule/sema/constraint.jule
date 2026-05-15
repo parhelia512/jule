@@ -23,7 +23,7 @@ const (
 	constraintComparable = "comparable"
 )
 
-let builtinConstraints = [...]str([
+let builtinConstraints = [...]string([
 	constraintSigned,
 	constraintUnsigned,
 	constraintInteger,
@@ -155,7 +155,7 @@ impl constraintChecker {
 	}
 }
 
-fn toStrConstraints(g: &InsGeneric): str {
+fn toStrConstraints(g: &InsGeneric): string {
 	mut sb := strings::Builder{}
 	sb.Grow(1 << 7)
 	for i, c in g.Constraint {
@@ -167,7 +167,7 @@ fn toStrConstraints(g: &InsGeneric): str {
 	ret sb.Str()
 }
 
-fn matchConstraint(c: str, mut g: &Type): bool {
+fn matchConstraint(c: string, mut g: &Type): bool {
 	match c {
 	| constraintSigned:
 		prim := g.Prim()
@@ -218,7 +218,7 @@ fn matchConstraint(c: str, mut g: &Type): bool {
 	}
 }
 
-fn isBuiltinConstraint(name: str): bool {
+fn isBuiltinConstraint(name: string): bool {
 	for _, bc in builtinConstraints {
 		if name == bc {
 			ret true

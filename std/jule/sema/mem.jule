@@ -31,7 +31,7 @@ fn Fastmemcopy(mut t: &Type): (r: bool) {
 	}
 
 	// Type any is dynamic and perform GC.
-	// Like type any, type str performs GC too.
+	// Like type any, type string performs GC too.
 	// We cannot use fastmemcopy for GC types.
 	ret !prim.IsAny() && !prim.IsStr()
 }

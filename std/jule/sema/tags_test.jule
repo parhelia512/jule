@@ -6,57 +6,57 @@ use "std/jule/token"
 use "std/testing"
 
 struct tagTest {
-	lit:  str
-	tags: map[str]str
+	lit:  string
+	tags: map[string]string
 }
 
 let tagTests = []tagTest([
 	{
 		lit: "`foo:\"bar\"`",
-		tags: map[str]str{
+		tags: map[string]string{
 			"foo": "bar",
 		},
 	},
 	{
 		lit: "`f_oo:\"bar\"`",
-		tags: map[str]str{
+		tags: map[string]string{
 			"f_oo": "bar",
 		},
 	},
 	{
 		lit: "\"foo:\\\"bar\\\"\"",
-		tags: map[str]str{
+		tags: map[string]string{
 			"foo": "bar",
 		},
 	},
 	{
 		lit: "`foo:\"\\u00E7\"`",
-		tags: map[str]str{
+		tags: map[string]string{
 			"foo": "ç",
 		},
 	},
 	{
 		lit: "\"foo:\\\"\\\\u00E7\\\"\"",
-		tags: map[str]str{
+		tags: map[string]string{
 			"foo": "ç",
 		},
 	},
 	{
 		lit: "\"foo:\\\"\\u00E7\\\"\"",
-		tags: map[str]str{
+		tags: map[string]string{
 			"foo": "ç",
 		},
 	},
 	{
 		lit: "`foo:\"bar\" baz:\"foo\"`",
-		tags: map[str]str{
+		tags: map[string]string{
 			"foo": "bar",
 			"baz": "foo",
 		},
 	},
 	{
 		lit: "`fo34çöğ;)(9384#o:\"foo\"`",
-		tags: map[str]str{
+		tags: map[string]string{
 			"fo34çöğ;)(9384#o": "foo",
 		},
 	},

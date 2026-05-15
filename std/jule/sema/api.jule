@@ -14,7 +14,7 @@ const (
 )
 
 // Builds symbol table of AST.
-fn buildSymbols(importPath: str, mut ast: &ast::AST, mut importer: Importer, mut owner: &symBuilder): (&SymTab, []log::Log) {
+fn buildSymbols(importPath: string, mut ast: &ast::AST, mut importer: Importer, mut owner: &symBuilder): (&SymTab, []log::Log) {
 	mut sb := &symBuilder{
 		importPath: importPath,
 		ast:        ast,

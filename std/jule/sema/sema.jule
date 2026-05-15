@@ -63,7 +63,7 @@ fn isValidModelForRef(mut m: Expr): bool {
 	}
 }
 
-fn compilerErr(token: &token::Token, line: bool, fmt: str, args: ...any): log::Log {
+fn compilerErr(token: &token::Token, line: bool, fmt: string, args: ...any): log::Log {
 	mut log := log::Log{
 		Kind:   log::Error,
 		Row:    token.Row,
@@ -246,7 +246,7 @@ fn findFile(mut files: []&SymTab, handler: &token::FileSet): &SymTab {
 	ret nil
 }
 
-unsafe fn pushSuggestion(mut log: *log::Log, fmt: str, args: ...any) {
+unsafe fn pushSuggestion(mut log: *log::Log, fmt: string, args: ...any) {
 	log.Suggestion = log::Logf(fmt, args...)
 }
 
@@ -331,7 +331,7 @@ impl Lookup for sema {
 	// Lookups:
 	//	- Package file's symbol table.
 	//	- Current file's public denifes of imported packages.
-	fn FindVar(mut *self, name: str, _extern: bool): &Var {
+	fn FindVar(mut *self, name: string, _extern: bool): &Var {
 		// Lookup package files.
 		mut v := findVarInPackage(self.files, name, _extern)
 		if v != nil {
@@ -346,7 +346,7 @@ impl Lookup for sema {
 	// Lookups:
 	//	- Package file's symbol table.
 	//	- Current file's public denifes of imported packages.
-	fn FindTypeAlias(mut *self, name: str, _extern: bool): &TypeAlias {
+	fn FindTypeAlias(mut *self, name: string, _extern: bool): &TypeAlias {
 		// Lookup package files.
 		mut ta := findTypeAliasInPackage(self.files, name, _extern)
 		if ta != nil {
@@ -361,7 +361,7 @@ impl Lookup for sema {
 	// Lookups:
 	//	- Package file's symbol table.
 	//	- Current file's public denifes of imported packages.
-	fn FindStruct(mut *self, name: str, _extern: bool): &Struct {
+	fn FindStruct(mut *self, name: string, _extern: bool): &Struct {
 		// Lookup package files.
 		mut s := findStructInPackage(self.files, name, _extern)
 		if s != nil {
@@ -376,7 +376,7 @@ impl Lookup for sema {
 	// Lookups:
 	//	- Package file's symbol table.
 	//	- Current file's public denifes of imported packages.
-	fn FindFunc(mut *self, name: str, _extern: bool): &Func {
+	fn FindFunc(mut *self, name: string, _extern: bool): &Func {
 		// Lookup package files.
 		mut f := findFuncInPackage(self.files, name, _extern)
 		if f != nil {
@@ -391,7 +391,7 @@ impl Lookup for sema {
 	// Lookups:
 	//	- Package file's symbol table.
 	//	- Current file's public denifes of imported packages.
-	fn FindTrait(mut *self, name: str): &Trait {
+	fn FindTrait(mut *self, name: string): &Trait {
 		// Lookup package files.
 		mut t := findTraitInPackage(self.files, name)
 		if t != nil {
@@ -406,7 +406,7 @@ impl Lookup for sema {
 	// Lookups:
 	//	- Package file's symbol table.
 	//	- Current file's public denifes of imported packages.
-	fn FindEnum(mut *self, name: str): &Enum {
+	fn FindEnum(mut *self, name: string): &Enum {
 		// Lookup package files.
 		mut e := findEnumInPackage(self.files, name)
 		if e != nil {
@@ -421,7 +421,7 @@ impl Lookup for sema {
 	// Lookups:
 	//	- Package file's symbol table.
 	//	- Current file's public denifes of imported packages.
-	fn FindTypeEnum(mut *self, name: str): &TypeEnum {
+	fn FindTypeEnum(mut *self, name: string): &TypeEnum {
 		// Lookup package files.
 		mut e := findTypeEnumInPackage(self.files, name)
 		if e != nil {
@@ -438,7 +438,7 @@ impl sema {
 	fn getCurrentFile(mut *self): &SymTab { ret self.file }
 	fn setCurrentFile(mut *self, mut f: &SymTab) { self.file = f }
 
-	fn pushErr(mut *self, token: &token::Token, fmt: str, args: ...any) {
+	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.errors = append(self.errors, compilerErr(token, true, fmt, args...))
 	}
 
@@ -460,7 +460,7 @@ impl sema {
 	}
 
 	// Push suggestion to last log.
-	fn pushSuggestion(mut *self, fmt: str, args: ...any) {
+	fn pushSuggestion(mut *self, fmt: string, args: ...any) {
 		unsafe { pushSuggestion(&self.errors[len(self.errors)-1], fmt, args...) }
 	}
 
@@ -489,7 +489,7 @@ impl sema {
 	// Reports this identifier duplicated in package's global scope.
 	// The "itself" parameter represents address of exception identifier.
 	// If founded identifier address equals to "itself", will be skipped.
-	fn isDuplicatedName(*self, itself: uintptr, name: str, _extern: bool): bool {
+	fn isDuplicatedName(*self, itself: uintptr, name: string, _extern: bool): bool {
 		for _, f in self.files {
 			if f.isDuplicatedName(itself, name, _extern) {
 				ret true
@@ -526,7 +526,7 @@ impl sema {
 		}
 	}
 
-	fn getImportDef(*self, name: str, mut imp: &ImportInfo): any {
+	fn getImportDef(*self, name: string, mut imp: &ImportInfo): any {
 		if findPackageBuiltinDef(imp.LinkPath, name) != nil {
 			ret true
 		}
@@ -2163,7 +2163,7 @@ impl sema {
 		ret self.checkFuncDeclsBy(self.file.Funcs)
 	}
 
-	fn pushCycleError(*self, st1: str, st2: str, mut &message: *strings::Builder) {
+	fn pushCycleError(*self, st1: string, st2: string, mut &message: *strings::Builder) {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", st1, st2)
 		m := message.Str()
@@ -2876,7 +2876,7 @@ impl sema {
 	// Check initialization cycles for global variables.
 	fn checkInitializationCycles(mut &self) {
 		mut message := new(strings::Builder)
-		pushIllegalCycleError := fn(v1: str, v2: str) {
+		pushIllegalCycleError := fn(v1: string, v2: string) {
 			const Padding = 7
 			refersTo := log::Logf("@ refers to @", v1, v2)
 			message.WriteStr(strings::Repeat(" ", Padding))!
@@ -2887,7 +2887,7 @@ impl sema {
 		for (_, mut file) in self.files {
 			for (_, mut v) in file.Vars {
 				cached = cached[:0]
-				let mut refCheck: fn(mut &cached: *[]&ReferenceStack, mut r: &ReferenceStack, owner: str): (cycle: bool)
+				let mut refCheck: fn(mut &cached: *[]&ReferenceStack, mut r: &ReferenceStack, owner: string): (cycle: bool)
 				&_refCheck := &refCheck // For closure.
 				refCheck = fn|mut cached, mut r, owner| {
 					// We already checked/checking this reference stack.
@@ -3177,7 +3177,7 @@ impl missingRetChecker {
 				//
 				// Example on pseudo AST:
 				//	╭──────────────────────╮
-				//	│ fn foo(): str {      │
+				//	│ fn foo(): string {   │
 				//	│     {                │
 				//	│         goto Keep    │ < jumps to below
 				//	│         ret "return" │
@@ -3585,7 +3585,7 @@ fn pushRuntimeMaphash(mut s: &sema, mut t: &Type, mut token: &token::Token,
 
 // Reports whether the alias valid for the import alias.
 // Designed to check auto aliases.
-fn isValidImpAlias(mut alias: str): (valid: bool) {
+fn isValidImpAlias(mut alias: string): (valid: bool) {
 	if jule::IsBlank(alias) {
 		ret false
 	}
@@ -3626,7 +3626,7 @@ fn checkTypeEnumRefCycle(mut s: &sema, mut e: &TypeEnum, mut item: &TypeEnumItem
 		ret
 	}
 	mut message := new(strings::Builder)
-	pushIllegalCycleError := fn(v1: str, v2: str) {
+	pushIllegalCycleError := fn(v1: string, v2: string) {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", v1, v2)
 		message.WriteStr(strings::Repeat(" ", Padding))!

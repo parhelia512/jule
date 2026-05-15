@@ -12,10 +12,10 @@ struct Field {
 	Token:   &token::Token
 	Public:  bool
 	Mutable: bool // Interior mutability.
-	Name:    str
+	Name:    string
 	TypeSym: &TypeSym
-	Tag:     &token::Token // Tag declaration.
-	Tags:    map[str]str   // Tags in key:value format.
+	Tag:     &token::Token     // Tag declaration.
+	Tags:    map[string]string // Tags in key:value format.
 }
 
 impl Field {
@@ -41,7 +41,7 @@ struct Struct {
 	Depends: []&Struct
 
 	Token:      &token::Token
-	Name:       str
+	Name:       string
 	Fields:     []&Field
 	Methods:    []&Func
 	Public:     bool
@@ -149,7 +149,7 @@ impl Struct {
 
 	// Returns method by identifier.
 	// Returns nil if not exist any method in this identifier.
-	fn FindMethod(mut *self, name: str, _static: bool): &Func {
+	fn FindMethod(mut *self, name: string, _static: bool): &Func {
 		for (_, mut f) in self.Methods {
 			if f.Static == _static && f.Name == name {
 				ret f
@@ -160,7 +160,7 @@ impl Struct {
 
 	// Returns field by identifier.
 	// Returns nil if not exist any field in this identifier.
-	fn FindField(mut *self, name: str): &Field {
+	fn FindField(mut *self, name: string): &Field {
 		for (_, mut f) in self.Fields {
 			if f.Name == name {
 				ret f
@@ -215,7 +215,7 @@ struct StructIns {
 impl Kind for StructIns {
 	// Implement: Kind
 	// Returns Struct's type kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		mut kind := strings::Builder{}
 		kind.Grow(1 << 5)
 		if self.Decl.Extern {
@@ -290,7 +290,7 @@ impl StructIns {
 
 	// Returns method by identifier.
 	// Returns nil if not exist any method in this identifier.
-	fn FindMethod(mut *self, name: str, _static: bool): &Func {
+	fn FindMethod(mut *self, name: string, _static: bool): &Func {
 		for (_, mut f) in self.Methods {
 			if f.Static == _static && f.Name == name {
 				ret f
@@ -301,7 +301,7 @@ impl StructIns {
 
 	// Returns field by identifier.
 	// Returns nil if not exist any field in this identifier.
-	fn FindField(mut *self, name: str): &FieldIns {
+	fn FindField(mut *self, name: string): &FieldIns {
 		for (_, mut f) in self.Fields {
 			if f.Decl.Name == name {
 				ret f

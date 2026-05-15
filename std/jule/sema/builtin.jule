@@ -20,13 +20,13 @@ use "std/os/filepath"
 type builtinCaller = fn(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Value
 
 // Initialized by the init function.
-let mut builtinFuncs = map[str]&FuncIns{}
+let mut builtinFuncs = map[string]&FuncIns{}
 
-fn findBuiltinFunc(name: str): &FuncIns {
+fn findBuiltinFunc(name: string): &FuncIns {
 	ret builtinFuncs[name]
 }
 
-fn primTypeAlias(name: str, mut k: &Type): &TypeAlias {
+fn primTypeAlias(name: string, mut k: &Type): &TypeAlias {
 	ret &TypeAlias{
 		Name:   name,
 		Public: true,
@@ -57,7 +57,7 @@ let mut primF64 = &Type{Kind: buildPrimType(types::F64)}
 let mut primCmplx64 = &Type{Kind: buildPrimType(types::Cmplx64)}
 let mut primCmplx128 = &Type{Kind: buildPrimType(types::Cmplx128)}
 
-let mut builtinVars = map[str]&Var{
+let mut builtinVars = map[string]&Var{
 	"nil": &Var{
 		Public:  true,
 		Mutable: false,
@@ -97,11 +97,11 @@ let mut builtinVars = map[str]&Var{
 	},
 }
 
-fn findBuiltinVar(name: str): &Var {
+fn findBuiltinVar(name: string): &Var {
 	ret builtinVars[name]
 }
 
-let mut builtinTypeAliases: map[str]&TypeAlias = {
+let mut builtinTypeAliases: map[string]&TypeAlias = {
 	"any":      primTypeAlias("any", primAny),
 	"str":      primTypeAlias("str", primStr),
 	"string":   primTypeAlias("string", primStr),
@@ -125,11 +125,11 @@ let mut builtinTypeAliases: map[str]&TypeAlias = {
 	"rune":     primTypeAlias("rune", primI32),
 }
 
-fn findBuiltinTypeAlias(name: str): &TypeAlias {
+fn findBuiltinTypeAlias(name: string): &TypeAlias {
 	ret builtinTypeAliases[name]
 }
 
-fn findBuiltinDef(name: str): any {
+fn findBuiltinDef(name: string): any {
 	mut v := findBuiltinVar(name)
 	if v != nil {
 		ret v
@@ -146,9 +146,9 @@ fn findBuiltinDef(name: str): any {
 }
 
 // Initialized by the init function.
-let mut builtinFuncsStdMem = map[str]&FuncIns{}
+let mut builtinFuncsStdMem = map[string]&FuncIns{}
 
-fn findBuiltinDefStdMem(name: str): any {
+fn findBuiltinDefStdMem(name: string): any {
 	mut r, ok := builtinFuncsStdMem[name]
 	if ok {
 		ret r
@@ -157,9 +157,9 @@ fn findBuiltinDefStdMem(name: str): any {
 }
 
 // Initialized by the init function.
-let mut builtinFuncsStdComptime = map[str]&FuncIns{}
+let mut builtinFuncsStdComptime = map[string]&FuncIns{}
 
-fn findBuiltinDefStdComptime(name: str): any {
+fn findBuiltinDefStdComptime(name: string): any {
 	mut r, ok := builtinFuncsStdComptime[name]
 	if ok {
 		ret r
@@ -168,9 +168,9 @@ fn findBuiltinDefStdComptime(name: str): any {
 }
 
 // Initialized by the init function.
-let mut builtinFuncsStdInteg = map[str]&FuncIns{}
+let mut builtinFuncsStdInteg = map[string]&FuncIns{}
 
-fn findBuiltinDefStdInteg(name: str): any {
+fn findBuiltinDefStdInteg(name: string): any {
 	match name {
 	| "Emit":
 		mut funcEmit := builtinFuncsStdInteg[name]
@@ -187,9 +187,9 @@ fn findBuiltinDefStdInteg(name: str): any {
 }
 
 // Initialized by the init function.
-let mut builtinFuncsStdSys = map[str]&FuncIns{}
+let mut builtinFuncsStdSys = map[string]&FuncIns{}
 
-fn findBuiltinDefStdSys(name: str): any {
+fn findBuiltinDefStdSys(name: string): any {
 	match name {
 	| "Addrcall":
 		mut funcAddrcall := builtinFuncsStdSys[name]
@@ -205,7 +205,7 @@ fn findBuiltinDefStdSys(name: str): any {
 	}
 }
 
-fn findPackageBuiltinDef(linkPath: str, name: str): any {
+fn findPackageBuiltinDef(linkPath: string, name: string): any {
 	match linkPath {
 	| "std/comptime":
 		ret findBuiltinDefStdComptime(name)
@@ -526,7 +526,7 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 		}
 		if s.Value.Prim() != nil && s.Value.Prim().IsU8() { // []byte
 			if e1.Type.Prim() != nil && e1.Type.Prim().IsStr() {
-				// append([]byte, str...)
+				// append([]byte, string...)
 				v.Model = &BuiltinAppendCallExpr{
 					Dest:     t,
 					Elements: e1,

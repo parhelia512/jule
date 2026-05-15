@@ -172,7 +172,7 @@ impl directiveChecker {
 			self.s.pushErr(d.Tag, "the #disable directive requires at least one argument")
 			ret
 		}
-		mut args := map[str]bool{
+		mut args := map[string]bool{
 			"boundary": false,
 			"nilptr":   false,
 		}

@@ -20,7 +20,7 @@ struct Param {
 	Variadic:  bool
 	Reference: bool
 	TypeSym:   &TypeSym
-	Name:      str
+	Name:      string
 }
 
 impl Param {
@@ -68,7 +68,7 @@ struct Func {
 	Static:     bool
 	Fallible:   bool
 	HasDefer:   bool // Whether function has at least one deferred scope.
-	Name:       str
+	Name:       string
 	Directives: []&ast::Directive
 
 	// Scope is the scope of function, aka body.
@@ -192,7 +192,7 @@ struct ParamIns {
 impl ParamIns {
 	// Implement: Kind
 	// Returns ParamIns's type kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		mut s := strings::Builder{}
 		if self.Decl.Mutable {
 			s.WriteStr("mut ")!
@@ -247,7 +247,7 @@ struct FuncIns {
 impl Kind for FuncIns {
 	// Implement: Kind
 	// Returns function's type kind as string.
-	fn Str(*self): str {
+	fn Str(*self): string {
 		const Ident = false
 		ret self.GetKindStr(Ident)
 	}
@@ -396,7 +396,7 @@ impl FuncIns {
 	// Returns kind string of function instance.
 	// Appends identifier to kind of this instance.
 	// Does not appends identifier of this instance to kind if self.Decl is nil.
-	fn GetKindStr(*self, name: bool): str {
+	fn GetKindStr(*self, name: bool): string {
 		mut s := strings::Builder{}
 		s.Grow(1 << 5)
 

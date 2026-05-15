@@ -26,7 +26,7 @@ struct comptimeRange {
 }
 
 impl Kind for comptimeRange {
-	fn Str(*self): str { ret "comptimeRange" }
+	fn Str(*self): string { ret "comptimeRange" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -36,7 +36,7 @@ struct comptimeStructField {
 }
 
 impl Kind for comptimeStructField {
-	fn Str(*self): str { ret "comptimeStructField" }
+	fn Str(*self): string { ret "comptimeStructField" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -63,7 +63,7 @@ impl comptimeStructField {
 		ret buildComptimeTypeInfoData(e.s, self.field.Type)
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Decl":
 			mut method := &FuncIns{
@@ -87,7 +87,7 @@ struct comptimeStructFields {
 }
 
 impl Kind for comptimeStructFields {
-	fn Str(*self): str { ret "comptimeStructFields" }
+	fn Str(*self): string { ret "comptimeStructFields" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -147,7 +147,7 @@ struct comptimeStatic {
 }
 
 impl Kind for comptimeStatic {
-	fn Str(*self): str { ret "comptimeStatic" }
+	fn Str(*self): string { ret "comptimeStatic" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -174,7 +174,7 @@ impl comptimeStatic {
 		ret buildComptimeTypeInfoData(e.s, self.field.TypeSym.Type)
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Decl":
 			mut method := &FuncIns{
@@ -198,7 +198,7 @@ struct comptimeStatics {
 }
 
 impl Kind for comptimeStatics {
-	fn Str(*self): str { ret "comptimeStatics" }
+	fn Str(*self): string { ret "comptimeStatics" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -258,7 +258,7 @@ struct comptimeEnumField {
 }
 
 impl Kind for comptimeEnumField {
-	fn Str(*self): str { ret "comptimeEnumField" }
+	fn Str(*self): string { ret "comptimeEnumField" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -276,7 +276,7 @@ impl comptimeEnumField {
 		}
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Decl":
 			mut method := &FuncIns{
@@ -295,7 +295,7 @@ struct comptimeEnumFields {
 }
 
 impl Kind for comptimeEnumFields {
-	fn Str(*self): str { ret "comptimeEnumFields" }
+	fn Str(*self): string { ret "comptimeEnumFields" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -355,7 +355,7 @@ struct comptimeParam {
 }
 
 impl Kind for comptimeParam {
-	fn Str(*self): str { ret "comptimeParam" }
+	fn Str(*self): string { ret "comptimeParam" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -397,7 +397,7 @@ impl comptimeParam {
 		}
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Decl":
 			mut method := &FuncIns{
@@ -426,7 +426,7 @@ struct comptimeParams {
 }
 
 impl Kind for comptimeParams {
-	fn Str(*self): str { ret "comptimeParams" }
+	fn Str(*self): string { ret "comptimeParams" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -486,7 +486,7 @@ struct comptimeTypeInfos {
 }
 
 impl Kind for comptimeTypeInfos {
-	fn Str(*self): str { ret "comptimeTypeInfos" }
+	fn Str(*self): string { ret "comptimeTypeInfos" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -544,7 +544,7 @@ struct comptimeTypeInfo {
 }
 
 impl Kind for comptimeTypeInfo {
-	fn Str(*self): str { ret "comptimeTypeInfo[" + self.base.Str() + "]" }
+	fn Str(*self): string { ret "comptimeTypeInfo[" + self.base.Str() + "]" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -1035,7 +1035,7 @@ impl comptimeTypeInfo {
 		ret buildComptimeTypeInfoData(e.s, t)
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Hash":
 			mut method := &FuncIns{
@@ -1154,7 +1154,7 @@ struct comptimeValue {
 }
 
 impl Kind for comptimeValue {
-	fn Str(*self): str { ret "comptimeValue" }
+	fn Str(*self): string { ret "comptimeValue" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -1244,7 +1244,7 @@ impl comptimeValue {
 		}
 		prim := v.Type.Prim()
 		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", str(types::Str), v.Type.Str())
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
 			ret nil
 		}
 		name := v.Constant.ReadStr()
@@ -1324,7 +1324,7 @@ impl comptimeValue {
 		}
 		prim := v.Type.Prim()
 		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", str(types::Str), v.Type.Str())
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
 			ret nil
 		}
 		name := v.Constant.ReadStr()
@@ -1342,7 +1342,7 @@ impl comptimeValue {
 		ret buildComptimeValue(v)
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Unwrap":
 			mut method := &FuncIns{
@@ -1396,7 +1396,7 @@ struct comptimeFiles {
 }
 
 impl Kind for comptimeFiles {
-	fn Str(*self): str { ret "comptimeFiles" }
+	fn Str(*self): string { ret "comptimeFiles" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -1456,7 +1456,7 @@ struct comptimeFile {
 }
 
 impl Kind for comptimeFile {
-	fn Str(*self): str { ret "comptimeFile" }
+	fn Str(*self): string { ret "comptimeFile" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -1506,7 +1506,7 @@ impl comptimeFile {
 		}
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Path":
 			mut method := &FuncIns{
@@ -1535,7 +1535,7 @@ struct comptimeDecls {
 }
 
 impl Kind for comptimeDecls {
-	fn Str(*self): str { ret "comptimeDecls" }
+	fn Str(*self): string { ret "comptimeDecls" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
@@ -1607,12 +1607,12 @@ struct comptimeDecl {
 }
 
 impl Kind for comptimeDecl {
-	fn Str(*self): str { ret "comptimeDecl" }
+	fn Str(*self): string { ret "comptimeDecl" }
 	fn Equal(&self, other: &Type): bool { ret false }
 }
 
 impl comptimeDecl {
-	fn declAsStr(*self): str {
+	fn declAsStr(*self): string {
 		match type self.decl {
 		| &Struct:
 			ret "<struct>"
@@ -2056,7 +2056,7 @@ impl comptimeDecl {
 		}
 		prim := v.Type.Prim()
 		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", str(types::Str), v.Type.Str())
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
 			ret nil
 		}
 		key := v.Constant.ReadStr()
@@ -2092,7 +2092,7 @@ impl comptimeDecl {
 		}
 		prim := v.Type.Prim()
 		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", str(types::Str), v.Type.Str())
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
 			ret nil
 		}
 		key := v.Constant.ReadStr()
@@ -2106,7 +2106,7 @@ impl comptimeDecl {
 		}
 	}
 
-	fn subIdent(mut &self, name: str): &Value {
+	fn subIdent(mut &self, name: string): &Value {
 		match name {
 		| "Name":
 			mut method := &FuncIns{

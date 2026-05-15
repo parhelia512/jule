@@ -16,7 +16,7 @@ enum RetState {
 struct Var {
 	Scope:      &Scope
 	Token:      &token::Token
-	Name:       str
+	Name:       string
 	Extern:     bool
 	Constant:   bool
 	Mutable:    bool
