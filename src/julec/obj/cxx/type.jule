@@ -31,7 +31,7 @@ impl sema::Kind for customType {
 
 const (
 	typeAny     = "__jule_Any"
-	typeStr     = "__jule_Str"
+	typeStr     = "__jule_String"
 	typeMap     = "__jule_Map"
 	typePtr     = "__jule_Ptr"
 	typeSptr    = "__jule_Sptr"
@@ -66,9 +66,6 @@ impl typeCoder {
 		| types::Cmplx64:
 			self.structureIns(buf, meta::Program.Runtime.Cmplx64)
 			ret
-		}
-		if id == "string" {
-			id = "str"
 		}
 		if id != types::Uintptr {
 			id = types::RealKindOf(id)

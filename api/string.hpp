@@ -18,11 +18,11 @@
 #include "types.hpp"
 
 // Built-in str type.
-class __jule_Str {
+class __jule_String {
 public:
     using buffer_t = __jule_Ptr<__jule_U8>;
 
-    mutable __jule_Str::buffer_t buffer;
+    mutable __jule_String::buffer_t buffer;
     mutable __jule_U8 *_slice = nullptr;
     mutable __jule_Int _len = 0;
 
@@ -45,7 +45,7 @@ public:
                         const __jule_Int n, const __jule_Int i) noexcept {
 #ifndef __JULE_DISABLE__SAFETY
         if (n == 0 || i < 0 || n <= i) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_INDEX_OUT_OF_RANGE(error, i, n);
             error += "\nruntime: string indexing with out of range index";
             error += "\nfile: ";
@@ -56,34 +56,34 @@ public:
         return s[i];
     }
 
-    __jule_Str(void) : _len(0) {};
-    __jule_Str(const __jule_Str &src)
+    __jule_String(void) : _len(0) {};
+    __jule_String(const __jule_String &src)
         : buffer(src.buffer), _slice(src._slice), _len(src._len) {}
-    __jule_Str(__jule_Str &&src)
+    __jule_String(__jule_String &&src)
         : buffer(std::move(src.buffer)), _slice(src._slice), _len(src._len) {}
-    __jule_Str(const char *src, const __jule_Int &len)
-        : __jule_Str(reinterpret_cast<const __jule_U8 *>(src), len) {}
-    __jule_Str(const __jule_U8 *src, const __jule_Int &len)
-        : __jule_Str(src, src + len) {}
-    __jule_Str(const __jule_U8 *src)
-        : __jule_Str(src,
-                     src + std::strlen(reinterpret_cast<const char *>(src))) {}
-    __jule_Str(const std::string &src)
-        : __jule_Str(
+    __jule_String(const char *src, const __jule_Int &len)
+        : __jule_String(reinterpret_cast<const __jule_U8 *>(src), len) {}
+    __jule_String(const __jule_U8 *src, const __jule_Int &len)
+        : __jule_String(src, src + len) {}
+    __jule_String(const __jule_U8 *src)
+        : __jule_String(
+              src, src + std::strlen(reinterpret_cast<const char *>(src))) {}
+    __jule_String(const std::string &src)
+        : __jule_String(
               reinterpret_cast<const __jule_U8 *>(src.c_str()),
               reinterpret_cast<const __jule_U8 *>(src.c_str() + src.size())) {}
-    __jule_Str(const char *src)
-        : __jule_Str(reinterpret_cast<const __jule_U8 *>(src),
-                     reinterpret_cast<const __jule_U8 *>(src) +
-                         std::strlen(src)) {}
+    __jule_String(const char *src)
+        : __jule_String(reinterpret_cast<const __jule_U8 *>(src),
+                        reinterpret_cast<const __jule_U8 *>(src) +
+                            std::strlen(src)) {}
 
-    __jule_Str(const __jule_U8 *begin, const __jule_U8 *end) {
+    __jule_String(const __jule_U8 *begin, const __jule_U8 *end) {
         this->_len = end - begin;
         if (this->_len == 0) {
             return;
         }
-        auto buf = __jule_Str::alloc(this->_len);
-        this->buffer = __jule_Str::buffer_t::make(buf);
+        auto buf = __jule_String::alloc(this->_len);
+        this->buffer = __jule_String::buffer_t::make(buf);
         this->_slice = buf;
         (void)std::copy(begin, end, this->_slice);
     }
@@ -143,7 +143,7 @@ public:
 #endif // __JULE_DISABLE__REFERENCE_COUNTING
     }
 
-    ~__jule_Str(void) noexcept { this->dealloc(); }
+    ~__jule_String(void) noexcept { this->dealloc(); }
 
     // Low-level access to buffer.
     // No boundary checking, push byte to end of the buffer.
@@ -178,35 +178,35 @@ public:
         this->safe_mut_slice(file, 0, this->_len);
     }
 
-    __jule_Str slice(const __jule_Int &start,
-                     const __jule_Int &end) const noexcept {
-        __jule_Str s;
+    __jule_String slice(const __jule_Int &start,
+                        const __jule_Int &end) const noexcept {
+        __jule_String s;
         s.buffer = this->buffer;
         s._len = end - start;
         s._slice = this->_slice + start;
         return s;
     }
 
-    inline __jule_Str slice(const __jule_Int &start) const noexcept {
+    inline __jule_String slice(const __jule_Int &start) const noexcept {
         return this->slice(start, this->_len);
     }
 
-    inline __jule_Str slice(void) const noexcept {
+    inline __jule_String slice(void) const noexcept {
         return this->slice(0, this->_len);
     }
 
-    inline __jule_Str safe_slice(const char *file, const __jule_Int &start,
-                                 const __jule_Int &end) const noexcept {
+    inline __jule_String safe_slice(const char *file, const __jule_Int &start,
+                                    const __jule_Int &end) const noexcept {
         this->slice_boundary_check(file, start, end);
         return this->slice(start, end);
     }
 
-    inline __jule_Str safe_slice(const char *file,
-                                 const __jule_Int &start) const noexcept {
+    inline __jule_String safe_slice(const char *file,
+                                    const __jule_Int &start) const noexcept {
         return this->safe_slice(file, start, this->_len);
     }
 
-    inline __jule_Str safe_slice(const char *file) const noexcept {
+    inline __jule_String safe_slice(const char *file) const noexcept {
         return this->safe_slice(file, 0, this->_len);
     }
 
@@ -244,36 +244,36 @@ public:
         return std::string(this->operator const char *(), this->_len);
     }
 
-    __jule_Str &operator+=(const __jule_Str &str) {
+    __jule_String &operator+=(const __jule_String &str) {
         if (str._len == 0) {
             return *this;
         }
-        auto buf = __jule_Str::alloc(this->_len + str._len);
+        auto buf = __jule_String::alloc(this->_len + str._len);
         (void)std::copy(this->begin(), this->end(), buf);
         (void)std::copy(str.begin(), str.end(), buf + this->_len);
         auto len = this->_len + str._len;
         this->dealloc();
-        this->buffer = __jule_Str::buffer_t::make(buf);
+        this->buffer = __jule_String::buffer_t::make(buf);
         this->_slice = buf;
         this->_len = len;
         return *this;
     }
 
-    __jule_Str operator+(const __jule_Str &str) const {
+    __jule_String operator+(const __jule_String &str) const {
         if (str._len == 0) {
             return *this;
         }
-        __jule_Str s;
+        __jule_String s;
         s._len = this->_len + str._len;
-        auto buf = __jule_Str::alloc(s._len);
-        s.buffer = __jule_Str::buffer_t::make(buf);
+        auto buf = __jule_String::alloc(s._len);
+        s.buffer = __jule_String::buffer_t::make(buf);
         s._slice = buf;
         (void)std::copy(this->begin(), this->end(), s._slice);
         (void)std::copy(str.begin(), str.end(), s._slice + this->_len);
         return s;
     }
 
-    __jule_Str &operator=(const __jule_Str &str) {
+    __jule_String &operator=(const __jule_String &str) {
         // Assignment to itself.
         if (this->buffer.alloc == str.buffer.alloc) {
             this->_len = str._len;
@@ -287,7 +287,7 @@ public:
         return *this;
     }
 
-    __jule_Str &operator=(__jule_Str &&str) {
+    __jule_String &operator=(__jule_String &&str) {
         this->dealloc();
         this->buffer = std::move(str.buffer);
         this->_slice = str._slice;
@@ -295,37 +295,41 @@ public:
         return *this;
     }
 
-    __jule_Bool operator==(const __jule_Str &str) const noexcept {
+    __jule_Bool operator==(const __jule_String &str) const noexcept {
         return this->_len == str._len &&
                (this->_len == 0 ||
                 std::memcmp(this->begin(), str.begin(), this->_len) == 0);
     }
 
-    inline __jule_Bool operator!=(const __jule_Str &str) const noexcept {
+    inline __jule_Bool operator!=(const __jule_String &str) const noexcept {
         return !this->operator==(str);
     }
 
-    __jule_Bool operator<(const __jule_Str &str) const noexcept {
-        return __jule_compareStr((__jule_Str *)this, (__jule_Str *)&str) == -1;
+    __jule_Bool operator<(const __jule_String &str) const noexcept {
+        return __jule_compareStr((__jule_String *)this,
+                                 (__jule_String *)&str) == -1;
     }
 
-    inline __jule_Bool operator<=(const __jule_Str &str) const noexcept {
-        return __jule_compareStr((__jule_Str *)this, (__jule_Str *)&str) <= 0;
+    inline __jule_Bool operator<=(const __jule_String &str) const noexcept {
+        return __jule_compareStr((__jule_String *)this,
+                                 (__jule_String *)&str) <= 0;
     }
 
-    __jule_Bool operator>(const __jule_Str &str) const noexcept {
-        return __jule_compareStr((__jule_Str *)this, (__jule_Str *)&str) == +1;
+    __jule_Bool operator>(const __jule_String &str) const noexcept {
+        return __jule_compareStr((__jule_String *)this,
+                                 (__jule_String *)&str) == +1;
     }
 
-    inline __jule_Bool operator>=(const __jule_Str &str) const noexcept {
-        return __jule_compareStr((__jule_Str *)this, (__jule_Str *)&str) >= 0;
+    inline __jule_Bool operator>=(const __jule_String &str) const noexcept {
+        return __jule_compareStr((__jule_String *)this,
+                                 (__jule_String *)&str) >= 0;
     }
 
     inline void boundary_check(const char *file,
                                const __jule_Int &index) noexcept {
 #ifndef __JULE_DISABLE__SAFETY
         if (this->empty() || index < 0 || this->len() <= index) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_INDEX_OUT_OF_RANGE(error, index, this->len());
             error += "\nruntime: string indexing with out of range index";
             error += "\nfile: ";
@@ -339,7 +343,7 @@ public:
                                      const __jule_Int &end) const noexcept {
 #ifndef __JULE_DISABLE__SAFETY
         if (start < 0 || end < 0 || start > end || end > this->_len) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_SLICING_INDEX_OUT_OF_RANGE(error, start, end,
                                                           this->_len, "length");
             error += "\nruntime: string slicing with out of range indexes";
@@ -351,4 +355,4 @@ public:
     }
 };
 
-#endif // #ifndef __JULE_STR_HPP
+#endif // #ifndef __JULE_STRING_HPP

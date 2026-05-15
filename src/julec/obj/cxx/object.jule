@@ -1081,7 +1081,7 @@ impl ObjectCoder {
 			self.indent()
 			self.write("__jule_Bool(*eq)(void*alloc, void*other);\n")
 			self.indent()
-			self.write("__jule_Str(*to_str)(void * alloc);\n")
+			self.write("__jule_String(*to_str)(void * alloc);\n")
 
 			self.traitDataTypeMethods(hash)
 			self.doneIndent()

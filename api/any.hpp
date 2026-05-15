@@ -5,7 +5,7 @@
 #ifndef __JULE_ANY_HPP
 #define __JULE_ANY_HPP
 
-#include "str.hpp"
+#include "string.hpp"
 
 struct __jule_TypeMeta {
 public:
@@ -13,7 +13,7 @@ public:
     __jule_Uintptr (*hash)(__jule_Ptr<__jule_Uintptr> *hash,
                            __jule_Uintptr seed);
     __jule_Bool (*eq)(void *alloc, void *other);
-    __jule_Str (*to_str)(void *alloc);
+    __jule_String (*to_str)(void *alloc);
 };
 
 // The type Any is also a trait data container for Jule's traits.
@@ -77,7 +77,7 @@ public:
 
     inline __jule_Any &must_ok(const char *file) noexcept {
         if (this->operator==(nullptr)) {
-            __jule_Str error = __JULE_ERROR__INVALID_MEMORY "\nfile: ";
+            __jule_String error = __JULE_ERROR__INVALID_MEMORY "\nfile: ";
             error += file;
             __jule_panicStr(error);
         }
@@ -88,7 +88,7 @@ public:
                                     __jule_TypeMeta *type) noexcept {
         this->must_ok(file);
         if (this->type != type) {
-            __jule_Str error = __JULE_ERROR__INCOMPATIBLE_TYPE
+            __jule_String error = __JULE_ERROR__INCOMPATIBLE_TYPE
                 "\nruntime: dynamic-type casted to incompatible type\nfile: ";
             error += file;
             __jule_panicStr(error);

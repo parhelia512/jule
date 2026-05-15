@@ -27,7 +27,7 @@ CONFIGURATION DEFINES
 #include "ptr.hpp"
 #include "runtime.hpp"
 #include "slice.hpp"
-#include "str.hpp"
+#include "string.hpp"
 #include "types.hpp"
 
 #endif // ifndef __JULE_HPP

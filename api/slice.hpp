@@ -11,7 +11,7 @@
 #include "error.hpp"
 #include "ptr.hpp"
 #include "runtime.hpp"
-#include "str.hpp"
+#include "string.hpp"
 #include "types.hpp"
 
 // Built-in slice type.
@@ -342,7 +342,7 @@ public:
     inline void must_ok(const char *file) const noexcept {
         if (this->operator==(nullptr)) {
             if (file != nullptr) {
-                __jule_Str error = __JULE_ERROR__INVALID_MEMORY
+                __jule_String error = __JULE_ERROR__INVALID_MEMORY
                     "\nruntime: slice is nil\nfile: ";
                 error += file;
                 __jule_panicStr(error);
@@ -358,7 +358,7 @@ public:
 #ifndef __JULE_DISABLE__SAFETY
         this->must_ok(file);
         if (this->empty() || index < 0 || this->len() <= index) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_INDEX_OUT_OF_RANGE(error, index, this->len());
             error += "\nruntime: slice indexing with out of range index";
             error += "\nfile: ";
@@ -375,7 +375,7 @@ public:
             this->must_ok(file);
         }
         if (start < 0 || end < 0 || start > end || end > this->_cap) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_SLICING_INDEX_OUT_OF_RANGE(
                 error, start, end, this->cap(), "capacity");
             error += "\nruntime: slice slicing with out of range indexes";
@@ -395,7 +395,7 @@ public:
         }
         if (start < 0 || end < 0 || cap < 0 || start > end ||
             end > this->_cap || end > cap || cap > this->_cap) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_SLICING_INDEX_OUT_OF_RANGE3(
                 error, start, end, cap, this->cap(), "capacity");
             error += "\nruntime: slice slicing with out of range indexes";

@@ -10,7 +10,7 @@
 #include "error.hpp"
 #include "ptr.hpp"
 #include "runtime.hpp"
-#include "str.hpp"
+#include "string.hpp"
 #include "types.hpp"
 
 // Anonymous function / closure wrapper of julec.
@@ -42,7 +42,7 @@ public:
 #ifndef __JULE_DISABLE__SAFETY
         if (this->f == nullptr) {
             __jule_panicStr(
-                __jule_Str(__JULE_ERROR__INVALID_MEMORY "\nfile: ") + file);
+                __jule_String(__JULE_ERROR__INVALID_MEMORY "\nfile: ") + file);
         }
 #endif // SAFETY
         return *this;

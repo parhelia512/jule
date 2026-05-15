@@ -9,7 +9,7 @@
 
 #include "error.hpp"
 #include "slice.hpp"
-#include "str.hpp"
+#include "string.hpp"
 #include "types.hpp"
 
 // Built-in array type.
@@ -112,7 +112,7 @@ public:
                                const __jule_Int &index) const noexcept {
 #ifndef __JULE_DISABLE__SAFETY
         if (this->empty() || index < 0 || N <= index) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_INDEX_OUT_OF_RANGE(error, index, N);
             error += "\nruntime: array indexing with out of range index";
             error += "\nfile: ";
@@ -126,7 +126,7 @@ public:
                                      const __jule_Int &end) const noexcept {
 #ifndef __JULE_DISABLE__SAFETY
         if (start < 0 || end < 0 || start > end || end > N) {
-            __jule_Str error;
+            __jule_String error;
             __JULE_WRITE_ERROR_SLICING_INDEX_OUT_OF_RANGE(error, start, end, N,
                                                           "length");
             error += "\nruntime: array slicing with out of range indexes";
