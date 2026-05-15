@@ -70,7 +70,7 @@ const (
 type CorruptInputError: i64
 
 impl CorruptInputError {
-	fn Str(*self): str {
+	fn Str(*self): string {
 		ret "illegal base64 data at input byte " + conv::FormatInt(i64(*self), 10)
 	}
 }
@@ -116,7 +116,7 @@ impl Encoding {
 	// without any special treatment for multi-byte UTF-8.
 	// The resulting Encoding uses the default padding character ('='),
 	// which may be changed or disabled via [Encoding.WithPadding].
-	fn New(encoder: str): &Encoding {
+	fn New(encoder: string): &Encoding {
 		if len(encoder) != 64 {
 			panic("encoding alphabet is not 64-bytes long")
 		}
@@ -264,7 +264,7 @@ impl Encoding {
 	}
 
 	// Returns the base64 encoding of src.
-	fn EncodeToStr(*self, src: []byte): str {
+	fn EncodeToStr(*self, src: []byte): string {
 		mut buf := make([]byte, self.EncodedLen(len(src)))
 		self.Encode(buf, src)
 		ret unsafe::StrFromBytes(buf)
@@ -454,7 +454,7 @@ impl Encoding {
 	// Returns the bytes represented by the base64 string s.
 	// If the input is malformed, it returns the partially decoded data and
 	// [CorruptInputError]. New line characters (\r and \n) are ignored.
-	fn DecodeStr(*self, s: str)!: []byte {
+	fn DecodeStr(*self, s: string)!: []byte {
 		mut dbuf := make([]byte, self.DecodedLen(len(s)))
 		n := self.Decode(dbuf, unsafe::BytesFromStr(s))?
 		ret dbuf[:n]

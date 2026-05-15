@@ -114,7 +114,7 @@ async fn testEncoderBuffering(t: &testing::T) {
 #test
 async fn testStdDecoder(t: &testing::T) {
 	for _, case in encodeDecodeMap {
-		mut sr := strings::Reader.New(str(case[1]))
+		mut sr := strings::Reader.New(string(case[1]))
 		mut dec := NewDecoder(StdEncoding, sr.Async())
 		mut buf := make([]byte, StdEncoding.DecodedLen(len(case[1])))
 		n := dec.Read(buf).await else {
@@ -156,13 +156,13 @@ async fn testDecoderBuffering(t: &testing::T) {
 			t.Errorf("Read from {} at pos {} = {}, unexpected error {}", bigtest[1], total, n, err)
 		}
 		if !bytesequal([]byte(bigtest[0]), buf[0:total]) {
-			t.Errorf("Decoding/{} of {} = {}, want {}", bs, bigtest[1], str(buf[0:total]), bigtest[0])
+			t.Errorf("Decoding/{} of {} = {}, want {}", bs, bigtest[1], string(buf[0:total]), bigtest[0])
 		}
 	}
 }
 
 struct decodeCorruptTest {
-	input:  str
+	input:  string
 	offset: int // -1 means no corruption.
 }
 
@@ -350,7 +350,7 @@ fn testNewLineCharacters(t: &testing::T) {
 			t.Errorf("Decode({}) failed: {}", e, error)
 			continue
 		}
-		s := str(buf)
+		s := string(buf)
 		if s != expected {
 			t.Errorf("Decode({}) = {}, want {}", e, s, expected)
 		}
