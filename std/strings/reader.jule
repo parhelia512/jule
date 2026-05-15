@@ -10,14 +10,14 @@ use "std/unicode/utf8"
 // io::Seeker, and io::WriterTo traits by reading from a string.
 // The zero value for Reader operates like a Reader of an empty string.
 struct Reader {
-	s:            str
+	s:            string
 	mut i:        i64 // current reading index
 	mut prevRune: int // index of previous rune; or < 0
 }
 
 impl Reader {
 	// Returns a new Reader reading from s.
-	fn New(s: str): &Reader { ret &Reader{s, 0, -1} }
+	fn New(s: string): &Reader { ret &Reader{s, 0, -1} }
 
 	// Returns the number of bytes of the unread portion of the string.
 	fn Len(*self): int {
@@ -147,7 +147,7 @@ impl Reader {
 	}
 
 	// Resets the Reader to be reading from s.
-	fn Reset(mut *self, s: str) {
+	fn Reset(mut *self, s: string) {
 		self.s = s
 		self.i = 0
 		self.prevRune = -1

@@ -43,6 +43,6 @@ use "std/runtime"
 // Use compare when you need to perform a three-way comparison (with
 // [slices::SortFunc], for example). It is usually clearer and always faster
 // to use the built-in string comparison operators ==, <, >, and so on.
-fn Compare(a: str, b: str): int {
+fn Compare(a: string, b: string): int {
 	ret runtime::compareStr(&a, &b)
 }

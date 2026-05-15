@@ -45,7 +45,7 @@ use "std/unsafe"
 struct Replacer {
 	mut once:   sync::Once // guards buildOnce
 	mut r:      replacer
-	mut oldnew: []str
+	mut oldnew: []string
 }
 
 impl Replacer {
@@ -55,13 +55,13 @@ impl Replacer {
 	// comparisons are done in argument order.
 	//
 	// Panics if given an odd number of arguments.
-	fn New(oldnew: ...str): &Replacer {
+	fn New(oldnew: ...string): &Replacer {
 		if len(oldnew)%2 == 1 {
 			panic("std/strings: Replacer.New: odd argument count")
 		}
 		mut r := &Replacer{}
 		if len(oldnew) != 0 {
-			r.oldnew = append([]str(nil), oldnew...)
+			r.oldnew = append([]string(nil), oldnew...)
 		}
 		ret r
 	}
@@ -106,7 +106,7 @@ impl Replacer {
 		}
 
 		mut r := new(byteStrReplacer)
-		r.toReplace = make([]str, 0, len(oldnew)/2)
+		r.toReplace = make([]string, 0, len(oldnew)/2)
 		// The first occurrence of old->new map takes precedence
 		// over the others with the same old string.
 		i = len(oldnew) - 2
@@ -118,7 +118,7 @@ impl Replacer {
 				// We need to use string([]byte{o}) instead of string(o),
 				// to avoid utf8 encoding of o.
 				// E. g. byte(150) produces string of length 2.
-				r.toReplace = append(r.toReplace, str(o))
+				r.toReplace = append(r.toReplace, string(o))
 			}
 			r.replacements[o] = []byte(n)
 		}
@@ -126,13 +126,13 @@ impl Replacer {
 	}
 
 	// Returns a copy of s with all replacements performed.
-	fn Replace(&self, s: str): str {
+	fn Replace(&self, s: string): string {
 		self.once.Do(fn|| self.buildOnce())
 		ret self.r.Replace(s)
 	}
 
 	// Writes s to w with all replacements performed.
-	async fn WriteStr(&self, mut w: io::Writer, s: str)!: (n: int) {
+	async fn WriteStr(&self, mut w: io::Writer, s: string)!: (n: int) {
 		self.once.Do(fn|| self.buildOnce())
 		ret self.r.WriteStr(w, s).await?
 	}
@@ -140,8 +140,8 @@ impl Replacer {
 
 // Trait that a replacement algorithm needs to implement.
 trait replacer {
-	fn Replace(mut *self, s: str): str
-	async fn WriteStr(mut *self, mut w: io::Writer, s: str)!: (n: int)
+	fn Replace(mut *self, s: string): string
+	async fn WriteStr(mut *self, mut w: io::Writer, s: string)!: (n: int)
 }
 
 // Node in a lookup trie for prioritized key/value pairs. Keys
@@ -164,7 +164,7 @@ trait replacer {
 struct trieNode {
 	// Value of the trie node's key/value pair. It is empty if
 	// this node is not a complete key.
-	value: str
+	value: string
 
 	// Priority (higher is more important) of the trie node's
 	// key/value pair; keys are not necessarily matched shortest- or longest-
@@ -184,7 +184,7 @@ struct trieNode {
 	// prefix is the difference in keys between this trie node and the next.
 	// In the example above, node n4 has prefix "cbc" and n4's next node is n5.
 	// Node n5 has no children and so has zero prefix, next and table fields.
-	prefix: str
+	prefix: string
 	next:   &trieNode
 
 	// Lookup table indexed by the next byte in the key, after
@@ -199,7 +199,7 @@ struct trieNode {
 
 impl trieNode {
 	#disable boundary
-	fn add(mut *self, key: str, val: str, priority: int, r: &genericReplacer) {
+	fn add(mut *self, key: string, val: string, priority: int, r: &genericReplacer) {
 		if key == "" {
 			if self.priority == 0 {
 				self.value = val
@@ -277,7 +277,7 @@ struct genericReplacer {
 
 impl genericReplacer {
 	#disable boundary
-	fn make(oldnew: []str): &genericReplacer {
+	fn make(oldnew: []string): &genericReplacer {
 		mut r := new(genericReplacer)
 		// Find each byte used, then assign them each an index.
 		mut i := 0
@@ -314,7 +314,7 @@ impl genericReplacer {
 	}
 
 	#disable boundary
-	fn lookup(mut *self, mut s: str, ignoreRoot: bool): (val: str, keylen: int, found: bool) {
+	fn lookup(mut *self, mut s: string, ignoreRoot: bool): (val: string, keylen: int, found: bool) {
 		// Iterate down the trie to the end, and grab the value and keylen with
 		// the highest priority.
 		mut bestPriority := 0
@@ -351,7 +351,7 @@ impl genericReplacer {
 	}
 
 	#disable boundary
-	fn appendStr(mut *self, mut &w: *appendSliceWriter, s: str)!: (n: int) {
+	fn appendStr(mut *self, mut &w: *appendSliceWriter, s: string)!: (n: int) {
 		let mut last: int
 		let mut prevMatchEmpty: bool
 		mut i := 0
@@ -385,14 +385,14 @@ impl genericReplacer {
 }
 
 impl replacer for genericReplacer {
-	fn Replace(mut *self, s: str): str {
+	fn Replace(mut *self, s: string): string {
 		mut buf := make(appendSliceWriter, 0, len(s))
 		self.appendStr(&buf, s) else {}
 		ret unsafe::StrFromBytes([]byte(buf))
 	}
 
 	#disable boundary
-	async fn WriteStr(mut *self, mut w: io::Writer, s: str)!: (n: int) {
+	async fn WriteStr(mut *self, mut w: io::Writer, s: string)!: (n: int) {
 		let mut last: int
 		let mut prevMatchEmpty: bool
 		mut i := 0
@@ -429,7 +429,7 @@ type appendSliceWriter: []byte
 
 impl appendSliceWriter {
 	// WriteString writes to the buffer without string->[]byte->string allocations.
-	fn WriteStr(mut *self, s: str): int {
+	fn WriteStr(mut *self, s: string): int {
 		*self = append(*self, s...)
 		ret len(s)
 	}
@@ -441,18 +441,18 @@ struct singleStrReplacer {
 	finder: &strFinder
 
 	// value is the new string that replaces that pattern when it's found.
-	value: str
+	value: string
 }
 
 impl singleStrReplacer {
-	fn make(pattern: str, value: str): &singleStrReplacer {
+	fn make(pattern: string, value: string): &singleStrReplacer {
 		ret &singleStrReplacer{finder: strFinder.make(pattern), value: value}
 	}
 }
 
 impl replacer for singleStrReplacer {
 	#disable boundary
-	fn Replace(mut *self, s: str): str {
+	fn Replace(mut *self, s: string): string {
 		let mut buf: Builder
 		mut i, mut matched := 0, false
 		for {
@@ -474,7 +474,7 @@ impl replacer for singleStrReplacer {
 	}
 
 	#disable boundary
-	async fn WriteStr(mut *self, mut w: io::Writer, s: str)!: (n: int) {
+	async fn WriteStr(mut *self, mut w: io::Writer, s: string)!: (n: int) {
 		let mut i: int
 		for {
 			_match := self.finder.next(s[i:])
@@ -496,7 +496,7 @@ impl replacer for singleStrReplacer {
 type byteReplacer: [256]byte
 
 impl replacer for byteReplacer {
-	fn Replace(mut *self, s: str): str {
+	fn Replace(mut *self, s: string): string {
 		let mut buf: []byte // lazily allocated
 		mut i := 0
 		for i < len(s); i++ {
@@ -515,7 +515,7 @@ impl replacer for byteReplacer {
 	}
 
 	#disable boundary
-	async fn WriteStr(mut *self, mut w: io::Writer, s: str)!: (n: int) {
+	async fn WriteStr(mut *self, mut w: io::Writer, s: string)!: (n: int) {
 		mut last := 0
 		mut i := 0
 		for i < len(s); i++ {
@@ -546,7 +546,7 @@ struct byteStrReplacer {
 	// Keeps a list of bytes to replace. Depending on length of toReplace
 	// and length of target string it may be faster to use Count, or a plain loop.
 	// We store single byte as a string, because Count takes a string.
-	toReplace: []str
+	toReplace: []string
 }
 
 // Controls the ratio of a string length to a number of replacements
@@ -558,7 +558,7 @@ struct byteStrReplacer {
 const countCutOff = 8
 
 impl replacer for byteStrReplacer {
-	fn Replace(mut *self, s: str): str {
+	fn Replace(mut *self, s: string): string {
 		mut newSize := len(s)
 		mut anyChanges := false
 		// Is it faster to use Count?
@@ -599,7 +599,7 @@ impl replacer for byteStrReplacer {
 		ret unsafe::StrFromBytes(buf)
 	}
 
-	async fn WriteStr(mut *self, mut w: io::Writer, s: str)!: (n: int) {
+	async fn WriteStr(mut *self, mut w: io::Writer, s: string)!: (n: int) {
 		mut i, mut last := 0, 0
 		for i < len(s); i++ {
 			b := s[i]

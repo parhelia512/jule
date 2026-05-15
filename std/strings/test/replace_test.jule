@@ -6,9 +6,9 @@ use "std/strings"
 use "std/testing"
 
 struct replacerTest {
-	oldnew: []str
-	input:  str
-	out:    str
+	oldnew: []string
+	input:  string
+	out:    string
 }
 
 let replacerTests = []replacerTest([
@@ -41,8 +41,8 @@ fn testReplacer(t: &testing::T) {
 
 struct replacerCase {
 	rep:   &strings::Replacer
-	input: str
-	out:   str
+	input: string
+	out:   string
 }
 
 let mut capitalLetters = strings::Replacer.New("a", "A", "b", "B")
@@ -64,13 +64,13 @@ let mut htmlUnescaper = strings::Replacer.New(
 #test
 fn testReplacerGoCompatibility(t: &testing::T) {
 	let mut testCases: []replacerCase
-	let mut s: []str
+	let mut s: []string
 
 	// inc maps "\x00"->"\x01", ..., "a"->"b", "b"->"c", ..., "\xff"->"\x00".
 	s = nil
 	mut i := 0
 	for i < 256; i++ {
-		s = append(s, str(byte(i)), str(byte(i+1)))
+		s = append(s, string(byte(i)), string(byte(i+1)))
 	}
 	mut inc := strings::Replacer.New(s...)
 
@@ -92,7 +92,7 @@ fn testReplacerGoCompatibility(t: &testing::T) {
 		if n < 1 {
 			n = 1
 		}
-		s = append(s, str(byte(i)), strings::Repeat(str(byte(i)), n))
+		s = append(s, string(byte(i)), strings::Repeat(string(byte(i)), n))
 	}
 	mut repeat := strings::Replacer.New(s...)
 
@@ -194,7 +194,7 @@ fn testReplacerGoCompatibility(t: &testing::T) {
 	for j in allBytes {
 		allBytes[j] = byte(j)
 	}
-	allString := str(allBytes)
+	allString := string(allBytes)
 	mut genAll := strings::Replacer.New(
 		allString, "[all]",
 		"\xff", "[ff]",

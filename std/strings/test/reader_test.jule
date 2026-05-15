@@ -11,10 +11,10 @@ struct readerTest {
 	off:     i64
 	seek:    int
 	n:       int
-	want:    str
+	want:    string
 	wantpos: i64
 	readerr: any
-	seekerr: str
+	seekerr: string
 }
 
 #test
@@ -60,7 +60,7 @@ fn testReader(t: &testing::T) {
 			t.Errorf("{}. read = {}; want {}", i, err, tt.readerr)
 			continue
 		}
-		got := str(buf[:n])
+		got := string(buf[:n])
 		if got != tt.want {
 			t.Errorf("{}. got {}; want {}", i, got, tt.want)
 		}
@@ -99,7 +99,7 @@ fn testReadAfterBigSeek(t: &testing::T) {
 struct readerAtTest {
 	off:     i64
 	n:       int
-	want:    str
+	want:    string
 	wanterr: any
 }
 
@@ -121,7 +121,7 @@ fn testReaderAt(t: &testing::T) {
 			err = error
 			use 0
 		}
-		got := str(b[:rn])
+		got := string(b[:rn])
 		if got != tt.want {
 			t.Errorf("{}. got {}; want {}", i, got, tt.want)
 		}
@@ -172,7 +172,7 @@ async fn testReaderReset(t: &testing::T) {
 	if err != nil {
 		t.Errorf("ReadAll: unexpected error: {}", err)
 	}
-	got := str(buf)
+	got := string(buf)
 	if got != want {
 		t.Errorf("ReadAll: got {}, want {}", got, want)
 	}

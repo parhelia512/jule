@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
-fn StrFind(pattern: str, text: str): int {
+fn StrFind(pattern: string, text: string): int {
 	ret strFinder.make(pattern).next(text)
 }
 
-fn DumpTables(pattern: str): ([256]int, []int) {
+fn DumpTables(pattern: string): ([256]int, []int) {
 	mut finder := strFinder.make(pattern)
 	ret finder.badCharSkip, finder.goodSuffixSkip
 }

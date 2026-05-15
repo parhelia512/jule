@@ -14,13 +14,13 @@ let faces = "☺☻☹"
 let commas = "1,2,3,4"
 let dots = "1....2....3....4"
 
-let space = str([]rune(['\t', '\v', '\r', '\f', '\n', '\u0085', '\u00a0', '\u2000', '\u3000']))
+let space = string([]rune(['\t', '\v', '\r', '\f', '\n', '\u0085', '\u00a0', '\u2000', '\u3000']))
 
-let longString = "a" + str(make([]byte, 1<<16)) + "z"
+let longString = "a" + string(make([]byte, 1<<16)) + "z"
 
 struct binOpTest {
-	a: str
-	b: str
+	a: string
+	b: string
 	i: int
 }
 
@@ -236,7 +236,7 @@ fn testIndexByte(t: &testing::T) {
 }
 
 struct indexRuneTest {
-	input: str
+	input: string
 	rune:  rune
 	want:  int
 }
@@ -312,8 +312,8 @@ fn testIndexRune(t: &testing::T) {
 // Test case for any function which accepts and returns a byte slice.
 // For ease of creation, we write the input byte slice as a string.
 struct strTest {
-	input: str
-	out:   str
+	input: string
+	out:   string
 }
 
 let trimSpaceTests: []strTest = [
@@ -362,7 +362,7 @@ let lowerTests: []strTest = [
 
 // Execute f on each test case.  funcName should be the name of f; it's used
 // in failure reports.
-fn runStrTests[F](t: &testing::T, f: F, funcName: str, testCases: []strTest) {
+fn runStrTests[F](t: &testing::T, f: F, funcName: string, testCases: []strTest) {
 	for _, tc in testCases {
 		actual := f(tc.input)
 		if actual == "" && tc.out != "" {
@@ -387,8 +387,8 @@ fn testToUpper(t: &testing::T) { runStrTests(t, strings::ToUpper, "ToUpper", upp
 fn testToLower(t: &testing::T) { runStrTests(t, strings::ToLower, "ToLower", lowerTests) }
 
 struct repeatTest {
-	input: str
-	out:   str
+	input: string
+	out:   string
 	count: int
 }
 
@@ -401,7 +401,7 @@ let repeatTests: []repeatTest = [
 	{"-", "----------", 10},
 	{"abc ", "abc abc abc ", 3},
 	// Tests for results over the chunkLimit
-	{str(rune(0)), str(make([]byte, 1<<16)), 1 << 16},
+	{string(rune(0)), string(make([]byte, 1<<16)), 1 << 16},
 	{longString, longString + longString, 2},
 ]
 
@@ -419,10 +419,10 @@ fn testRepeat(t: &testing::T) {
 }
 
 struct trimTest {
-	f:     str
-	input: str
-	arg:   str
-	out:   str
+	f:     string
+	input: string
+	arg:   string
+	out:   string
 }
 
 let trimTests: []trimTest = [
@@ -460,7 +460,7 @@ let trimTests: []trimTest = [
 
 #test
 fn testTrim(t: &testing::T) {
-	toFn := fn(name: str): (fn(str, str): str, fn(str, str): str) {
+	toFn := fn(name: string): (fn(string, string): string, fn(string, string): string) {
 		match name {
 		| "Trim":
 			ret strings::Trim, nil
@@ -486,9 +486,9 @@ fn testTrim(t: &testing::T) {
 		}
 		mut actual := ""
 		if f != nil {
-			actual = str(f(tc.input, tc.arg))
+			actual = string(f(tc.input, tc.arg))
 		} else {
-			actual = str(fb(tc.input, tc.arg))
+			actual = string(fb(tc.input, tc.arg))
 		}
 		if actual != tc.out {
 			t.Errorf("{}({}, {}) = {}; want {}", name, tc.input, tc.arg, actual, tc.out)
@@ -498,10 +498,10 @@ fn testTrim(t: &testing::T) {
 
 struct trimFuncTest {
 	f:        predicate
-	input:    str
-	trimOut:  str
-	leftOut:  str
-	rightOut: str
+	input:    string
+	trimOut:  string
+	leftOut:  string
+	rightOut: string
 }
 
 let trimFuncTests: []trimFuncTest = [
@@ -555,9 +555,9 @@ let trimFuncTests: []trimFuncTest = [
 ]
 
 struct trimmer {
-	name: str
-	trim: fn(str, f: fn(rune): bool): str
-	out:  str
+	name: string
+	trim: fn(string, f: fn(rune): bool): string
+	out:  string
 }
 
 #test
@@ -585,7 +585,7 @@ fn testTrimFunc(t: &testing::T) {
 
 struct predicate {
 	f:    fn(rune): bool
-	name: str
+	name: string
 }
 
 let isSpace = predicate{unicode::IsSpace, "IsSpace"}
@@ -608,7 +608,7 @@ fn not(p: predicate): predicate {
 }
 
 struct indexFuncTest {
-	input: str
+	input: string
 	f:     predicate
 	first: int
 	last:  int
@@ -650,11 +650,11 @@ fn testIndexFunc(t: &testing::T) {
 }
 
 struct replaceTest {
-	input: str
-	old:   str
-	new:   str
+	input: string
+	old:   string
+	new:   string
 	n:     int
-	out:   str
+	out:   string
 }
 
 let replaceTests: []replaceTest = [
@@ -685,13 +685,13 @@ fn testReplace(t: &testing::T) {
 		mut input := tt.input + "<spare>"
 		input = input[:len(tt.input)]
 		mut out := strings::Replace(input, tt.old, tt.new, tt.n)
-		mut s := str(out)
+		mut s := string(out)
 		if s != tt.out {
 			t.Errorf("Replace({}, {}, {}, {}) = {}, want {}", tt.input, tt.old, tt.new, tt.n, s, tt.out)
 		}
 		if tt.n == -1 {
 			out = strings::ReplaceAll(input, tt.old, tt.new)
-			s = str(out)
+			s = string(out)
 			if s != tt.out {
 				t.Errorf("ReplaceAll({}, {}, {}) = {}, want {}", tt.input, tt.old, tt.new, s, tt.out)
 			}
@@ -700,8 +700,8 @@ fn testReplace(t: &testing::T) {
 }
 
 struct equalFoldTest {
-	s:   str
-	t:   str
+	s:   string
+	t:   string
 	out: bool
 }
 
@@ -734,10 +734,10 @@ fn testEqualFold(t: &testing::T) {
 }
 
 struct cutTest {
-	s:      str
-	sep:    str
-	before: str
-	after:  str
+	s:      string
+	sep:    string
+	before: string
+	after:  string
 	found:  bool
 }
 
@@ -801,8 +801,8 @@ fn testCutSuffix(t: &testing::T) {
 }
 
 struct containsTest {
-	b:      str
-	substr: str
+	b:      string
+	substr: string
 	want:   bool
 }
 
@@ -824,8 +824,8 @@ fn testContains(t: &testing::T) {
 }
 
 struct containsAnyTest {
-	b:        str
-	substr:   str
+	b:        string
+	substr:   string
 	expected: bool
 }
 
@@ -854,7 +854,7 @@ fn testContainsAny(t: &testing::T) {
 }
 
 struct containsRuneTest {
-	b:        str
+	b:        string
 	r:        rune
 	expected: bool
 }

@@ -6,8 +6,8 @@ use "std/strings"
 use "std/testing"
 
 struct finderNextTest {
-	pat:   str
-	text:  str
+	pat:   string
+	text:  string
 	index: int
 }
 

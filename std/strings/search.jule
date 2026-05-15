@@ -42,7 +42,7 @@
 // document uses 1-based indexing)
 struct strFinder {
 	// pattern is the string that we are searching for in the text.
-	pattern: str
+	pattern: string
 
 	// badCharSkip[b] contains the distance between the last byte of pattern
 	// and the rightmost occurrence of b in pattern. If b is not in pattern,
@@ -78,7 +78,7 @@ struct strFinder {
 
 impl strFinder {
 	#disable boundary
-	fn make(pattern: str): &strFinder {
+	fn make(pattern: string): &strFinder {
 		mut f := &strFinder{
 			pattern:        pattern,
 			goodSuffixSkip: make([]int, len(pattern)),
@@ -127,7 +127,7 @@ impl strFinder {
 	// Returns the index in text of the first occurrence of the pattern. If
 	// the pattern is not found, it returns -1.
 	#disable boundary
-	fn next(mut *self, text: str): int {
+	fn next(mut *self, text: string): int {
 		mut i := len(self.pattern) - 1
 		for i < len(text) {
 			// Compare backwards from the end until the first unmatching character.
@@ -153,7 +153,7 @@ fn max(i: int, j: int): int {
 }
 
 #disable boundary
-fn longestCommonSuffix(a: str, b: str): (i: int) {
+fn longestCommonSuffix(a: string, b: string): (i: int) {
 	for i < len(a) && i < len(b); i++ {
 		if a[len(a)-1-i] != b[len(b)-1-i] {
 			break
