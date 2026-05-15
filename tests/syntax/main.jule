@@ -55,7 +55,7 @@ fn testSlice() {
 }
 
 fn testArray() {
-	let myArray: [2][3]str = [
+	let myArray: [2][3]string = [
 		["Apple", "Banana", "TEST"],
 		["Bred", "Cheese", "BLA"],
 	]
@@ -173,7 +173,7 @@ fn testVariadicParameters(lnEvery: bool, values: ...i32) {
 	}
 }
 
-fn testVariadicParameters2(...str) {}
+fn testVariadicParameters2(...string) {}
 
 fn testCasting() {
 	let a: *int = nil
@@ -181,7 +181,7 @@ fn testCasting() {
 	_ = f32(5000)
 	let bytes = []byte("Hello Bytes")
 	println(bytes)
-	println(str(bytes))
+	println(string(bytes))
 }
 
 fn testRawString() {
@@ -193,7 +193,7 @@ fn testRawString() {
 }
 
 fn testMap() {
-	let mut m: map[int]str = {
+	let mut m: map[int]string = {
 		0: "The",
 		1: "Jule",
 		2: "Programming",
@@ -251,7 +251,7 @@ enum testEnum {
 }
 
 struct testStruct {
-	a: str
+	a: string
 	b: i32
 	c: byte
 	d: bool
