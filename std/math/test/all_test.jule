@@ -2501,7 +2501,7 @@ fn testExp(t: &testing::T) {
 	_testExp(t, math::Exp, "Exp")
 }
 
-fn _testExp(t: &testing::T, Exp: fn(f64): f64, name: str) {
+fn _testExp(t: &testing::T, Exp: fn(f64): f64, name: string) {
 	mut i := 0
 	for i < len(vf); i++ {
 		f := Exp(vf[i])
@@ -2550,7 +2550,7 @@ fn testExp2(t: &testing::T) {
 	_testExp2(t, math::Exp2, "Exp2")
 }
 
-fn _testExp2(t: &testing::T, Exp2: fn(f64): f64, name: str) {
+fn _testExp2(t: &testing::T, Exp2: fn(f64): f64, name: string) {
 	mut i := 0
 	for i < len(vf); i++ {
 		f := Exp2(vf[i])
