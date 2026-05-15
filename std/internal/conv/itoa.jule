@@ -5,7 +5,7 @@
 use "std/unsafe"
 
 // Returns x in decimal string format.
-fn Itoa(x: int): str {
+fn Itoa(x: int): string {
 	if x < 0 {
 		ret "-" + Utoa(uint(-x))
 	}
@@ -13,12 +13,12 @@ fn Itoa(x: int): str {
 }
 
 // Returns x in decimal string format.
-fn Utoa(mut x: uint): str {
+fn Utoa(mut x: uint): string {
 	ret Utoa64(u64(x))
 }
 
 // Returns x in decimal string format.
-fn Itoa64(x: i64): str {
+fn Itoa64(x: i64): string {
 	if x < 0 {
 		ret "-" + Utoa64(u64(-x))
 	}
@@ -26,7 +26,7 @@ fn Itoa64(x: i64): str {
 }
 
 // Returns x in decimal string format.
-fn Utoa64(mut x: u64): str {
+fn Utoa64(mut x: u64): string {
 	if x == 0 {
 		ret "0"
 	}

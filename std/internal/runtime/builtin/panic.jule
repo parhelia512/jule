@@ -19,6 +19,6 @@ unsafe fn panic1(m: *byte, n: int) {
 
 // Calls the panic1 function by m.
 #export "__jule_panicStr"
-fn panicStr(m: str) {
+fn panicStr(m: string) {
 	unsafe { panic1(&m[0], len(m)) }
 }

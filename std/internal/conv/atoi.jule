@@ -30,7 +30,7 @@ unsafe fn AtoiBp(mut b: *byte, mut n: int): (i: int, ok: bool) {
 }
 
 // Same as AtoiBp.
-fn Atoi(s: str): (i: int, ok: bool) {
+fn Atoi(s: string): (i: int, ok: bool) {
 	i, ok = unsafe { AtoiBp(&s[0], len(s)) }
 	ret
 }
@@ -38,7 +38,7 @@ fn Atoi(s: str): (i: int, ok: bool) {
 // Decimal to integer.
 // Returns number, characters consumed, success.
 #disable boundary
-fn Dtoi(s: str): (n: int, i: int, ok: bool) {
+fn Dtoi(s: string): (n: int, i: int, ok: bool) {
 	// Bigger than we need, not too big to worry about overflow.
 	const big = 0xFFFFFF
 

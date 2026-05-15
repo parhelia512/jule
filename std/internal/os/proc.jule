@@ -3,14 +3,14 @@
 // license that can be found in the LICENSE file.
 
 // Returns environment variables.
-fn Environ(): []str {
+fn Environ(): []string {
 	ret environ()
 }
 
 // Retrieves the value of the environment variable named by the key.
 // It returns the value, which will be empty if the variable is not present.
 // To distinguish between an empty value and an found value, use [LookupEnv].
-fn Getenv(key: str): str {
+fn Getenv(key: string): string {
 	v, _ := LookupEnv(key)
 	ret v
 }
@@ -19,11 +19,11 @@ fn Getenv(key: str): str {
 // If the variable is present in the environment the value (which may be empty)
 // is returned and the boolean is true. Otherwise the returned value will be
 // empty and the boolean will be false.
-fn LookupEnv(key: str): (value: str, found: bool) {
+fn LookupEnv(key: string): (value: string, found: bool) {
 	ret lookupenv(key)
 }
 
 // Sets the value of the environment variable named by the key.
-fn Setenv(key: str, value: str)! {
+fn Setenv(key: string, value: string)! {
 	setenv(key, value)?
 }

@@ -4,6 +4,6 @@
 
 use "std/sys"
 
-fn Eaccess(file: str, mode: u32)! {
+fn Eaccess(file: string, mode: u32)! {
 	sys::Faccessat(sys::AT_FDCWD, file, mode, sys::AT_EACCESS)?
 }

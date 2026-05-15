@@ -21,7 +21,7 @@ fn Count(s: []byte, b: byte): int {
 }
 
 // Same as Count, but takes string as byte stack.
-fn CountStr(s: str, b: byte): int {
+fn CountStr(s: string, b: byte): int {
 	ret Count(unsafe::StrBytes(s), b)
 }
 
@@ -61,12 +61,12 @@ fn LastIndexByte(s: []byte, b: byte): int {
 }
 
 // Same as IndexByte, but takes string as byte stack.
-fn IndexByteStr(s: str, b: byte): int {
+fn IndexByteStr(s: string, b: byte): int {
 	ret IndexByte(unsafe::StrBytes(s), b)
 }
 
 // Same as LastIndexByte, but takes string as byte stack.
-fn LastIndexByteStr(s: str, b: byte): int {
+fn LastIndexByteStr(s: string, b: byte): int {
 	if len(s) == 0 {
 		ret -1
 	}
@@ -78,7 +78,7 @@ const PrimeRK = 16777619
 
 // Returns the hash and the appropriate multiplicative
 // factor for use in Rabin-Karp algorithm.
-fn HashStr[T: str | []byte](sep: T): (u32, u32) {
+fn HashStr[T: string | []byte](sep: T): (u32, u32) {
 	mut hash := u32(0)
 	mut i := 0
 	for i < len(sep); i++ {
@@ -97,7 +97,7 @@ fn HashStr[T: str | []byte](sep: T): (u32, u32) {
 
 // Returns the hash of the reverse of sep and the
 // appropriate multiplicative factor for use in Rabin-Karp algorithm.
-fn HashStrRev[T: str | []byte](sep: T): (u32, u32) {
+fn HashStrRev[T: string | []byte](sep: T): (u32, u32) {
 	mut hash := u32(0)
 	mut i := len(sep) - 1
 	for i >= 0; i-- {
@@ -117,7 +117,7 @@ fn HashStrRev[T: str | []byte](sep: T): (u32, u32) {
 
 // Uses the Rabin-Karp search algorithm to return the index of the
 // first occurrence of sep in s, or -1 if not present.
-fn IndexRabinKarp[T: str | []byte](s: T, sep: T): int {
+fn IndexRabinKarp[T: string | []byte](s: T, sep: T): int {
 	// Rabin-Karp search
 	hashss, pow := HashStr(sep)
 	n := len(sep)
@@ -126,7 +126,7 @@ fn IndexRabinKarp[T: str | []byte](s: T, sep: T): int {
 	for i < n; i++ {
 		h = h*PrimeRK + u32(s[i])
 	}
-	if h == hashss && str(s[:n]) == str(sep) {
+	if h == hashss && string(s[:n]) == string(sep) {
 		ret 0
 	}
 	for i < len(s) {
@@ -134,7 +134,7 @@ fn IndexRabinKarp[T: str | []byte](s: T, sep: T): int {
 		h += u32(s[i])
 		h -= pow * u32(s[i-n])
 		i++
-		if h == hashss && str(s[i-n:i]) == str(sep) {
+		if h == hashss && string(s[i-n:i]) == string(sep) {
 			ret i - n
 		}
 	}
@@ -143,7 +143,7 @@ fn IndexRabinKarp[T: str | []byte](s: T, sep: T): int {
 
 // Uses the Rabin-Karp search algorithm to return the last index of the
 // occurrence of sep in s, or -1 if not present.
-fn LastIndexRabinKarp[T: str | []byte](s: T, sep: T): int {
+fn LastIndexRabinKarp[T: string | []byte](s: T, sep: T): int {
 	// Rabin-Karp search from the end of the string
 	hashss, pow := HashStrRev(sep)
 	n := len(sep)
@@ -153,14 +153,14 @@ fn LastIndexRabinKarp[T: str | []byte](s: T, sep: T): int {
 	for i >= last; i-- {
 		h = h*PrimeRK + u32(s[i])
 	}
-	if h == hashss && str(s[last:]) == str(sep) {
+	if h == hashss && string(s[last:]) == string(sep) {
 		ret last
 	}
 	for i >= 0; i-- {
 		h *= PrimeRK
 		h += u32(s[i])
 		h -= pow * u32(s[i+n])
-		if h == hashss && str(s[i:i+n]) == str(sep) {
+		if h == hashss && string(s[i:i+n]) == string(sep) {
 			ret i
 		}
 	}

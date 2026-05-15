@@ -5,7 +5,7 @@
 use "std/unsafe"
 
 // See the [strings::Clone] for documentation.
-fn Clone(s: str): str {
+fn Clone(s: string): string {
 	if len(s) == 0 {
 		ret ""
 	}
@@ -15,11 +15,11 @@ fn Clone(s: str): str {
 }
 
 // Reports whether the string s begins with prefix.
-fn HasPrefix(s: str, prefix: str): bool {
+fn HasPrefix(s: string, prefix: string): bool {
 	ret len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }
 
 // Reports whether the string s ends with suffix.
-fn HasSuffix(s: str, suffix: str): bool {
+fn HasSuffix(s: string, suffix: string): bool {
 	ret len(s) >= len(suffix) && s[len(s)-len(suffix):] == suffix
 }

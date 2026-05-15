@@ -33,13 +33,13 @@ fn readStdin(mut buf: []byte): int {
 
 // The runtime implementation of the built-in print function.
 #export "__jule_print"
-fn zprint(s: str) {
+fn zprint(s: string) {
 	writeStdout(unsafe::StrBytes(s))
 }
 
 // The runtime implementation of the built-in println function.
 #export "__jule_println"
-fn zprintln(s: str) {
+fn zprintln(s: string) {
 	writeStdout(unsafe::StrBytes(s))
 	writeStdout(unsafe::StrBytes("\n"))
 }

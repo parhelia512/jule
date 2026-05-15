@@ -5,7 +5,7 @@
 use "std/integ"
 use "std/sys"
 
-fn Getwd()!: str {
+fn Getwd()!: string {
 	let mut buf: [sys::MAX_PATH + 1]u16
 	n := unsafe { sys::GetCurrentDirectory(u32(len(buf)), &buf[0]) }
 	if n == 0 {
@@ -14,7 +14,7 @@ fn Getwd()!: str {
 	ret unsafe { integ::UTF16PtrToStr(&buf[0]) }
 }
 
-fn Chdir(path: str)! {
+fn Chdir(path: string)! {
 	utf16Path := integ::UTF16FromStr(path)
 	if unsafe { !sys::SetCurrentDirectory(&utf16Path[0]) } {
 		throw sys::GetLastErrno()

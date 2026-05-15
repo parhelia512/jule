@@ -17,7 +17,7 @@ let envOnce = sync::Once{}
 let envLock = runtime::rwmutex{}
 
 // Maps from an environment variable to its first occurrence in envs.
-let mut env: map[str]int = nil
+let mut env: map[string]int = nil
 
 // Provided by the runtime. Elements are expected to
 // be of the form "key=value". An empty string means deleted
@@ -25,7 +25,7 @@ let mut env: map[str]int = nil
 let mut envs = runtime::env()
 
 fn copyenv() {
-	env = map[str]int{}
+	env = map[string]int{}
 	for i, s in envs {
 		mut j := 0
 		for j < len(s); j++ {
@@ -47,7 +47,7 @@ fn copyenv() {
 	}
 }
 
-fn lookupenv(key: str): (value: str, found: bool) {
+fn lookupenv(key: string): (value: string, found: bool) {
 	envOnce.Do(copyenv)
 	if len(key) == 0 {
 		ret "", false
@@ -70,7 +70,7 @@ fn lookupenv(key: str): (value: str, found: bool) {
 	ret "", false
 }
 
-fn setenv(key: str, value: str)! {
+fn setenv(key: string, value: string)! {
 	envOnce.Do(copyenv)
 	if len(key) == 0 {
 		throw sys::EINVAL
@@ -96,10 +96,10 @@ fn setenv(key: str, value: str)! {
 	env[key] = i
 }
 
-fn environ(): []str {
+fn environ(): []string {
 	envOnce.Do(copyenv)
 	envLock.rLock()
-	mut a := make([]str, 0, len(envs))
+	mut a := make([]string, 0, len(envs))
 	for _, env in envs {
 		if env != "" {
 			a = append(a, env)

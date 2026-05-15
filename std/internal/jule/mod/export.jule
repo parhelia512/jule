@@ -6,7 +6,7 @@ use "std/unicode"
 use "std/unicode/utf8"
 
 // Reports whether identifier is public.
-fn IsPub(name: str): bool {
+fn IsPub(name: string): bool {
 	if name[0] < utf8::RuneSelf { // ASCII, fast way.
 		b := name[0]
 		ret 'A' <= b && b <= 'Z'

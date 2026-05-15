@@ -60,7 +60,7 @@ fn toUpper(c: byte): byte {
 }
 
 // Reports whether the path is absolute.
-fn IsAbs(mut path: str): bool {
+fn IsAbs(mut path: string): bool {
 	l := VolumeNameLen(path)
 	if l == 0 {
 		ret false
@@ -80,7 +80,7 @@ fn IsAbs(mut path: str): bool {
 // It returns 0 elsewhere.
 //
 // See: https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
-fn VolumeNameLen(path: str): int {
+fn VolumeNameLen(path: string): int {
 	if len(path) < 2 {
 		ret 0
 	}
@@ -117,7 +117,7 @@ fn VolumeNameLen(path: str): int {
 }
 
 // Slices path around the first path separator.
-fn cutPath(path: str): (before: str, after: str, found: bool) {
+fn cutPath(path: string): (before: string, after: string, found: bool) {
 	for i in path {
 		if isSlash(path[i]) {
 			ret path[:i], path[i+1:], true
@@ -126,7 +126,7 @@ fn cutPath(path: str): (before: str, after: str, found: bool) {
 	ret path, "", false
 }
 
-fn fullPath(name: str)!: (path: str) {
+fn fullPath(name: string)!: (path: string) {
 	utf16Name := integ::UTF16FromStr(name)
 	p := &utf16Name[0]
 	mut n := u32(100)
@@ -143,7 +143,7 @@ fn fullPath(name: str)!: (path: str) {
 	throw sys::GetLastErrno()
 }
 
-fn abs(mut path: str)!: str {
+fn abs(mut path: string)!: string {
 	if path == "" {
 		// full_path returns an error on empty path, because it's not a valid path.
 		// To implement Abs behavior of returning working directory on empty string input,
@@ -154,7 +154,7 @@ fn abs(mut path: str)!: str {
 	ret Clean(path)
 }
 
-fn join(elem: ...str): str {
+fn join(elem: ...string): string {
 	mut s := strings::Builder{}
 	s.Grow(1 << 4)
 	mut lastChar := byte(0)
@@ -196,13 +196,13 @@ fn join(elem: ...str): str {
 	ret Clean(s.Str())
 }
 
-fn splitList(path: str): []str {
+fn splitList(path: string): []string {
 	if path == "" {
 		ret []
 	}
 
 	// Split path, respecting but preserving quotes.
-	mut list := []str(nil)
+	mut list := []string(nil)
 	mut start := 0
 	mut quo := false
 	mut i := 0

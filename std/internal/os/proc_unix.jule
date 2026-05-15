@@ -5,13 +5,13 @@
 use "std/sys"
 use "std/unsafe"
 
-fn Getwd()!: str {
+fn Getwd()!: string {
 	let mut buf: [sys::PATH_MAX]byte
 	mut sbuf := unsafe::Slice(&buf[0], len(buf), len(buf))
 	n := ignoringEINTR2(fn|| sys::Getcwd(sbuf)?)?
 	ret unsafe::StrFromBytes(buf[:n])
 }
 
-fn Chdir(path: str)! {
+fn Chdir(path: string)! {
 	sys::Chdir(path)?
 }

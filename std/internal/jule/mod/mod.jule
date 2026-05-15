@@ -20,7 +20,7 @@ fn FindModuleFile(dirents: []os::DirEntry): bool {
 // Searches module file in path, and their parent paths.
 // Returns empty string if any module file is not exist.
 // Returns directory path of module file if exist.
-fn FindModuleFileDeep(mut path: str): str {
+fn FindModuleFileDeep(mut path: string): string {
 	for {
 		mut dirents := os::ReadDir(path) else { break }
 		exist := FindModuleFile(dirents)

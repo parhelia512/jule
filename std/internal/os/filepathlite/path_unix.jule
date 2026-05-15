@@ -50,17 +50,17 @@ fn IsPathSeparator(c: byte): bool {
 }
 
 // Reports whether the path is absolute.
-fn IsAbs(path: str): bool {
+fn IsAbs(path: string): bool {
 	ret strings::HasPrefix(path, "/")
 }
 
 // Returns length of the leading volume name on Windows.
 // It returns 0 elsewhere.
-fn VolumeNameLen(path: str): int {
+fn VolumeNameLen(path: string): int {
 	ret 0
 }
 
-fn abs(path: str)!: str {
+fn abs(path: string)!: string {
 	if IsAbs(path) {
 		ret Clean(path)
 	}
@@ -68,18 +68,18 @@ fn abs(path: str)!: str {
 	ret join(wd, path)
 }
 
-fn join(elem: ...str): str {
+fn join(elem: ...string): string {
 	for i, e in elem {
 		if e != "" {
-			ret Clean(strings::Join(elem[i:], str(Separator)))
+			ret Clean(strings::Join(elem[i:], string(Separator)))
 		}
 	}
 	ret ""
 }
 
-fn splitList(path: str): []str {
+fn splitList(path: string): []string {
 	if path == "" {
 		ret []
 	}
-	ret strings::Split(path, str(ListSeparator))
+	ret strings::Split(path, string(ListSeparator))
 }

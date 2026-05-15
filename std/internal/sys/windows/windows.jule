@@ -143,7 +143,7 @@ struct IpAdapterAddresses {
 	/* more fields might be present here. */
 }
 
-fn GetSystemDirectory(): str {
+fn GetSystemDirectory(): string {
 	mut path := make([]u16, sys::MAX_PATH)
 	n := sys::Addrcall[uint](uintptr(extern.GetSystemDirectoryW), uintptr(&path[0]), uint(len(path)))
 	ret integ::UTF16ToStr(path[:n])
