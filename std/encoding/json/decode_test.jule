@@ -214,6 +214,31 @@ fn testDecodeSliceWithRemainder(t: &testing::T) {
 }
 
 #test
+fn testDecodeNumberSlice(t: &testing::T) {
+	const json = `[1, 2, 3]`
+	mut s := []int(nil)
+	Decode([]byte(json), &s) else {
+		t.Errorf("Decode({}, s) failed", json)
+		return
+	}
+	t.Assert(len(s) == 3, `len(s) != 3`)
+	t.Assert(s[0] == 1, `s[0] != 1`)
+	t.Assert(s[1] == 2, `s[1] != 2`)
+	t.Assert(s[2] == 3, `s[2] != 3`)
+
+	type Numbers: []int
+	mut s2 := Numbers(nil)
+	Decode([]byte(json), &s2) else {
+		t.Errorf("Decode({}, s) failed", json)
+		return
+	}
+	t.Assert(len(s2) == 3, `len(s2) != 3`)
+	t.Assert(s2[0] == 1, `s2[0] != 1`)
+	t.Assert(s2[1] == 2, `s2[1] != 2`)
+	t.Assert(s2[2] == 3, `s2[2] != 3`)
+}
+
+#test
 fn testDecodeByteSlice(t: &testing::T) {
 	type byte2: byte
 	type byteSlice: []byte2

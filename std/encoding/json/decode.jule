@@ -148,7 +148,6 @@ impl decoder {
 	// and scan a literal's bytes much more quickly.
 	#disable nilptr boundary
 	fn rescanLiteral(*self)! {
-		self.scanNext()
 		self.skipLiteral()?
 	}
 
