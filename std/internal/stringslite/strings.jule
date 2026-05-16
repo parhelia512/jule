@@ -11,7 +11,7 @@ fn Clone(s: string): string {
 	}
 	mut b := make([]byte, len(s))
 	copy(b, s)
-	ret unsafe::StrFromBytes(b)
+	ret unsafe::StringFromBytes(b)
 }
 
 // Reports whether the string s begins with prefix.

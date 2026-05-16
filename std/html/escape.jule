@@ -178,16 +178,16 @@ let htmlEscaper = strings::Replacer.New(
 
 // Escapes special characters like "<" to become "&lt;". It
 // escapes only five such characters: <, >, &, ' and ".
-// UnescapeStr(EscapeStr(s)) == s always holds, but the converse isn't always true.
-fn EscapeStr(s: string): string {
+// UnescapeString(EscapeString(s)) == s always holds, but the converse isn't always true.
+fn EscapeString(s: string): string {
 	ret htmlEscaper.Replace(s)
 }
 
 // Unescapes entities like "&lt;" to become "<". It unescapes a
-// larger range of entities than EscapeStr escapes. For example, "&aacute;"
+// larger range of entities than EscapeString escapes. For example, "&aacute;"
 // unescapes to "á", as does "&#225;" and "&#xE1;".
-// UnescapeStr(EscapeStr(s)) == s always holds, but the converse isn't always true.
-fn UnescapeStr(s: string): string {
+// UnescapeString(EscapeString(s)) == s always holds, but the converse isn't always true.
+fn UnescapeString(s: string): string {
 	mut i := strings::IndexByte(s, '&')
 	if i < 0 {
 		ret s
@@ -210,5 +210,5 @@ fn UnescapeStr(s: string): string {
 		}
 		dst, src = unescapeEntity(b, dst+i, src+i, &entity, &entity2)
 	}
-	ret unsafe::StrFromBytes(b[:dst])
+	ret unsafe::StringFromBytes(b[:dst])
 }

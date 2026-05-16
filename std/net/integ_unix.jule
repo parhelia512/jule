@@ -37,7 +37,7 @@ fn integLookupIP(net: Network, host: string)!: (addrs: []IPAddr) {
 	| IP6 | TCP6 | UDP6:
 		hints.ai_family = sys::AF_INET6
 	}
-	hostb := integ::BytesFromStr(host)
+	hostb := integ::BytesFromString(host)
 	let mut res: *extern.addrinfo
 	e := sys::Addrcall[int](uintptr(extern.getaddrinfo), uintptr(&hostb[0]), uintptr(0), uintptr(&hints), uintptr(&res))
 	if e != 0 {
@@ -105,7 +105,7 @@ fn integLookupPortMap(network: Network, service: string)!: (port: int) {
 	|:
 		throw &DNSError{Err: "unknown network", Name: networkToStr(network) + "/" + service}
 	}
-	mut serviceb := integ::BytesFromStr(service)
+	mut serviceb := integ::BytesFromString(service)
 	// Lowercase the C service name.
 	for i, b in serviceb[:len(service)] {
 		serviceb[i] = lowerASCII(b)

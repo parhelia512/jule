@@ -11,11 +11,11 @@ fn Getwd()!: string {
 	if n == 0 {
 		throw sys::GetLastErrno()
 	}
-	ret unsafe { integ::UTF16PtrToStr(&buf[0]) }
+	ret unsafe { integ::UTF16PtrToString(&buf[0]) }
 }
 
 fn Chdir(path: string)! {
-	utf16Path := integ::UTF16FromStr(path)
+	utf16Path := integ::UTF16FromString(path)
 	if unsafe { !sys::SetCurrentDirectory(&utf16Path[0]) } {
 		throw sys::GetLastErrno()
 	}

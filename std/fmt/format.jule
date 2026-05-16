@@ -47,51 +47,51 @@ fn getFormatRange(mut &i: *int, mut &bytes: *[]byte): []byte {
 // Formats arg by default format and appends to buf.
 fn formatByDefault(mut &buf: *strings::Builder, arg: any) {
 	if arg == nil {
-		buf.WriteStr("<nil>")!
+		buf.WriteString("<nil>")!
 		ret
 	}
 	match type arg {
 	| f32:
-		buf.WriteStr(conv::FormatFloat(f64(arg.(f32)), 'g', -1, 32))!
+		buf.WriteString(conv::FormatFloat(f64(arg.(f32)), 'g', -1, 32))!
 	| f64:
-		buf.WriteStr(conv::FormatFloat(arg.(f64), 'g', -1, 64))!
+		buf.WriteString(conv::FormatFloat(arg.(f64), 'g', -1, 64))!
 	| cmplx64:
-		buf.WriteStr(conv::FormatCmplx(cmplx128(arg.(cmplx64)), 'g', -1, 64))!
+		buf.WriteString(conv::FormatCmplx(cmplx128(arg.(cmplx64)), 'g', -1, 64))!
 	| cmplx128:
-		buf.WriteStr(conv::FormatCmplx(arg.(cmplx128), 'g', -1, 128))!
+		buf.WriteString(conv::FormatCmplx(arg.(cmplx128), 'g', -1, 128))!
 	| int:
-		buf.WriteStr(conv::FormatInt(i64(arg.(int)), 10))!
+		buf.WriteString(conv::FormatInt(i64(arg.(int)), 10))!
 	| i8:
-		buf.WriteStr(conv::FormatInt(i64(arg.(i8)), 10))!
+		buf.WriteString(conv::FormatInt(i64(arg.(i8)), 10))!
 	| i16:
-		buf.WriteStr(conv::FormatInt(i64(arg.(i16)), 10))!
+		buf.WriteString(conv::FormatInt(i64(arg.(i16)), 10))!
 	| i32:
-		buf.WriteStr(conv::FormatInt(i64(arg.(i32)), 10))!
+		buf.WriteString(conv::FormatInt(i64(arg.(i32)), 10))!
 	| i64:
-		buf.WriteStr(conv::FormatInt(arg.(i64), 10))!
+		buf.WriteString(conv::FormatInt(arg.(i64), 10))!
 	| uint:
-		buf.WriteStr(conv::FormatUint(u64(arg.(uint)), 10))!
+		buf.WriteString(conv::FormatUint(u64(arg.(uint)), 10))!
 	| u8:
-		buf.WriteStr(conv::FormatUint(u64(arg.(u8)), 10))!
+		buf.WriteString(conv::FormatUint(u64(arg.(u8)), 10))!
 	| u16:
-		buf.WriteStr(conv::FormatUint(u64(arg.(u16)), 10))!
+		buf.WriteString(conv::FormatUint(u64(arg.(u16)), 10))!
 	| u32:
-		buf.WriteStr(conv::FormatUint(u64(arg.(u32)), 10))!
+		buf.WriteString(conv::FormatUint(u64(arg.(u32)), 10))!
 	| u64:
-		buf.WriteStr(conv::FormatUint(arg.(u64), 10))!
+		buf.WriteString(conv::FormatUint(arg.(u64), 10))!
 	| uintptr:
-		buf.WriteStr("0x")!
-		buf.WriteStr(conv::FormatUint(u64(arg.(uintptr)), 16))!
+		buf.WriteString("0x")!
+		buf.WriteString(conv::FormatUint(u64(arg.(uintptr)), 16))!
 	| string:
-		buf.WriteStr(arg.(string))!
+		buf.WriteString(arg.(string))!
 	| bool:
 		if arg.(bool) {
-			buf.WriteStr("true")!
+			buf.WriteString("true")!
 		} else {
-			buf.WriteStr("false")!
+			buf.WriteString("false")!
 		}
 	|:
-		buf.WriteStr(runtime::toStr(arg))!
+		buf.WriteString(runtime::toString(arg))!
 	}
 }
 
@@ -115,7 +115,7 @@ fn applyFormat(mut &fmt: *[]byte, mut &buf: *strings::Builder, mut &j: *int, arg
 		(*fmt)[1] == '{' &&
 		(*fmt)[2] == '}' &&
 		(*fmt)[3] == '}' {
-		buf.WriteStr("{}")!
+		buf.WriteString("{}")!
 		ret
 	}
 	buf.Write(*fmt)!
@@ -125,7 +125,7 @@ fn applyFormat(mut &fmt: *[]byte, mut &buf: *strings::Builder, mut &j: *int, arg
 // For this function, returned []byte is might be string literal actually.
 // Be careful about mutating it.
 fn bprintf(fmt: string, args: ...any): []byte {
-	mut fmtBytes := unsafe::StrBytes(fmt)
+	mut fmtBytes := unsafe::StringBytes(fmt)
 	if len(args) == 0 {
 		ret fmtBytes
 	}
@@ -172,7 +172,7 @@ fn tryToCallStr[T](mut &sb: *strings::Builder, t: T): (ok: bool) {
 				const params = method.Params()
 				const match {
 				| len(params) == 1 && !params[0].Mutable():
-					sb.WriteStr(methodv.Unwrap()())!
+					sb.WriteString(methodv.Unwrap()())!
 					ret true
 				}
 			}
@@ -185,12 +185,12 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 	const tt = comptime::TypeOf(T)
 	const match {
 	| tt.Extern():
-		sb.WriteStr(tt.Str())!
+		sb.WriteString(tt.Str())!
 	|:
 		const match {
 		| tt.CanNil():
 			if t == nil {
-				sb.WriteStr("<nil>")!
+				sb.WriteString("<nil>")!
 				ret
 			}
 		| tt.Strict():
@@ -201,30 +201,30 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 		}
 		const match tt.Kind() {
 		| comptime::F32:
-			sb.WriteStr(conv::FormatFloat(f64(t), 'g', -1, 32))!
+			sb.WriteString(conv::FormatFloat(f64(t), 'g', -1, 32))!
 		| comptime::F64:
-			sb.WriteStr(conv::FormatFloat(f64(t), 'g', -1, 64))!
+			sb.WriteString(conv::FormatFloat(f64(t), 'g', -1, 64))!
 		| comptime::Cmplx64:
-			sb.WriteStr(conv::FormatCmplx(cmplx128(t), 'g', -1, 64))!
+			sb.WriteString(conv::FormatCmplx(cmplx128(t), 'g', -1, 64))!
 		| comptime::Cmplx128:
-			sb.WriteStr(conv::FormatCmplx(cmplx128(t), 'g', -1, 128))!
+			sb.WriteString(conv::FormatCmplx(cmplx128(t), 'g', -1, 128))!
 		| comptime::Int | comptime::I8 | comptime::I16 | comptime::I32 | comptime::I64:
-			sb.WriteStr(conv::FormatInt(i64(t), 10))!
+			sb.WriteString(conv::FormatInt(i64(t), 10))!
 		| comptime::Uint | comptime::U8 | comptime::U16 | comptime::U32 | comptime::U64:
-			sb.WriteStr(conv::FormatUint(u64(t), 10))!
+			sb.WriteString(conv::FormatUint(u64(t), 10))!
 		| comptime::Str:
-			sb.WriteStr(t)!
+			sb.WriteString(t)!
 		| comptime::Bool:
 			if t {
-				sb.WriteStr("true")!
+				sb.WriteString("true")!
 			} else {
-				sb.WriteStr("false")!
+				sb.WriteString("false")!
 			}
 		| comptime::Slice | comptime::Array:
 			sb.WriteByte('[')!
 			for i, z in t {
 				if i > 0 {
-					sb.WriteStr(", ")!
+					sb.WriteString(", ")!
 				}
 				bprintgw(sb, z)
 			}
@@ -234,7 +234,7 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 			mut written := false
 			for key, val in x {
 				if written {
-					sb.WriteStr(", ")!
+					sb.WriteString(", ")!
 				} else {
 					written = true
 				}
@@ -253,11 +253,11 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 			const for i, field in tt.Fields() {
 				const match {
 				| i > 0:
-					sb.WriteStr(", ")!
+					sb.WriteString(", ")!
 				}
 				const match {
 				| field.Type().Extern():
-					sb.WriteStr(field.Type().Str())!
+					sb.WriteString(field.Type().Str())!
 				|:
 					bprintgw(sb, v.FieldByIndex(i).Unwrap())
 				}
@@ -273,21 +273,21 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 					ret
 				}
 			}
-			sb.WriteStr(conv::FormatUint(u64(uintptr(t)), 16))!
+			sb.WriteString(conv::FormatUint(u64(uintptr(t)), 16))!
 		| comptime::Uintptr | comptime::Ptr | comptime::Unsafeptr:
 			p := uintptr(t)
 			if p == 0 { // Check for nil, because uintptr will not be checked above.
-				sb.WriteStr("<nil>")!
+				sb.WriteString("<nil>")!
 			} else {
-				sb.WriteStr("0x")!
-				sb.WriteStr(conv::FormatUint(u64(p), 16))!
+				sb.WriteString("0x")!
+				sb.WriteString(conv::FormatUint(u64(p), 16))!
 			}
 		| comptime::Enum:
 			comptime::TypeAlias(elemType, tt.Value())
 			bprintgw(sb, elemType(t))
 		|:
 			// Channel, dynamic type, function.
-			sb.WriteStr(runtime::toStr(t))!
+			sb.WriteString(runtime::toString(t))!
 		}
 	}
 }

@@ -21,8 +21,8 @@ fn Count(s: []byte, b: byte): int {
 }
 
 // Same as Count, but takes string as byte stack.
-fn CountStr(s: string, b: byte): int {
-	ret Count(unsafe::StrBytes(s), b)
+fn CountString(s: string, b: byte): int {
+	ret Count(unsafe::StringBytes(s), b)
 }
 
 // Returns index of first matched item with specified byte,
@@ -61,12 +61,12 @@ fn LastIndexByte(s: []byte, b: byte): int {
 }
 
 // Same as IndexByte, but takes string as byte stack.
-fn IndexByteStr(s: string, b: byte): int {
-	ret IndexByte(unsafe::StrBytes(s), b)
+fn IndexByteString(s: string, b: byte): int {
+	ret IndexByte(unsafe::StringBytes(s), b)
 }
 
 // Same as LastIndexByte, but takes string as byte stack.
-fn LastIndexByteStr(s: string, b: byte): int {
+fn LastIndexByteString(s: string, b: byte): int {
 	if len(s) == 0 {
 		ret -1
 	}

@@ -56,6 +56,6 @@ impl FuncPattern {
 		if prim == nil {
 			ret false
 		}
-		ret prim.IsStr()
+		ret prim.IsString()
 	}
 }

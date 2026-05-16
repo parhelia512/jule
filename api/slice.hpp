@@ -345,10 +345,10 @@ public:
                 __jule_String error = __JULE_ERROR__INVALID_MEMORY
                     "\nruntime: slice is nil\nfile: ";
                 error += file;
-                __jule_panicStr(error);
+                __jule_panicString(error);
             } else {
-                __jule_panicStr(__JULE_ERROR__INVALID_MEMORY
-                                "\nruntime: slice is nil");
+                __jule_panicString(__JULE_ERROR__INVALID_MEMORY
+                                   "\nruntime: slice is nil");
             }
         }
     }
@@ -363,7 +363,7 @@ public:
             error += "\nruntime: slice indexing with out of range index";
             error += "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
     }
@@ -381,7 +381,7 @@ public:
             error += "\nruntime: slice slicing with out of range indexes";
             error += "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
     }
@@ -401,7 +401,7 @@ public:
             error += "\nruntime: slice slicing with out of range indexes";
             error += "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
     }

@@ -690,5 +690,5 @@ fn equalErr2(a: any, b: any): bool {
 	if b == nil {
 		ret a == nil
 	}
-	ret runtime::toStr(a) == runtime::toStr(b)
+	ret runtime::toString(a) == runtime::toString(b)
 }

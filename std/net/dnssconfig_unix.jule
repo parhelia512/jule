@@ -131,7 +131,7 @@ fn dnsDefaultSearch(): []string {
 		ret nil
 	}
 
-	i := byteslite::IndexByteStr(hn, '.')
+	i := byteslite::IndexByteString(hn, '.')
 	if i >= 0 && i < len(hn)-1 {
 		ret [ensureRooted(hn[i+1:])]
 	}

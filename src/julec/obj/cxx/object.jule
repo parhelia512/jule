@@ -162,7 +162,7 @@ impl ObjectCoder {
 	}
 
 	fn write(mut &self, s: string) {
-		self.Buf.WriteStr(s)!
+		self.Buf.WriteString(s)!
 	}
 
 	fn writeBytes(mut &self, b: []byte) {
@@ -208,16 +208,16 @@ impl ObjectCoder {
 		i := len(self.coSpawnMap)
 		is := conv::Itoa(i)
 		self.coSpawnMap = append(self.coSpawnMap, f)
-		self.coSpawnObj.WriteStr("struct ")!
-		self.coSpawnObj.WriteStr(coSpawnPrefix + coSpawnArgDataSuffix)!
-		self.coSpawnObj.WriteStr(is)!
-		self.coSpawnObj.WriteStr("{\n")!
+		self.coSpawnObj.WriteString("struct ")!
+		self.coSpawnObj.WriteString(coSpawnPrefix + coSpawnArgDataSuffix)!
+		self.coSpawnObj.WriteString(is)!
+		self.coSpawnObj.WriteString("{\n")!
 
 		// setup func data
 		self.coSpawnObj.WriteByte(indentKind)!
 		self.tc.func(&self.coSpawnObj, f)
 		self.coSpawnObj.WriteByte(' ')!
-		self.coSpawnObj.WriteStr(coSpawnArgDataFunc)!
+		self.coSpawnObj.WriteString(coSpawnArgDataFunc)!
 		self.coSpawnObj.WriteByte(';')!
 		self.coSpawnObj.WriteByte('\n')!
 
@@ -231,8 +231,8 @@ impl ObjectCoder {
 				self.tc.kind(&self.coSpawnObj, p.Type)
 			}
 			self.coSpawnObj.WriteByte(' ')!
-			self.coSpawnObj.WriteStr(coSpawnArgDataParam)!
-			self.coSpawnObj.WriteStr(conv::Itoa(j))!
+			self.coSpawnObj.WriteString(coSpawnArgDataParam)!
+			self.coSpawnObj.WriteString(conv::Itoa(j))!
 			self.coSpawnObj.WriteByte(';')!
 			self.coSpawnObj.WriteByte('\n')!
 		}
@@ -241,60 +241,60 @@ impl ObjectCoder {
 		self.coSpawnObj.WriteByte('\n')!
 
 		// Declare function.
-		self.coSpawnObj.WriteStr("__jule_Coroutine ")!
-		self.coSpawnObj.WriteStr(coSpawnPrefix + coSpawnMethodSuffix)!
-		self.coSpawnObj.WriteStr(is)!
+		self.coSpawnObj.WriteString("__jule_Coroutine ")!
+		self.coSpawnObj.WriteString(coSpawnPrefix + coSpawnMethodSuffix)!
+		self.coSpawnObj.WriteString(is)!
 		const argData = "__jule_argdata"
-		self.coSpawnObj.WriteStr("(void *")!
-		self.coSpawnObj.WriteStr(argData)!
-		self.coSpawnObj.WriteStr("_param) {\n")!
+		self.coSpawnObj.WriteString("(void *")!
+		self.coSpawnObj.WriteString(argData)!
+		self.coSpawnObj.WriteString("_param) {\n")!
 		self.coSpawnObj.WriteByte(indentKind)!
-		self.coSpawnObj.WriteStr(coSpawnPrefix + coSpawnArgDataSuffix)!
-		self.coSpawnObj.WriteStr(is)!
-		self.coSpawnObj.WriteStr(" *")!
-		self.coSpawnObj.WriteStr(argData)!
-		self.coSpawnObj.WriteStr(" = (")!
-		self.coSpawnObj.WriteStr(coSpawnPrefix + coSpawnArgDataSuffix)!
-		self.coSpawnObj.WriteStr(is)!
-		self.coSpawnObj.WriteStr("*)")!
-		self.coSpawnObj.WriteStr(argData)!
-		self.coSpawnObj.WriteStr("_param;\n")!
+		self.coSpawnObj.WriteString(coSpawnPrefix + coSpawnArgDataSuffix)!
+		self.coSpawnObj.WriteString(is)!
+		self.coSpawnObj.WriteString(" *")!
+		self.coSpawnObj.WriteString(argData)!
+		self.coSpawnObj.WriteString(" = (")!
+		self.coSpawnObj.WriteString(coSpawnPrefix + coSpawnArgDataSuffix)!
+		self.coSpawnObj.WriteString(is)!
+		self.coSpawnObj.WriteString("*)")!
+		self.coSpawnObj.WriteString(argData)!
+		self.coSpawnObj.WriteString("_param;\n")!
 
 		// call the function
 		self.coSpawnObj.WriteByte(indentKind)!
-		self.coSpawnObj.WriteStr("__jule_AsyncAwait ")!
-		self.coSpawnObj.WriteStr(argData)!
-		self.coSpawnObj.WriteStr("->")!
-		self.coSpawnObj.WriteStr(coSpawnArgDataFunc)!
-		self.coSpawnObj.WriteStr("(")!
+		self.coSpawnObj.WriteString("__jule_AsyncAwait ")!
+		self.coSpawnObj.WriteString(argData)!
+		self.coSpawnObj.WriteString("->")!
+		self.coSpawnObj.WriteString(coSpawnArgDataFunc)!
+		self.coSpawnObj.WriteString("(")!
 
 		// pass arguments
 		for j in f.Params {
-			self.coSpawnObj.WriteStr(argData)!
-			self.coSpawnObj.WriteStr("->")!
-			self.coSpawnObj.WriteStr(coSpawnArgDataParam)!
-			self.coSpawnObj.WriteStr(conv::Itoa(j))!
+			self.coSpawnObj.WriteString(argData)!
+			self.coSpawnObj.WriteString("->")!
+			self.coSpawnObj.WriteString(coSpawnArgDataParam)!
+			self.coSpawnObj.WriteString(conv::Itoa(j))!
 			if len(f.Params)-j > 1 {
-				self.coSpawnObj.WriteStr(", ")!
+				self.coSpawnObj.WriteString(", ")!
 			}
 		}
-		self.coSpawnObj.WriteStr(");\n")!
+		self.coSpawnObj.WriteString(");\n")!
 
 		// release coroutine data
 		self.coSpawnObj.WriteByte(indentKind)!
-		self.coSpawnObj.WriteStr("delete ")!
-		self.coSpawnObj.WriteStr(argData)!
-		self.coSpawnObj.WriteStr(";\n")!
+		self.coSpawnObj.WriteString("delete ")!
+		self.coSpawnObj.WriteString(argData)!
+		self.coSpawnObj.WriteString(";\n")!
 		self.coSpawnObj.WriteByte(indentKind)!
 
 		// final return
-		self.coSpawnObj.WriteStr("__jule_AsyncRet")!
+		self.coSpawnObj.WriteString("__jule_AsyncRet")!
 		if f.Decl.IsVoid() {
-			self.coSpawnObj.WriteStr(";\n")!
+			self.coSpawnObj.WriteString(";\n")!
 		} else {
-			self.coSpawnObj.WriteStr(" {};\n")!
+			self.coSpawnObj.WriteString(" {};\n")!
 		}
-		self.coSpawnObj.WriteStr("}\n")!
+		self.coSpawnObj.WriteString("}\n")!
 
 		ret i
 	}
@@ -307,9 +307,9 @@ impl ObjectCoder {
 		}
 		i := len(self.deallocated)
 		self.deallocated = append(self.deallocated, t)
-		self.deallocObj.WriteStr("void " + deallocatedTypeIdent)!
-		self.deallocObj.WriteStr(conv::Itoa(i))!
-		self.deallocObj.WriteStr("(__jule_Ptr<__jule_Uintptr> &alloc) noexcept { alloc.__as<")!
+		self.deallocObj.WriteString("void " + deallocatedTypeIdent)!
+		self.deallocObj.WriteString(conv::Itoa(i))!
+		self.deallocObj.WriteString("(__jule_Ptr<__jule_Uintptr> &alloc) noexcept { alloc.__as<")!
 		// We handling map and channel types as smart pointer,
 		// because this kind types implemented as smart pointers
 		// at machine code level.
@@ -327,7 +327,7 @@ impl ObjectCoder {
 		|:
 			self.tc.kind(&self.deallocObj, t)
 		}
-		self.deallocObj.WriteStr(">().dealloc(); }\n")!
+		self.deallocObj.WriteString(">().dealloc(); }\n")!
 		ret i
 	}
 
@@ -337,27 +337,27 @@ impl ObjectCoder {
 		closure := obj::IsClosure(m)
 		if closure {
 			// Handle identifier and generate ctx.
-			self.anonObj.WriteStr("struct ")!
+			self.anonObj.WriteString("struct ")!
 			l := self.anonObj.Len()
-			self.anonObj.WriteStr("__jule_anon_")!
-			self.anonObj.WriteStr(conv::FormatUint(u64(uintptr(m.Func)), 0xF))!
+			self.anonObj.WriteString("__jule_anon_")!
+			self.anonObj.WriteString(conv::FormatUint(u64(uintptr(m.Func)), 0xF))!
 			name = string(unsafe { self.anonObj.Buf()[l:] })
-			self.anonObj.WriteStr(anonFuncCtxSuffix + "{\n")!
+			self.anonObj.WriteString(anonFuncCtxSuffix + "{\n")!
 			for (_, mut v) in m.Captured {
 				self.anonObj.WriteByte(indentKind)! // 1x indent
 				self.tc.kind(&self.anonObj, v.TypeSym.Type)
 				self.anonObj.WriteByte(' ')!
 				self.ic.anonFuncVar(&self.anonObj, v)
-				self.anonObj.WriteStr(";\n")!
+				self.anonObj.WriteString(";\n")!
 			}
-			self.anonObj.WriteStr("};\n")!
+			self.anonObj.WriteString("};\n")!
 
 			// Ctx handler function.
-			self.anonObj.WriteStr("static void ")!
-			self.anonObj.WriteStr(name)!
-			self.anonObj.WriteStr(anonFuncCtxHandlerSuffix + "(__jule_Ptr<" + typeUintptr + "> &ptr) { ptr.__as<")!
-			self.anonObj.WriteStr(name)!
-			self.anonObj.WriteStr(anonFuncCtxSuffix + ">().dealloc(); }\n")!
+			self.anonObj.WriteString("static void ")!
+			self.anonObj.WriteString(name)!
+			self.anonObj.WriteString(anonFuncCtxHandlerSuffix + "(__jule_Ptr<" + typeUintptr + "> &ptr) { ptr.__as<")!
+			self.anonObj.WriteString(name)!
+			self.anonObj.WriteString(anonFuncCtxSuffix + ">().dealloc(); }\n")!
 		} else {
 			name = "__jule_anon"
 			name += conv::FormatUint(u64(uintptr(m.Func)), 0xF)
@@ -396,58 +396,58 @@ impl ObjectCoder {
 			// we have to use runtime string conversion function, because it
 			// might be have custom stringer function.
 			if runtimeToStr {
-				self.anyObj.WriteStr(typeStr + " " + anyTypeIdent)!
-				self.anyObj.WriteStr(si)!
-				self.anyObj.WriteStr("_to_str(void *alloc) noexcept { ")!
-				mut f := obj::FindFuncGenericInstanceNoPanic(meta::Program.Runtime.ToStr, t)
+				self.anyObj.WriteString(typeStr + " " + anyTypeIdent)!
+				self.anyObj.WriteString(si)!
+				self.anyObj.WriteString("_to_str(void *alloc) noexcept { ")!
+				mut f := obj::FindFuncGenericInstanceNoPanic(meta::Program.Runtime.ToString, t)
 				// If function f is nil, it have not to implement runtime string function.
 				// This means program will not use in any case this function.
 				// Otherwise, it means the compiler have issues for analysis.
 				if f == nil {
 					// This method should be unused.
 					// Implement as a panic call to help debugging.
-					self.anyObj.WriteStr(`__jule_panicStr(__jule_strBytePtr((__jule_U8*)"runtime: type data have not string conversion data but used at runtime", 70)); }` + "\n")!
+					self.anyObj.WriteString(`__jule_panicString(__jule_stringBytePtr((__jule_U8*)"runtime: type data have not string conversion data but used at runtime", 70)); }` + "\n")!
 				} else {
-					self.anyObj.WriteStr("return ")!
+					self.anyObj.WriteString("return ")!
 					self.ic.funcIns(&self.anyObj, f)
-					self.anyObj.WriteStr("(")!
+					self.anyObj.WriteString("(")!
 					// If type is a smart pointer, we have to point to element.
 					// See memory model of dynamic types.
 					if sptr != nil {
 						self.tc.kind(&self.anyObj, t)
-						self.anyObj.WriteStr("::make(reinterpret_cast<")!
+						self.anyObj.WriteString("::make(reinterpret_cast<")!
 						self.tc.kind(&self.anyObj, sptr.Value)
-						self.anyObj.WriteStr("*>(alloc), nullptr)); }\n")!
+						self.anyObj.WriteString("*>(alloc), nullptr)); }\n")!
 					} else {
-						self.anyObj.WriteStr("*reinterpret_cast<")!
+						self.anyObj.WriteString("*reinterpret_cast<")!
 						self.tc.kind(&self.anyObj, t)
-						self.anyObj.WriteStr("*>(alloc)); }\n")!
+						self.anyObj.WriteString("*>(alloc)); }\n")!
 					}
 				}
 			}
 
 			// Type structure.
-			self.anyObj.WriteStr("struct __jule_TypeMeta ")!
-			self.anyObj.WriteStr(anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("{.dealloc=" + deallocatedTypeIdent)!
-			self.anyObj.WriteStr(conv::Itoa(di))!
-			self.anyObj.WriteStr(", .hash=__jule_priv_dynhash, .eq=__jule_ptrEqual, .to_str=")!
+			self.anyObj.WriteString("struct __jule_TypeMeta ")!
+			self.anyObj.WriteString(anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("{.dealloc=" + deallocatedTypeIdent)!
+			self.anyObj.WriteString(conv::Itoa(di))!
+			self.anyObj.WriteString(", .hash=__jule_priv_dynhash, .eq=__jule_ptrEqual, .to_str=")!
 			if runtimeToStr {
-				self.anyObj.WriteStr(anyTypeIdent)!
-				self.anyObj.WriteStr(si)!
-				self.anyObj.WriteStr("_to_str")!
+				self.anyObj.WriteString(anyTypeIdent)!
+				self.anyObj.WriteString(si)!
+				self.anyObj.WriteString("_to_str")!
 			} else {
-				self.anyObj.WriteStr("__jule_ptrToStr")!
+				self.anyObj.WriteString("__jule_ptrToString")!
 			}
-			self.anyObj.WriteStr("};\n")!
+			self.anyObj.WriteString("};\n")!
 
 			// comparison function.
-			self.anyObj.WriteStr(typeBool + " " + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_compare(" + typeAny + " &any, void *type, ")!
+			self.anyObj.WriteString(typeBool + " " + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_compare(" + typeAny + " &any, void *type, ")!
 			self.tc.kind(&self.anyObj, t)
-			self.anyObj.WriteStr(" other) { return any.type == type && __jule_ptrEqual(any.data.alloc, other.alloc); }\n")!
+			self.anyObj.WriteString(" other) { return any.type == type && __jule_ptrEqual(any.data.alloc, other.alloc); }\n")!
 		| t.Map() != nil:
 			// Consider map as a smart pointer.
 			// But it supports content-based string conversion unlike channels.
@@ -461,60 +461,60 @@ impl ObjectCoder {
 
 			// eq function. Map is not comparable, so panic if called.
 			{
-				self.anyObj.WriteStr(typeBool + " " + anyTypeIdent)!
-				self.anyObj.WriteStr(si)!
-				self.anyObj.WriteStr("_eq(void *alloc, void *other) noexcept { __jule_panic((")!
-				self.anyObj.WriteStr(typeU8)!
-				self.anyObj.WriteStr(`*)"runtime: comparing uncomparable type " "`)!
+				self.anyObj.WriteString(typeBool + " " + anyTypeIdent)!
+				self.anyObj.WriteString(si)!
+				self.anyObj.WriteString("_eq(void *alloc, void *other) noexcept { __jule_panic((")!
+				self.anyObj.WriteString(typeU8)!
+				self.anyObj.WriteString(`*)"runtime: comparing uncomparable type " "`)!
 				mut n := self.anyObj.Len()
 				cstrBytes(&self.anyObj, t.Str())
 				n = self.anyObj.Len() - n
 				n += 37 // offset of message prefix
-				self.anyObj.WriteStr("\", ")!
-				self.anyObj.WriteStr(conv::Itoa(n))!
-				self.anyObj.WriteStr("); return false; }\n")!
+				self.anyObj.WriteString("\", ")!
+				self.anyObj.WriteString(conv::Itoa(n))!
+				self.anyObj.WriteString("); return false; }\n")!
 			}
 
 			// to_str function.
-			self.anyObj.WriteStr(typeStr + " " + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_to_str(void *alloc) noexcept { ")!
-			mut f := obj::FindFuncGenericInstanceNoPanic(meta::Program.Runtime.ToStr, t)
+			self.anyObj.WriteString(typeStr + " " + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_to_str(void *alloc) noexcept { ")!
+			mut f := obj::FindFuncGenericInstanceNoPanic(meta::Program.Runtime.ToString, t)
 			// If function f is nil, it have not to implement runtime string function.
 			// This means program will not use in any case this function.
 			// Otherwise, it means the compiler have issues for analysis.
 			if f == nil {
 				// This method should be unused.
 				// Implement as a panic call to help debugging.
-				self.anyObj.WriteStr(`__jule_panicStr(__jule_strBytePtr((__jule_U8*)"runtime: type data have not string conversion data but used at runtime", 70)); }` + "\n")!
+				self.anyObj.WriteString(`__jule_panicString(__jule_stringBytePtr((__jule_U8*)"runtime: type data have not string conversion data but used at runtime", 70)); }` + "\n")!
 			} else {
-				self.anyObj.WriteStr("return ")!
+				self.anyObj.WriteString("return ")!
 				self.ic.funcIns(&self.anyObj, f)
-				self.anyObj.WriteStr("(")!
+				self.anyObj.WriteString("(")!
 				self.tc.kind(&self.anyObj, t)
-				self.anyObj.WriteStr("::make((")!
+				self.anyObj.WriteString("::make((")!
 				self.tc.structureIns(&self.anyObj, mps)
-				self.anyObj.WriteStr("*)alloc, nullptr)); }\n")!
+				self.anyObj.WriteString("*)alloc, nullptr)); }\n")!
 			}
 
 			// Type structure.
-			self.anyObj.WriteStr("struct __jule_TypeMeta ")!
-			self.anyObj.WriteStr(anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("{.dealloc=" + deallocatedTypeIdent)!
-			self.anyObj.WriteStr(conv::Itoa(di))!
-			self.anyObj.WriteStr(", .hash=nullptr, .eq=" + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_eq, .to_str=" + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_to_str};\n")!
+			self.anyObj.WriteString("struct __jule_TypeMeta ")!
+			self.anyObj.WriteString(anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("{.dealloc=" + deallocatedTypeIdent)!
+			self.anyObj.WriteString(conv::Itoa(di))!
+			self.anyObj.WriteString(", .hash=nullptr, .eq=" + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_eq, .to_str=" + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_to_str};\n")!
 
 			// comparison function.
-			self.anyObj.WriteStr(typeBool + " " + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_compare(" + typeAny + " &any, void *type, ")!
+			self.anyObj.WriteString(typeBool + " " + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_compare(" + typeAny + " &any, void *type, ")!
 			self.tc.kind(&self.anyObj, t)
-			self.anyObj.WriteStr(" other) { return any.type == type && __jule_ptrEqual(any.data.alloc, other.alloc); }\n")!
+			self.anyObj.WriteString(" other) { return any.type == type && __jule_ptrEqual(any.data.alloc, other.alloc); }\n")!
 		|:
 			mut kindB := strings::Builder{}
 			self.tc.kind(&kindB, t)
@@ -533,13 +533,13 @@ impl ObjectCoder {
 				mut f := obj::FindFuncGenericInstanceNoPanic(meta::Program.Runtime.Maphash, t)
 				if f != nil {
 					hashhable = true
-					self.anyObj.WriteStr(typeUintptr + " " + anyTypeIdent)!
-					self.anyObj.WriteStr(si)!
-					self.anyObj.WriteStr("_hash(__jule_Ptr<__jule_Uintptr> *ptr, __jule_Uintptr seed) noexcept { return ")!
+					self.anyObj.WriteString(typeUintptr + " " + anyTypeIdent)!
+					self.anyObj.WriteString(si)!
+					self.anyObj.WriteString("_hash(__jule_Ptr<__jule_Uintptr> *ptr, __jule_Uintptr seed) noexcept { return ")!
 					self.ic.funcIns(&self.anyObj, f)
-					self.anyObj.WriteStr("(reinterpret_cast<")!
-					self.anyObj.WriteStr(kind)!
-					self.anyObj.WriteStr("*>(ptr->alloc), seed); }\n")!
+					self.anyObj.WriteString("(reinterpret_cast<")!
+					self.anyObj.WriteString(kind)!
+					self.anyObj.WriteString("*>(ptr->alloc), seed); }\n")!
 				}
 			}
 
@@ -553,71 +553,71 @@ impl ObjectCoder {
 			rmodel += "other)"
 			lmodel += "alloc)"
 
-			self.anyObj.WriteStr(typeBool + " " + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_eq(void *alloc, void *other) noexcept { ")!
+			self.anyObj.WriteString(typeBool + " " + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_eq(void *alloc, void *other) noexcept { ")!
 			if comparable {
-				self.anyObj.WriteStr("return ")!
+				self.anyObj.WriteString("return ")!
 				self.ec._unsafeBinaryNoDynamic(&self.anyObj, lmodel, rmodel, t, t, token::EQL, "==")
-				self.anyObj.WriteStr("; }\n")!
+				self.anyObj.WriteString("; }\n")!
 			} else {
-				self.anyObj.WriteStr(`__jule_panic((`)!
-				self.anyObj.WriteStr(typeU8)!
-				self.anyObj.WriteStr(`*)"runtime: comparing uncomparable type " "`)!
+				self.anyObj.WriteString(`__jule_panic((`)!
+				self.anyObj.WriteString(typeU8)!
+				self.anyObj.WriteString(`*)"runtime: comparing uncomparable type " "`)!
 				mut n := self.anyObj.Len()
 				cstrBytes(&self.anyObj, t.Str())
 				n = self.anyObj.Len() - n
 				n += 37 // offset of message prefix
-				self.anyObj.WriteStr("\", ")!
-				self.anyObj.WriteStr(conv::Itoa(n))!
-				self.anyObj.WriteStr("); return false; }\n")!
+				self.anyObj.WriteString("\", ")!
+				self.anyObj.WriteString(conv::Itoa(n))!
+				self.anyObj.WriteString("); return false; }\n")!
 			}
 
 			// to_str function.
-			self.anyObj.WriteStr(typeStr + " " + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_to_str(void *alloc) noexcept { ")!
-			mut f := obj::FindFuncGenericInstanceNoPanic(meta::Program.Runtime.ToStr, t)
+			self.anyObj.WriteString(typeStr + " " + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_to_str(void *alloc) noexcept { ")!
+			mut f := obj::FindFuncGenericInstanceNoPanic(meta::Program.Runtime.ToString, t)
 			// If function f is nil, it have not to implement runtime string function.
 			// This means program will not use in any case this function.
 			// Otherwise, it means the compiler have issues for analysis.
 			if f == nil {
 				// This method should be unused.
 				// Implement as a panic call to help debugging.
-				self.anyObj.WriteStr(`__jule_panicStr(__jule_strBytePtr((__jule_U8*)"runtime: type data have not string conversion data but used at runtime", 70)); }` + "\n")!
+				self.anyObj.WriteString(`__jule_panicString(__jule_stringBytePtr((__jule_U8*)"runtime: type data have not string conversion data but used at runtime", 70)); }` + "\n")!
 			} else {
-				self.anyObj.WriteStr("return ")!
+				self.anyObj.WriteString("return ")!
 				self.ic.funcIns(&self.anyObj, f)
-				self.anyObj.WriteStr("(*reinterpret_cast<")!
-				self.anyObj.WriteStr(kind)!
-				self.anyObj.WriteStr("*>(alloc)); }\n")!
+				self.anyObj.WriteString("(*reinterpret_cast<")!
+				self.anyObj.WriteString(kind)!
+				self.anyObj.WriteString("*>(alloc)); }\n")!
 			}
 
 			// Type structure.
-			self.anyObj.WriteStr("struct __jule_TypeMeta ")!
-			self.anyObj.WriteStr(anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("{.dealloc=" + deallocatedTypeIdent)!
-			self.anyObj.WriteStr(conv::Itoa(di))!
+			self.anyObj.WriteString("struct __jule_TypeMeta ")!
+			self.anyObj.WriteString(anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("{.dealloc=" + deallocatedTypeIdent)!
+			self.anyObj.WriteString(conv::Itoa(di))!
 			if hashhable {
-				self.anyObj.WriteStr(", .hash=" + anyTypeIdent)!
-				self.anyObj.WriteStr(si)!
-				self.anyObj.WriteStr("_hash")!
+				self.anyObj.WriteString(", .hash=" + anyTypeIdent)!
+				self.anyObj.WriteString(si)!
+				self.anyObj.WriteString("_hash")!
 			} else {
-				self.anyObj.WriteStr(", .hash=nullptr")!
+				self.anyObj.WriteString(", .hash=nullptr")!
 			}
-			self.anyObj.WriteStr(", .eq=" + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_eq, .to_str=" + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_to_str};\n")!
+			self.anyObj.WriteString(", .eq=" + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_eq, .to_str=" + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_to_str};\n")!
 
 			// comparison function.
-			self.anyObj.WriteStr(typeBool + " " + anyTypeIdent)!
-			self.anyObj.WriteStr(si)!
-			self.anyObj.WriteStr("_compare(" + typeAny + " &any, void *type, ")!
+			self.anyObj.WriteString(typeBool + " " + anyTypeIdent)!
+			self.anyObj.WriteString(si)!
+			self.anyObj.WriteString("_compare(" + typeAny + " &any, void *type, ")!
 			self.tc.kind(&self.anyObj, t)
-			self.anyObj.WriteStr(" other) { return any.type == type && any.type->eq(any.data.alloc, (void*)&other); }\n")!
+			self.anyObj.WriteString(" other) { return any.type == type && any.type->eq(any.data.alloc, (void*)&other); }\n")!
 		}
 		ret i
 	}
@@ -629,21 +629,21 @@ impl ObjectCoder {
 			ret
 		}
 		self.resultMap[s] = false
-		self.resultProto.WriteStr("struct ")!
-		self.resultDecls.WriteStr("struct ")!
-		self.resultDecls.WriteStr(s)!
-		self.resultProto.WriteStr(s)!
-		self.resultProto.WriteStr(";\n")!
-		self.resultDecls.WriteStr(" {\n")!
+		self.resultProto.WriteString("struct ")!
+		self.resultDecls.WriteString("struct ")!
+		self.resultDecls.WriteString(s)!
+		self.resultProto.WriteString(s)!
+		self.resultProto.WriteString(";\n")!
+		self.resultDecls.WriteString(" {\n")!
 		for (i, mut t) in f.Result.Tuple().Types {
 			self.resultDecls.WriteByte(indentKind)!
 			self.tc.kind(&self.resultDecls, t)
 			self.resultDecls.WriteByte(' ')!
-			self.resultDecls.WriteStr(resultArgName)!
-			self.resultDecls.WriteStr(conv::Itoa(i))!
-			self.resultDecls.WriteStr(";\n")!
+			self.resultDecls.WriteString(resultArgName)!
+			self.resultDecls.WriteString(conv::Itoa(i))!
+			self.resultDecls.WriteString(";\n")!
 		}
-		self.resultDecls.WriteStr("};\n")!
+		self.resultDecls.WriteString("};\n")!
 	}
 
 	fn pushResult(mut &self, mut f: &sema::Func) {
@@ -664,10 +664,10 @@ impl ObjectCoder {
 	fn pushAndWriteMaskMapper(mut &self, mut t1: &sema::Trait, mut t2: &sema::Trait) {
 		mut ident := strings::Builder{}
 		ident.Grow(1 << 5)
-		ident.WriteStr("__jule_trait_offset_mapper_")!
-		ident.WriteStr(conv::FormatUint(u64(uintptr(t2)), 0xF))!
-		ident.WriteStr("_to_")!
-		ident.WriteStr(conv::FormatUint(u64(uintptr(t1)), 0xF))!
+		ident.WriteString("__jule_trait_offset_mapper_")!
+		ident.WriteString(conv::FormatUint(u64(uintptr(t2)), 0xF))!
+		ident.WriteString("_to_")!
+		ident.WriteString(conv::FormatUint(u64(uintptr(t1)), 0xF))!
 		self.Buf.Write(unsafe { ident.Buf() })!
 
 		// Lookup and push if this match is not exist.
@@ -681,9 +681,9 @@ impl ObjectCoder {
 
 		// Not exist, push.
 		const data = "data"
-		self.anonObj.WriteStr("void *")!
+		self.anonObj.WriteString("void *")!
 		self.anonObj.Write(unsafe { ident.Buf() })!
-		self.anonObj.WriteStr("(const void *" + data + ") noexcept { ")!
+		self.anonObj.WriteString("(const void *" + data + ") noexcept { ")!
 
 		mut t1Ident := strings::Builder{}
 		mut t2Ident := strings::Builder{}
@@ -697,32 +697,32 @@ impl ObjectCoder {
 						i1 := obj::FindTraitTypeOffsetS(t1, s1i)
 						i2 := obj::FindTraitTypeOffsetS(t2, s1i)
 						// For: Type.
-						self.anonObj.WriteStr("if (data == &")!
+						self.anonObj.WriteString("if (data == &")!
 						self.anonObj.Write(unsafe { t2Ident.Buf() })!
-						self.anonObj.WriteStr("_mptr_data")!
-						self.anonObj.WriteStr(conv::Itoa(i2))!
-						self.anonObj.WriteStr(") return &")!
+						self.anonObj.WriteString("_mptr_data")!
+						self.anonObj.WriteString(conv::Itoa(i2))!
+						self.anonObj.WriteString(") return &")!
 						self.anonObj.Write(unsafe { t1Ident.Buf() })!
-						self.anonObj.WriteStr("_mptr_data")!
-						self.anonObj.WriteStr(conv::Itoa(i1))!
-						self.anonObj.WriteStr("; ")!
+						self.anonObj.WriteString("_mptr_data")!
+						self.anonObj.WriteString(conv::Itoa(i1))!
+						self.anonObj.WriteString("; ")!
 						// For: &Type.
-						self.anonObj.WriteStr("if (data == &")!
+						self.anonObj.WriteString("if (data == &")!
 						self.anonObj.Write(unsafe { t2Ident.Buf() })!
-						self.anonObj.WriteStr("_mptr_data")!
-						self.anonObj.WriteStr(conv::Itoa(i2 + 1))!
-						self.anonObj.WriteStr(") return &")!
+						self.anonObj.WriteString("_mptr_data")!
+						self.anonObj.WriteString(conv::Itoa(i2 + 1))!
+						self.anonObj.WriteString(") return &")!
 						self.anonObj.Write(unsafe { t1Ident.Buf() })!
-						self.anonObj.WriteStr("_mptr_data")!
-						self.anonObj.WriteStr(conv::Itoa(i1 + 1))!
-						self.anonObj.WriteStr("; ")!
+						self.anonObj.WriteString("_mptr_data")!
+						self.anonObj.WriteString(conv::Itoa(i1 + 1))!
+						self.anonObj.WriteString("; ")!
 					}
 				}
 			}
 		}
-		self.anonObj.WriteStr("__jule_panicStr(")!
+		self.anonObj.WriteString("__jule_panicString(")!
 		strLit(&self.anonObj, "trait casting failed because of an implementation mistake, this is a julec bug", "78")
-		self.anonObj.WriteStr("); return nullptr; }\n")!
+		self.anonObj.WriteString("); return nullptr; }\n")!
 	}
 
 	// Writes location information of token as cstr bytes.
@@ -984,13 +984,13 @@ impl ObjectCoder {
 	// It also useable as custom identifiers for functions.
 	fn funcHead(mut &self, mut &buf: *strings::Builder, mut f: &sema::FuncIns, ptr: bool, name: string) {
 		if !ptr && opt::Inline && !f.Decl.IsEntryPoint() {
-			buf.WriteStr("inline ")!
+			buf.WriteString("inline ")!
 		}
 		if f.Decl.Async {
 			if f.Decl.IsVoid() && !f.Decl.Fallible {
-				buf.WriteStr("__jule_VoidAsync")!
+				buf.WriteString("__jule_VoidAsync")!
 			} else {
-				buf.WriteStr("__jule_Async<")!
+				buf.WriteString("__jule_Async<")!
 				self.tc.funcInsResult(buf, f)
 				buf.WriteByte('>')!
 			}
@@ -998,7 +998,7 @@ impl ObjectCoder {
 			self.tc.funcInsResult(buf, f)
 		}
 		if ptr {
-			buf.WriteStr("(*")!
+			buf.WriteString("(*")!
 			self.ic.funcIns(buf, f)
 			buf.WriteByte(')')!
 		} else {
@@ -1006,7 +1006,7 @@ impl ObjectCoder {
 			if name == "" {
 				self.ic.funcIns(buf, f)
 			} else {
-				buf.WriteStr(name)!
+				buf.WriteString(name)!
 			}
 		}
 	}
@@ -1098,20 +1098,20 @@ impl ObjectCoder {
 
 	fn paramsIns(mut &self, mut &buf: *strings::Builder, mut f: &sema::FuncIns) {
 		if !f.AsAnon && len(f.Params) == 0 {
-			buf.WriteStr("(void)")!
+			buf.WriteString("(void)")!
 			ret
 		}
 		buf.WriteByte('(')!
 		if f.AsAnon {
-			buf.WriteStr(ctxParamType + " " + ctxParamIdent)!
+			buf.WriteString(ctxParamType + " " + ctxParamIdent)!
 			if len(f.Params) > 0 {
-				buf.WriteStr(", ")!
+				buf.WriteString(", ")!
 			}
 		}
 		for (i, mut p) in f.Params {
 			self.paramIns(buf, p)
 			if len(f.Params)-i > 1 {
-				buf.WriteStr(", ")!
+				buf.WriteString(", ")!
 			}
 		}
 		buf.WriteByte(')')!
@@ -1213,10 +1213,10 @@ impl ObjectCoder {
 
 		mut nname := strings::Builder{}
 		nname.Grow(30)
-		nname.WriteStr("__jule_trait_method_")!
-		nname.WriteStr(conv::FormatUint(u64(uintptr(f)), 0xF))!
-		nname.WriteStr("_")!
-		nname.WriteStr(conv::FormatUint(u64(uintptr(s)), 0xF))!
+		nname.WriteString("__jule_trait_method_")!
+		nname.WriteString(conv::FormatUint(u64(uintptr(f)), 0xF))!
+		nname.WriteString("_")!
+		nname.WriteString(conv::FormatUint(u64(uintptr(s)), 0xF))!
 
 		mut k := f.Params[0].Type
 		f.Params[0].Type = generalGCPtr
@@ -1812,7 +1812,7 @@ fn concatAllParts(parts: ...&token::Token): []byte {
 	mut s := strings::Builder{}
 	s.Grow(n)
 	for _, p in parts {
-		s.WriteStr(p.Kind)!
+		s.WriteString(p.Kind)!
 	}
 	ret unsafe { s.Buf() }
 }

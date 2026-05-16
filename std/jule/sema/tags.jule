@@ -36,7 +36,7 @@ impl tagChecker {
 
 	fn getValue(mut *self, tag: string, mut &i: *int): string {
 		{
-			r, _ := utf8::DecodeRuneStr(tag[*i:])
+			r, _ := utf8::DecodeRuneString(tag[*i:])
 			if r != '"' {
 				self.s.pushErrorFromLitError(self.f.Tag, lit::Error{
 					Offset: self.off + *i,
@@ -55,7 +55,7 @@ impl tagChecker {
 		}
 		mut value := strings::Builder{}
 		for {
-			mut r, _ := utf8::DecodeRuneStr(tag[*i:])
+			mut r, _ := utf8::DecodeRuneString(tag[*i:])
 			if r == '"' {
 				ret value.Str()
 			}
@@ -92,7 +92,7 @@ impl tagChecker {
 				})
 				ret false
 			}
-			mut r, _ := utf8::DecodeRuneStr(tag[i:])
+			mut r, _ := utf8::DecodeRuneString(tag[i:])
 			if r != ':' {
 				self.s.pushErrorFromLitError(self.f.Tag, lit::Error{
 					Offset: self.off + i,
@@ -127,7 +127,7 @@ impl tagChecker {
 				ret true
 			}
 			// Trailing rune, tags must be separated by whitespaces.
-			r, _ = utf8::DecodeRuneStr(tag[i:])
+			r, _ = utf8::DecodeRuneString(tag[i:])
 			if r != ' ' {
 				self.s.pushErrorFromLitError(self.f.Tag, lit::Error{
 					Offset: self.off + i,
@@ -142,10 +142,10 @@ impl tagChecker {
 	fn check(mut *self): (ok: bool) {
 		mut tag := ""
 		if self.f.Tag.Kind[0] == '`' {
-			tag = lit::ToRawStr(self.f.Tag.Kind)
+			tag = lit::ToRawString(self.f.Tag.Kind)
 		} else {
 			mut errors := []lit::Error(nil)
-			tag, errors = lit::ToStr(self.f.Tag.Kind)
+			tag, errors = lit::ToString(self.f.Tag.Kind)
 			if len(errors) != 0 {
 				self.s.pushErrorsFromLitErrors(self.f.Tag, errors)
 				ret false

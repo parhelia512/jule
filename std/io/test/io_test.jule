@@ -41,7 +41,7 @@ impl testbuffer {
 async fn testCopyN(t: &testing::T) {
 	mut rb := new(testbuffer)
 	mut wb := new(testbuffer)
-	io::WriteStr(rb, "hello, world.").await!
+	io::WriteString(rb, "hello, world.").await!
 	io::CopyN(wb, rb, 5).await!
 	if wb.Str() != "hello" {
 		t.Errorf("CopyN did not work properly")

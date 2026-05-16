@@ -16,8 +16,8 @@ fn ptrEqual(a: *unsafe, b: *unsafe): bool {
 // Returns string based on b, the parameter b means first byte of string.
 // The returned string uses n as length.
 // Will not perform garbage collection.
-#export "__jule_strBytePtr"
-unsafe fn strBytePtr(b: *byte, n: int): string {
+#export "__jule_stringBytePtr"
+unsafe fn stringBytePtr(b: *byte, n: int): string {
 	mut s := ""
 	mut sb := (*runtime::Str)(&s)
 	sb.Buffer.Ptr = *(&b)
@@ -29,8 +29,8 @@ unsafe fn strBytePtr(b: *byte, n: int): string {
 
 // Equals to sliceBytePtr(&s[0], len(s), len(s)) call.
 // Returns nil slice for empty string.
-#export "__jule_strAsSlice"
-fn strAsSlice(s: string): []byte {
+#export "__jule_stringAsSlice"
+fn stringAsSlice(s: string): []byte {
 	if len(s) == 0 {
 		ret nil
 	}
@@ -45,14 +45,14 @@ fn sliceBytePtr(mut b: *byte, len: int, cap: int): []byte {
 }
 
 // Returns byte slice as string.
-// Equals to strBytePtr(&b[0], len(b)) call.
+// Equals to stringBytePtr(&b[0], len(b)) call.
 // Returns empty string if len(b) == 0.
-#export "__jule_sliceAsStr"
-fn sliceAsStr(b: []byte): string {
+#export "__jule_sliceAsString"
+fn sliceAsString(b: []byte): string {
 	if len(b) == 0 {
 		ret ""
 	}
-	ret unsafe { strBytePtr(&b[0], len(b)) }
+	ret unsafe { stringBytePtr(&b[0], len(b)) }
 }
 
 // Fills the first n bytes of the pointer p with the constant byte b.

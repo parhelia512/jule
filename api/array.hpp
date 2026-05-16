@@ -117,7 +117,7 @@ public:
             error += "\nruntime: array indexing with out of range index";
             error += "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
     }
@@ -132,7 +132,7 @@ public:
             error += "\nruntime: array slicing with out of range indexes";
             error += "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
     }

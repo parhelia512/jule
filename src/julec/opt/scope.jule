@@ -364,7 +364,7 @@ impl scopeOptimizer {
 			| &sema::CastingExpr:
 				mut cem := it.Expr.Model.(&sema::CastingExpr)
 				eprim := cem.Expr.Type.Prim()
-				if eprim == nil || !eprim.IsStr() {
+				if eprim == nil || !eprim.IsString() {
 					break
 				}
 				mut s := cem.Type.Slice()
@@ -379,7 +379,7 @@ impl scopeOptimizer {
 				| prim.IsU8():
 					// Expression is: []byte(string)
 					// Use string's bytes directly, byte casting is unnecessary.
-					mut model := any(&BytesFromStr{Expr: cem.Expr.Model})
+					mut model := any(&BytesFromString{Expr: cem.Expr.Model})
 					it.Expr.Model = unsafe { *(*sema::Expr)(&model) }
 				| prim.IsI32():
 					// Expression is: []rune(string)
@@ -439,7 +439,7 @@ impl scopeOptimizer {
 			ret false
 		}
 		lp := a.Left.Type.Prim()
-		if lp == nil || !lp.IsStr() {
+		if lp == nil || !lp.IsString() {
 			ret false
 		}
 		ret self.substr(a)

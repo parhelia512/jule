@@ -39,7 +39,7 @@ fn Bytes(mut b: *byte, n: int): []byte {
 
 // Alias for Slice(&s[0], len(s), len(s)).
 // Returns nil if len(s) == 0.
-fn StrBytes(s: string): []byte {
+fn StringBytes(s: string): []byte {
 	if len(s) == 0 {
 		ret nil
 	}
@@ -48,18 +48,18 @@ fn StrBytes(s: string): []byte {
 
 // Alias for Str(&b[0], len(b), len(b)).
 // Returns empty string if len(b) == 0.
-fn BytesStr(b: []byte): string {
+fn BytesString(b: []byte): string {
 	if len(b) == 0 {
 		ret ""
 	}
 	ret Str(&b[0], len(b))
 }
 
-// Same as [BytesStr] but keeps garbage collection.
-fn StrFromBytes(b: []byte): string { ret unsafe { *(*string)(&b) } }
+// Same as [BytesString] but keeps garbage collection.
+fn StringFromBytes(b: []byte): string { ret unsafe { *(*string)(&b) } }
 
-// Same as [StrBytes] but keeps garbage collection.
-fn BytesFromStr(s: string): []byte {
+// Same as [StringBytes] but keeps garbage collection.
+fn BytesFromString(s: string): []byte {
 	let mut b: []byte
 	unsafe {
 		*(*string)(&b) = s

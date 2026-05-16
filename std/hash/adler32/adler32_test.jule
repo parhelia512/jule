@@ -61,7 +61,7 @@ let cases: []case = [
 #test
 fn testChecksum(t: &testing::T) {
 	for _, case in cases {
-		s := Checksum(unsafe::StrBytes(case.input))
+		s := Checksum(unsafe::StringBytes(case.input))
 		if s != case.out {
 			t.Errorf("expected {} for {}, found {}", case.out, case.input, s)
 		}

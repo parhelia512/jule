@@ -79,7 +79,7 @@ public:
         if (this->operator==(nullptr)) {
             __jule_String error = __JULE_ERROR__INVALID_MEMORY "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
         return *this;
     }
@@ -91,7 +91,7 @@ public:
             __jule_String error = __JULE_ERROR__INCOMPATIBLE_TYPE
                 "\nruntime: dynamic-type casted to incompatible type\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
         return *this;
     }

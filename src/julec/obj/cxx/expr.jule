@@ -39,9 +39,9 @@ enum compExpr: type {
 	&opt::UnsafeTypeAssertionExpr,
 	&opt::FuncCallIgnoreErrorExpr,
 	&opt::StrConcatExpr,
-	&opt::StrFromBytes,
+	&opt::StringFromBytes,
 	&opt::ArrayAsSlice,
-	&opt::BytesFromStr,
+	&opt::BytesFromString,
 }
 
 struct exprCoder {
@@ -60,7 +60,7 @@ impl exprCoder {
 	}
 
 	fn string(mut &self, c: &constant::Const) {
-		content := c.ReadStr()
+		content := c.ReadString()
 		if len(content) == 0 { // Empty.
 			self.oc.write(typeStr + "()")
 			ret
@@ -149,7 +149,7 @@ impl exprCoder {
 
 	fn constant(mut &self, mut c: &constant::Const) {
 		match {
-		| c.IsStr():
+		| c.IsString():
 			self.string(c)
 		| c.IsBool():
 			self.boolean(c.ReadBool())
@@ -225,7 +225,7 @@ impl exprCoder {
 		self.possibleRefExpr(r)
 		self.oc.write("; if (")
 		self.oc.write(yVar)
-		self.oc.write(` == 0) __jule_panicStr(`)
+		self.oc.write(` == 0) __jule_panicString(`)
 		strLitF(&self.oc.Buf, fn|| {
 			self.oc.write("\"runtime: divide by zero")
 			mut len := 23 // runtime: divide by zero
@@ -298,23 +298,23 @@ impl exprCoder {
 		}
 		i := self.oc.pushAnyType(t)
 		si := conv::Itoa(i)
-		buf.WriteStr(anyTypeIdent)!
-		buf.WriteStr(si)!
-		buf.WriteStr("_compare(")!
-		buf.WriteStr(ls)!
-		buf.WriteStr(", &")!
+		buf.WriteString(anyTypeIdent)!
+		buf.WriteString(si)!
+		buf.WriteString("_compare(")!
+		buf.WriteString(ls)!
+		buf.WriteString(", &")!
 		if dynT.Trait() != nil { // Trait <any> type.
 			trt := dynT.Trait()
 			self.oc.ic.traitDecl(buf, trt)
-			buf.WriteStr("_mptr_data")!
-			buf.WriteStr(conv::Itoa(obj::FindTraitTypeOffset(trt, t)))!
+			buf.WriteString("_mptr_data")!
+			buf.WriteString(conv::Itoa(obj::FindTraitTypeOffset(trt, t)))!
 		} else { // Pure <any> type.
-			buf.WriteStr(anyTypeIdent)!
-			buf.WriteStr(si)!
+			buf.WriteString(anyTypeIdent)!
+			buf.WriteString(si)!
 		}
-		buf.WriteStr(", ")!
-		buf.WriteStr(rs)!
-		buf.WriteStr("))")!
+		buf.WriteString(", ")!
+		buf.WriteString(rs)!
+		buf.WriteString("))")!
 		ret true
 	}
 
@@ -327,11 +327,11 @@ impl exprCoder {
 			buf.WriteByte('!')!
 		}
 		self.oc.ic.structureIns(buf, s)
-		buf.WriteStr(structDefaultEqMethodSuffix)!
-		buf.WriteStr("(&")!
-		buf.WriteStr(l)!
-		buf.WriteStr(", ")!
-		buf.WriteStr(r)!
+		buf.WriteString(structDefaultEqMethodSuffix)!
+		buf.WriteString("(&")!
+		buf.WriteString(l)!
+		buf.WriteString(", ")!
+		buf.WriteString(r)!
 		buf.WriteByte(')')!
 	}
 
@@ -377,11 +377,11 @@ impl exprCoder {
 			|:
 				panic("unreachable")
 			}
-			buf.WriteStr("(")!
-			buf.WriteStr(l)!
-			buf.WriteStr(", ")!
-			buf.WriteStr(r)!
-			buf.WriteStr(")")!
+			buf.WriteString("(")!
+			buf.WriteString(l)!
+			buf.WriteString(", ")!
+			buf.WriteString(r)!
+			buf.WriteString(")")!
 			ret
 		| lk.Array() != nil:
 			// If this binary operator comparing array type.
@@ -392,12 +392,12 @@ impl exprCoder {
 				buf.WriteByte('!')!
 			}
 			self.oc.ic.funcIns(buf, ins)
-			buf.WriteStr("((")!
-			buf.WriteStr(l)!
-			buf.WriteStr(").begin(), (")!
-			buf.WriteStr(r)!
-			buf.WriteStr(").begin(), ")!
-			buf.WriteStr(conv::Itoa(arr.N))!
+			buf.WriteString("((")!
+			buf.WriteString(l)!
+			buf.WriteString(").begin(), (")!
+			buf.WriteString(r)!
+			buf.WriteString(").begin(), ")!
+			buf.WriteString(conv::Itoa(arr.N))!
 			buf.WriteByte(')')!
 			ret
 		}
@@ -426,11 +426,11 @@ impl exprCoder {
 		}
 
 		buf.WriteByte('(')!
-		buf.WriteStr(l)!
+		buf.WriteString(l)!
 		buf.WriteByte(' ')!
-		buf.WriteStr(kind)!
+		buf.WriteString(kind)!
 		buf.WriteByte(' ')!
-		buf.WriteStr(r)!
+		buf.WriteString(r)!
 		buf.WriteByte(')')!
 
 		if wrap {
@@ -900,13 +900,13 @@ impl exprCoder {
 				self.possibleRefExpr(m.Expr.Model)
 				self.oc.write(")")
 				ret
-			| prim.IsStr():
+			| prim.IsString():
 				mut eprim := m.Expr.Type.Prim()
 				if eprim != nil && prim != nil {
 					if eprim.IsU8() {
-						self.oc.write("__jule_strFromByte(")
+						self.oc.write("__jule_stringFromByte(")
 					} else {
-						self.oc.write("__jule_strFromRune(")
+						self.oc.write("__jule_stringFromRune(")
 					}
 					self.possibleRefExpr(m.Expr.Model)
 					self.oc.write(")")
@@ -917,9 +917,9 @@ impl exprCoder {
 					eprim = slc.Value.Prim()
 					// []rune or []byte
 					if eprim.IsI32() {
-						self.oc.write("__jule_runesToStr(")
+						self.oc.write("__jule_runesToString(")
 					} else {
-						self.oc.write("__jule_bytesToStr(")
+						self.oc.write("__jule_bytesToString(")
 					}
 					self.possibleRefExpr(m.Expr.Model)
 					self.oc.write(")")
@@ -928,15 +928,15 @@ impl exprCoder {
 			}
 		}
 		prim = m.Expr.Type.Prim()
-		if prim != nil && prim.IsStr() {
+		if prim != nil && prim.IsString() {
 			mut slc := m.Type.Slice()
 			if slc != nil {
 				prim = slc.Value.Prim()
 				// []rune or []byte
 				if prim.IsI32() {
-					self.oc.write("__jule_strToRunes(")
+					self.oc.write("__jule_stringToRunes(")
 				} else {
-					self.oc.write("__jule_strToBytes(")
+					self.oc.write("__jule_stringToBytes(")
 				}
 				self.possibleRefExpr(m.Expr.Model)
 				self.oc.write(")")
@@ -1326,7 +1326,7 @@ impl exprCoder {
 		} else {
 			self.oc.write("if (!")
 			self.oc.write(errorName)
-			self.oc.write(".ok()) __jule_panicStr(")
+			self.oc.write(".ok()) __jule_panicString(")
 			strLit(&self.oc.Buf, "unhandled error: ", "17")
 			self.oc.write(" + ")
 			self.oc.write(errorName)
@@ -1495,7 +1495,7 @@ impl exprCoder {
 			self.oc.locInfo(m.Token)
 			self.oc.write("\", ")
 			self.oc.write("reinterpret_cast<const " + typeU8 + "*>(")
-			s := m.Expr.Model.(&constant::Const).ReadStr()
+			s := m.Expr.Model.(&constant::Const).ReadString()
 			cstrLit(&self.oc.Buf, s)
 			self.oc.write("), ")
 			self.oc.write(conv::Itoa(len(s)))
@@ -1717,7 +1717,7 @@ impl exprCoder {
 	fn printCall(mut &self, mut m: &sema::BuiltinPrintCallExpr) {
 		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Zprint)
 		self.oc.write("(")
-		mut f := obj::FindFuncGenericInstance(meta::Program.Runtime.ToStr, m.Expr.Type)
+		mut f := obj::FindFuncGenericInstance(meta::Program.Runtime.ToString, m.Expr.Type)
 		self.oc.ic.funcIns(&self.oc.Buf, f)
 		self.oc.write("(")
 		self.possibleRefExpr(m.Expr.Model)
@@ -1727,7 +1727,7 @@ impl exprCoder {
 	fn printlnCall(mut &self, mut m: &sema::BuiltinPrintlnCallExpr) {
 		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.Zprintln)
 		self.oc.write("(")
-		mut f := obj::FindFuncGenericInstance(meta::Program.Runtime.ToStr, m.Expr.Type)
+		mut f := obj::FindFuncGenericInstance(meta::Program.Runtime.ToString, m.Expr.Type)
 		self.oc.ic.funcIns(&self.oc.Buf, f)
 		self.oc.write("(")
 		self.possibleRefExpr(m.Expr.Model)
@@ -1735,7 +1735,7 @@ impl exprCoder {
 	}
 
 	fn panicCall(mut &self, mut m: &sema::BuiltinPanicCallExpr) {
-		self.oc.write("__jule_panicStr(")
+		self.oc.write("__jule_panicString(")
 		self.possibleRefExpr(m.Expr)
 		self.oc.write(" + ")
 		strLit(&self.oc.Buf, "\nlocation: ", "12")
@@ -2027,7 +2027,7 @@ impl exprCoder {
 			if b == "'" {
 				self.oc.Buf.WriteByte('\\')!
 			}
-			self.oc.Buf.WriteStr(b)!
+			self.oc.Buf.WriteString(b)!
 			self.oc.Buf.WriteByte('\'')!
 			ret
 		}
@@ -2136,7 +2136,7 @@ impl exprCoder {
 		if m.NotEq {
 			self.oc.write("(!")
 		}
-		s := m.Right.ReadStr()
+		s := m.Right.ReadString()
 		self.possibleRefExpr(m.Left)
 		self.oc.write(".equal(")
 		cstrLit(&self.oc.Buf, s)
@@ -2225,15 +2225,15 @@ impl exprCoder {
 		self.oc.write(typeStr + " result; result._len = buf._len; result.buffer = std::move(buf.data); result._slice = buf._slice; std::move(result); })")
 	}
 
-	fn strFromBytes(mut &self, mut m: &opt::StrFromBytes) {
-		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.SliceAsStr)
+	fn stringFromBytes(mut &self, mut m: &opt::StringFromBytes) {
+		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.SliceAsString)
 		self.oc.write("(")
 		self.possibleRefExpr(m.Expr)
 		self.oc.write(")")
 	}
 
-	fn bytesFromStr(mut &self, mut m: &opt::BytesFromStr) {
-		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.StrAsSlice)
+	fn bytesFromString(mut &self, mut m: &opt::BytesFromString) {
+		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.StringAsSlice)
 		self.oc.write("(")
 		self.possibleRefExpr(m.Expr)
 		self.oc.write(")")
@@ -2353,10 +2353,10 @@ impl exprCoder {
 			self.funcCall(m.(&opt::FuncCallIgnoreErrorExpr).Base, true)
 		| &opt::StrConcatExpr:
 			self.strConcat(m.(&opt::StrConcatExpr))
-		| &opt::StrFromBytes:
-			self.strFromBytes(m.(&opt::StrFromBytes))
-		| &opt::BytesFromStr:
-			self.bytesFromStr(m.(&opt::BytesFromStr))
+		| &opt::StringFromBytes:
+			self.stringFromBytes(m.(&opt::StringFromBytes))
+		| &opt::BytesFromString:
+			self.bytesFromString(m.(&opt::BytesFromString))
 		| &opt::ArrayAsSlice:
 			self.arrayAsSlice(m.(&opt::ArrayAsSlice))
 		}
@@ -2447,7 +2447,7 @@ impl exprCoder {
 		self.oc.write("({ auto " + collectionIdent + " = ")
 		self.oc.tc.array(&self.oc.Buf, arr)
 		self.oc.write("(); ")
-		self.initCollection(arr.Value, toStrArraySize(i64(arr.N), 10))
+		self.initCollection(arr.Value, toStringArraySize(i64(arr.N), 10))
 		self.oc.write(" " + collectionIdent + "; })")
 	}
 
@@ -2503,7 +2503,7 @@ impl exprCoder {
 				self.oc.write("0")
 			| prim.IsBool():
 				self.oc.write("false")
-			| prim.IsStr():
+			| prim.IsString():
 				self.oc.write(typeStr + "()")
 			}
 			ret
@@ -2576,7 +2576,7 @@ fn sbtoa(b: byte): string {
 
 fn cstrBytes(mut &s: *strings::Builder, ctx: string) {
 	for _, b in []byte(ctx) {
-		s.WriteStr(sbtoa(b))!
+		s.WriteString(sbtoa(b))!
 	}
 }
 
@@ -2598,19 +2598,19 @@ fn ftoa(mut &s: *strings::Builder, f: f64, bitsize: int) {
 		}
 	}
 	m := conv::FormatFloat(f, 'f', -1, bitsize)
-	s.WriteStr(m)!
+	s.WriteString(m)!
 	if !strings::Contains(m, ".") {
-		s.WriteStr(".0")!
+		s.WriteString(".0")!
 	}
 }
 
 fn itoa(mut &s: *strings::Builder, x: i64) {
 	if x == types::MinI64 {
-		s.WriteStr("(-9223372036854775807LL-1LL)")!
+		s.WriteString("(-9223372036854775807LL-1LL)")!
 		ret
 	}
 
-	s.WriteStr(conv::FormatInt(x, 10))!
+	s.WriteString(conv::FormatInt(x, 10))!
 	if dist::Is64bit(runtime::Arch) {
 		s.WriteByte('L')!
 	}
@@ -2618,40 +2618,40 @@ fn itoa(mut &s: *strings::Builder, x: i64) {
 }
 
 fn utoa(mut &s: *strings::Builder, x: u64) {
-	s.WriteStr(conv::FormatUint(x, 10))!
+	s.WriteString(conv::FormatUint(x, 10))!
 	if dist::Is64bit(runtime::Arch) {
 		s.WriteByte('L')!
 	}
-	s.WriteStr("LU")!
+	s.WriteString("LU")!
 }
 
 // Writes string literal expression for constant literal to buf.
 // Literal is not including quotes, just string content in bytes.
 fn strLit(mut &buf: *strings::Builder, lit: string, len: string) {
-	export := obj::FindDirective(meta::Program.Runtime.StrBytePtr.Decl.Directives, directive::Export)
+	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.Directives, directive::Export)
 	if export == nil {
 		panic("strLit: expected exported functions")
 	}
 	identCoder.export(buf, export)
-	buf.WriteStr("((" + typeU8 + "*)")!
+	buf.WriteString("((" + typeU8 + "*)")!
 	cstrLit(buf, lit)
 	buf.WriteByte(',')!
-	buf.WriteStr(len)!
+	buf.WriteString(len)!
 	buf.WriteByte(')')!
 }
 
 // Same as the strLit function, but uses the lit function to write content.
 // The lit function should return the length of content.
 fn strLitF(mut &buf: *strings::Builder, lit: fn(): int) {
-	export := obj::FindDirective(meta::Program.Runtime.StrBytePtr.Decl.Directives, directive::Export)
+	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.Directives, directive::Export)
 	if export == nil {
 		panic("strLitF: expected exported functions")
 	}
 	identCoder.export(buf, export)
-	buf.WriteStr("((" + typeU8 + "*)")!
+	buf.WriteString("((" + typeU8 + "*)")!
 	len := conv::Itoa(lit())
 	buf.WriteByte(',')!
-	buf.WriteStr(len)!
+	buf.WriteString(len)!
 	buf.WriteByte(')')!
 }
 
@@ -2662,24 +2662,24 @@ fn strLitAsSlice(mut &buf: *strings::Builder, lit: string, len: string) {
 		panic("strLitF: expected exported functions")
 	}
 	identCoder.export(buf, export)
-	buf.WriteStr("((" + typeU8 + "*)")!
+	buf.WriteString("((" + typeU8 + "*)")!
 	cstrLit(buf, lit)
 	buf.WriteByte(',')!
-	buf.WriteStr(len)!
+	buf.WriteString(len)!
 	buf.WriteByte(',')!
-	buf.WriteStr(len)!
+	buf.WriteString(len)!
 	buf.WriteByte(')')!
 }
 
 // Returns string expr as byte slice (will not perform allocation).
 fn strToSlice(mut &buf: *strings::Builder, expr: string) {
-	export := obj::FindDirective(meta::Program.Runtime.StrAsSlice.Decl.Directives, directive::Export)
+	export := obj::FindDirective(meta::Program.Runtime.StringAsSlice.Decl.Directives, directive::Export)
 	if export == nil {
 		panic("strLitF: expected exported functions")
 	}
 	identCoder.export(buf, export)
 	buf.WriteByte('(')!
-	buf.WriteStr(expr)!
+	buf.WriteString(expr)!
 	buf.WriteByte(')')!
 }
 

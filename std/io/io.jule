@@ -46,15 +46,15 @@ trait Writer {
 	async fn Write(mut *self, buf: []byte)!: (n: int)
 }
 
-// Implements the basic WriteStr method.
+// Implements the basic WriteString method.
 //
-// The WriteStr method similar to Writer.Write method but takes string.
+// The WriteString method similar to Writer.Write method but takes string.
 // Behavior should be same as the Writer.Write method.
 //
 // Implementations must not retain s.
 // Errors are not standardized. Should be documented by implementations.
-trait StrWriter {
-	async fn WriteStr(mut *self, s: string)!: (n: int)
+trait StringWriter {
+	async fn WriteString(mut *self, s: string)!: (n: int)
 }
 
 // Implements the basic ReadByte method.
@@ -280,8 +280,8 @@ impl Writer for discard {
 	}
 }
 
-impl StrWriter for discard {
-	async fn WriteStr(mut *self, s: string)!: (n: int) {
+impl StringWriter for discard {
+	async fn WriteString(mut *self, s: string)!: (n: int) {
 		ret len(s)
 	}
 }
@@ -400,8 +400,8 @@ async fn copyBuffer(mut dst: Writer, mut src: Reader, mut buf: []byte)!: (writte
 
 // Writes the contents of the string s to w efficiently.
 // Guarantees a slice will not be allocated.
-async fn WriteStr(mut w: Writer, s: string)!: (n: int) {
-	ret w.Write(unsafe::StrBytes(s)).await?
+async fn WriteString(mut w: Writer, s: string)!: (n: int) {
+	ret w.Write(unsafe::StringBytes(s)).await?
 }
 
 // Writes a single byte to w efficiently.

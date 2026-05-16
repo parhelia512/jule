@@ -42,7 +42,7 @@ fn newFile(h: u64, mut flags: int)!: &File {
 }
 
 fn remove(path: string)! {
-	utf16Path := integ::UTF16FromStr(fixLongPath(path))
+	utf16Path := integ::UTF16FromString(fixLongPath(path))
 	if unsafe { !sys::DeleteFile(&utf16Path[0]) } {
 		throw sys::GetLastErrno()
 	}

@@ -80,9 +80,9 @@ impl Kind for Type {
 		kind.Grow(1 << 4)
 
 		if self.Variadic {
-			kind.WriteStr("...")!
+			kind.WriteString("...")!
 		}
-		kind.WriteStr(self.Kind.Str())!
+		kind.WriteString(self.Kind.Str())!
 		ret kind.Str()
 	}
 
@@ -208,7 +208,7 @@ impl Type {
 			mut _self := *(&self)
 			prim := _self.Prim()
 			if prim != nil {
-				ret types::IsNum(prim.Kind) || prim.IsStr()
+				ret types::IsNum(prim.Kind) || prim.IsString()
 			}
 			mut enm := _self.Enum()
 			if enm != nil {
@@ -246,7 +246,7 @@ impl Type {
 			mut _self := *(&self)
 			prim := _self.Prim()
 			if prim != nil {
-				ret prim.IsAny() || prim.IsStr()
+				ret prim.IsAny() || prim.IsString()
 			}
 			ret _self.Sptr() != nil || _self.Slice() != nil || _self.Trait() != nil ||
 				_self.TypeEnum() != nil || _self.Chan() != nil
@@ -485,7 +485,7 @@ impl Kind for Prim {
 impl Prim {
 	// Reports whether type is built-in constraint.
 	fn IsConstraint(*self): bool {
-		ret !self.IsStr() &&
+		ret !self.IsString() &&
 			!self.IsAny() &&
 			!self.IsBool() &&
 			!types::IsNum(self.Kind)
@@ -540,7 +540,7 @@ impl Prim {
 	fn IsBool(*self): bool { ret self.Kind == types::Bool }
 
 	// Reports whether type is primitive string.
-	fn IsStr(*self): bool { ret self.Kind == types::Str }
+	fn IsString(*self): bool { ret self.Kind == types::String }
 
 	// Reports whether type is primitive any.
 	fn IsAny(*self): bool { ret self.Kind == types::Any }
@@ -619,10 +619,10 @@ impl Kind for Tuple {
 		mut s := strings::Builder{}
 		s.Grow(1 << 4)
 		s.WriteByte('(')!
-		s.WriteStr(self.Types[0].Str())!
+		s.WriteString(self.Types[0].Str())!
 		for _, t in self.Types[1:] {
 			s.WriteByte(',')!
-			s.WriteStr(t.Str())!
+			s.WriteString(t.Str())!
 		}
 		s.WriteByte(')')!
 		ret s.Str()
@@ -655,10 +655,10 @@ impl Kind for Map {
 	fn Str(*self): string {
 		mut s := strings::Builder{}
 		s.Grow(1 << 4)
-		s.WriteStr("map[")!
-		s.WriteStr(self.Key.Str())!
+		s.WriteString("map[")!
+		s.WriteString(self.Key.Str())!
 		s.WriteByte(']')!
-		s.WriteStr(self.Value.Str())!
+		s.WriteString(self.Value.Str())!
 		ret s.Str()
 	}
 
@@ -681,9 +681,9 @@ impl Kind for Array {
 	fn Str(*self): string {
 		mut s := strings::Builder{}
 		s.WriteByte('[')!
-		s.WriteStr(conv::Itoa(self.N))!
+		s.WriteString(conv::Itoa(self.N))!
 		s.WriteByte(']')!
-		s.WriteStr(self.Value.Str())!
+		s.WriteString(self.Value.Str())!
 		ret s.Str()
 	}
 
@@ -926,8 +926,8 @@ impl typeChecker {
 	fn pushCycleError(*self, def1: string, def2: string, mut &message: *strings::Builder) {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", def1, def2)
-		message.WriteStr(strings::Repeat(" ", Padding))!
-		message.WriteStr(refersTo)!
+		message.WriteString(strings::Repeat(" ", Padding))!
+		message.WriteString(refersTo)!
 		message.WriteByte('\n')!
 	}
 

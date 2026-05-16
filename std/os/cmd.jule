@@ -29,7 +29,7 @@ struct lookpathError {
 
 impl lookpathError {
 	fn Str(*self): string {
-		ret "std/os: Cmd: " + conv::Quote(self.Name) + ": " + runtime::toStr(self.Err)
+		ret "std/os: Cmd: " + conv::Quote(self.Name) + ": " + runtime::toString(self.Err)
 	}
 }
 

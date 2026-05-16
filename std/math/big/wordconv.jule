@@ -323,14 +323,14 @@ fn divisors(m: int, b: Word, ndigits: int, bb: Word): []divisor {
 	ret table
 }
 
-struct strScan {
+struct stringScan {
 	s: string
 	i: int
 }
 
-impl strScan {
-	fn new(s: string): strScan {
-		ret strScan{s: s}
+impl stringScan {
+	fn new(s: string): stringScan {
+		ret stringScan{s: s}
 	}
 
 	fn read(mut *self): (b: byte, ended: bool) {
@@ -395,7 +395,7 @@ impl strScan {
 //
 // Returns ConvError in integer form.
 // err = -1 if no error occurred.
-fn scanW(mut z: []Word, mut &r: *strScan, base: int, mut fracOk: bool): ([]Word, b: int, count: int, ok: bool) {
+fn scanW(mut z: []Word, mut &r: *stringScan, base: int, mut fracOk: bool): ([]Word, b: int, count: int, ok: bool) {
 	ok = true
 	// reject invalid bases
 	baseOk := base == 0 ||
@@ -536,11 +536,11 @@ fn scanW(mut z: []Word, mut &r: *strScan, base: int, mut fracOk: bool): ([]Word,
 	ret z, b, count, ok
 }
 
-fn fromStrW(s: string): []Word {
-	mut r := strScan.new(s)
+fn fromStringW(s: string): []Word {
+	mut r := stringScan.new(s)
 	mut x, _, _, ok := scanW(nil, &r, 0, false)
 	if !ok {
-		panic("std/math/big: fromStrW failed")
+		panic("std/math/big: fromStringW failed")
 	}
 	ret x
 }

@@ -613,7 +613,7 @@ fn makePositions(mut text: string): ([][][2]int, map[int][2]int, string) {
 	mut recNum := 0
 
 	for len(text) > 0 {
-		r, size := utf8::DecodeRuneStr(text)
+		r, size := utf8::DecodeRuneString(text)
 		match r {
 		| '\n':
 			line++

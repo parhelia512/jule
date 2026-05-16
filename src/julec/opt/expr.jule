@@ -194,7 +194,7 @@ impl exprOptimizer {
 	// So make sure this optimizations are always safe for the scope.
 	fn strConv(*self, mut m: &sema::OperandExpr) {
 		p := m.Type.Prim()
-		if p == nil || !p.IsStr() {
+		if p == nil || !p.IsString() {
 			ret
 		}
 		mut c, casting := m.Model.(&sema::CastingExpr)
@@ -212,14 +212,14 @@ impl exprOptimizer {
 		}
 		if sp.IsU8() {
 			// string([]byte)
-			mut model := any(&StrFromBytes{Expr: c.Expr.Model})
+			mut model := any(&StringFromBytes{Expr: c.Expr.Model})
 			m.Model = unsafe { *(*sema::Expr)(&model) }
 		}
 	}
 
 	fn strCond(*self, mut m: &sema::BinaryExpr): bool {
 		lp := m.Left.Type.Prim()
-		if lp == nil || !lp.IsStr() {
+		if lp == nil || !lp.IsString() {
 			ret false
 		}
 		if m.Op.ID != token::EQL && m.Op.ID != token::NEQ {
@@ -241,7 +241,7 @@ impl exprOptimizer {
 		mut c := m.Right.Model.(&constant::Const)
 		match m.Op.ID {
 		| token::EQL:
-			if c.ReadStr() == "" {
+			if c.ReadString() == "" {
 				mut model := any(&EmptyCompareExpr{
 					Expr: m.Left.Model,
 					Neg:  false,
@@ -256,7 +256,7 @@ impl exprOptimizer {
 			})
 			*self.model = unsafe { *(*sema::Expr)(&model) }
 		| token::NEQ:
-			if c.ReadStr() == "" {
+			if c.ReadString() == "" {
 				mut model := any(&EmptyCompareExpr{
 					Expr: m.Left.Model,
 					Neg:  true,
@@ -277,7 +277,7 @@ impl exprOptimizer {
 	// Tries to optimize string concatenations and reports whether applied.
 	fn strConcat(*self, mut m: &sema::BinaryExpr): bool {
 		lp := m.Left.Type.Prim()
-		if lp == nil || !lp.IsStr() {
+		if lp == nil || !lp.IsString() {
 			ret false
 		}
 		if m.Op.ID != token::ADD {
@@ -341,11 +341,11 @@ impl exprOptimizer {
 	}
 
 	fn tryNeutralElement1(*self, mut m: &sema::BinaryExpr, mut c: &constant::Const, mut nc: &sema::OperandExpr): bool {
-		if c.IsStr() { // Constant is string, check for string optimizations.
+		if c.IsString() { // Constant is string, check for string optimizations.
 			if !Str {
 				ret false
 			}
-			if c.ReadStr() == "" && m.Op.ID == token::ADD {
+			if c.ReadString() == "" && m.Op.ID == token::ADD {
 				// Concatenation with empty string, use the non-constant operand's model.
 				*self.model = nc.Model
 				ret true
@@ -825,11 +825,11 @@ impl exprOptimizer {
 		scopt.optimize()
 	}
 
-	fn optimizeStrBuilderCall(*self, mut m: &sema::FuncCallExpr) {
+	fn optimizeStringBuilderCall(*self, mut m: &sema::FuncCallExpr) {
 		// Some strings::Builder methods are not real-fallible implementations.
 		// They just implements interfaces and not throws any error.
 		// Therefore we can remove error handling algorithms for these method calls.
-		const meta = comptime::ValueOf(*meta::Program.StrBuilder)
+		const meta = comptime::ValueOf(*meta::Program.StringBuilder)
 		const for _, f in meta.Type().Decl().Fields() {
 			if meta.Field(f.Name()).Unwrap() == m.Func {
 				mut model := any(&FuncCallIgnoreErrorExpr{Base: m})
@@ -896,7 +896,7 @@ impl exprOptimizer {
 		}
 		mut c := m.Expr.Model.(&sema::CastingExpr)
 		mut prim := c.Expr.Type.Prim()
-		if prim == nil || !prim.IsStr() {
+		if prim == nil || !prim.IsString() {
 			ret
 		}
 		// len((?)(string))
@@ -935,8 +935,8 @@ impl exprOptimizer {
 			self.scope(nil, m.Handler, Child)
 		}
 		match {
-		| StdStrings && meta::Program.StrBuilder != nil:
-			self.optimizeStrBuilderCall(m)
+		| StdStrings && meta::Program.StringBuilder != nil:
+			self.optimizeStringBuilderCall(m)
 		}
 	}
 

@@ -102,7 +102,7 @@ impl Writer {
 			strings::ContainsAny(field, "\"\r\n") {
 			ret true
 		}
-		r1, _ := utf8::DecodeRuneStr(field)
+		r1, _ := utf8::DecodeRuneString(field)
 		ret unicode::IsSpace(r1)
 	}
 
@@ -120,7 +120,7 @@ impl Writer {
 			// If we don't have to have a quoted field then just
 			// write out the field and continue to the next field.
 			if !self.fieldNeedsQuotes(field) {
-				self.w.WriteStr(field).await?
+				self.w.WriteString(field).await?
 				continue
 			}
 
@@ -134,21 +134,21 @@ impl Writer {
 				}
 
 				// Copy verbatim everything before the special character.
-				self.w.WriteStr(field[:i]).await?
+				self.w.WriteString(field[:i]).await?
 				field = field[i:]
 
 				// Encode the special character.
 				if len(field) > 0 {
 					match field[0] {
 					| '"':
-						self.w.WriteStr(`""`).await?
+						self.w.WriteString(`""`).await?
 					| '\r':
 						if !self.UseCRLF {
 							self.w.WriteByte('\r').await?
 						}
 					| '\n':
 						if self.UseCRLF {
-							self.w.WriteStr("\r\n").await?
+							self.w.WriteString("\r\n").await?
 						} else {
 							self.w.WriteByte('\n').await?
 						}
@@ -160,7 +160,7 @@ impl Writer {
 			self.w.WriteByte('"').await?
 		}
 		if self.UseCRLF {
-			self.w.WriteStr("\r\n").await?
+			self.w.WriteString("\r\n").await?
 		} else {
 			self.w.WriteByte('\n').await?
 		}

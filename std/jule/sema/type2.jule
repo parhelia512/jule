@@ -371,9 +371,9 @@ impl assignTypeChecker {
 			ret false
 		}
 		match {
-		| prim.IsStr():
+		| prim.IsString():
 			prim = self.v.Type.Prim()
-			ok := prim != nil && prim.IsStr()
+			ok := prim != nil && prim.IsString()
 			// If type compatibility is ok, use the destination type and make
 			// literal untyped, a kind of brief implicit casting.
 			if ok {
@@ -966,12 +966,12 @@ impl fnCallArgChecker {
 		}
 		mut err := strings::Builder{}
 		err.Grow(1 << 5)
-		err.WriteStr(self.f.Decl.Name)!
-		err.WriteStr("\n       want (")!
+		err.WriteString(self.f.Decl.Name)!
+		err.WriteString("\n       want (")!
 		for i, p in params {
-			err.WriteStr(p.Type.Str())!
+			err.WriteString(p.Type.Str())!
 			if len(params)-i > 1 {
-				err.WriteStr(", ")!
+				err.WriteString(", ")!
 			}
 		}
 		err.WriteByte(')')!
@@ -1388,8 +1388,8 @@ impl structLitChecker {
 			mut idents := strings::Builder{}
 			idents.Grow(1 << 5)
 			for diff > 0; diff-- {
-				idents.WriteStr(", ")!
-				idents.WriteStr(self.s.Fields[n-diff].Decl.Name)!
+				idents.WriteString(", ")!
+				idents.WriteString(self.s.Fields[n-diff].Decl.Name)!
 			}
 			self.pushErr(self.errorToken, "missing expression for @",
 				idents.Str()[2:]) /* Remove first separator. */
@@ -1583,7 +1583,7 @@ impl rangeChecker {
 			ret self.checkComptimeRange()
 		|:
 			prim := self.v.Type.Prim()
-			if prim != nil && prim.IsStr() {
+			if prim != nil && prim.IsString() {
 				self.checkStr()
 				ret true
 			}
@@ -1734,19 +1734,19 @@ impl retTypeChecker {
 	fn notFitVariables(mut *self) {
 		mut wanted := strings::Builder{}
 		for i, t in self.types {
-			wanted.WriteStr(t.Str())!
+			wanted.WriteString(t.Str())!
 			if len(self.types)-i > 1 {
-				wanted.WriteStr(", ")!
+				wanted.WriteString(", ")!
 			}
 		}
 		if wanted.Len() == 0 {
-			wanted.WriteStr("no return")!
+			wanted.WriteString("no return")!
 		}
 		mut given := strings::Builder{}
 		for i, d in self.exprs {
-			given.WriteStr(d.Type.Str())!
+			given.WriteString(d.Type.Str())!
 			if len(self.exprs)-i > 1 {
-				given.WriteStr(", ")!
+				given.WriteString(", ")!
 			}
 		}
 		if len(self.exprs) < len(self.types) {

@@ -127,7 +127,7 @@ fn cutPath(path: string): (before: string, after: string, found: bool) {
 }
 
 fn fullPath(name: string)!: (path: string) {
-	utf16Name := integ::UTF16FromStr(name)
+	utf16Name := integ::UTF16FromString(name)
 	p := &utf16Name[0]
 	mut n := u32(100)
 	for {
@@ -137,7 +137,7 @@ fn fullPath(name: string)!: (path: string) {
 			throw sys::GetLastErrno()
 		}
 		if n <= u32(len(buf)) {
-			ret integ::UTF16ToStr(buf[:n])
+			ret integ::UTF16ToString(buf[:n])
 		}
 	}
 	throw sys::GetLastErrno()
@@ -186,7 +186,7 @@ fn join(elem: ...string): string {
 			lastChar = '\\'
 		}
 		if len(e) > 0 {
-			s.WriteStr(e)!
+			s.WriteString(e)!
 			lastChar = e[len(e)-1]
 		}
 	}

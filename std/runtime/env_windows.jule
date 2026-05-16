@@ -19,7 +19,7 @@ fn args(): []string {
 	mut argvw := unsafe { extern.CommandLineToArgvW(cmdl, (*c::Int)(&argc)) }
 	mut args := make([]string, argc)
 	for i in args {
-		args[i] = unsafe { integ::UTF16PtrToStr((*u16)(argvw[i])) }
+		args[i] = unsafe { integ::UTF16PtrToString((*u16)(argvw[i])) }
 	}
 	unsafe { extern.LocalFree(argvw) }
 	ret args
@@ -36,7 +36,7 @@ fn env(): []string {
 		for *latest != NULL {
 			for *np != NULL; np++ {
 			}
-			env = append(env, integ::UTF16PtrToStr((*u16)(latest)))
+			env = append(env, integ::UTF16PtrToString((*u16)(latest)))
 			np++
 			latest = np
 		}
@@ -51,7 +51,7 @@ fn executable(): string {
 	n := unsafe { extern.GetModuleFileNameW(nil, (*c::Wchar)(&buf[0]), sys::MAX_PATH) }
 	if n > 0 {
 		buf[n] = NULL
-		ret unsafe { integ::UTF16PtrToStr(&buf[0]) }
+		ret unsafe { integ::UTF16PtrToString(&buf[0]) }
 	}
 	panic("runtime: executable path read error")
 }

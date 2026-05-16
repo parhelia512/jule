@@ -25,7 +25,7 @@ trait addr {
 // See the [Dial] function for a description of the host and port parameters.
 fn JoinHostPort(host: string, port: string): string {
 	// We assume that host is a literal IPv6 address if host has colons.
-	if byteslite::IndexByteStr(host, ':') >= 0 {
+	if byteslite::IndexByteString(host, ':') >= 0 {
 		ret "[" + host + "]:" + port
 	}
 	ret host + ":" + port
@@ -47,13 +47,13 @@ fn SplitHostPort(hostport: string)!: (host: string, port: string) {
 	)
 
 	mut j, mut k := 0, 0
-	i := byteslite::LastIndexByteStr(hostport, ':')
+	i := byteslite::LastIndexByteString(hostport, ':')
 	if i == -1 {
 		throw &AddrError{Err: missingPort, Addr: hostport}
 	}
 	if hostport[0] == '[' {
 		// Expect the first ']' just before the last ':'.
-		end := byteslite::IndexByteStr(hostport, ']')
+		end := byteslite::IndexByteString(hostport, ']')
 		if end == -1 {
 			throw &AddrError{Err: "missing ']' in address", Addr: hostport}
 		}
@@ -74,14 +74,14 @@ fn SplitHostPort(hostport: string)!: (host: string, port: string) {
 		j, k = 1, end+1 // There can't be a '[' resp. ']' before these positions.
 	} else {
 		host = hostport[:i]
-		if byteslite::IndexByteStr(host, ':') != -1 {
+		if byteslite::IndexByteString(host, ':') != -1 {
 			throw &AddrError{Err: tooManyColons, Addr: hostport}
 		}
 	}
-	if byteslite::IndexByteStr(hostport[j:], '[') != -1 {
+	if byteslite::IndexByteString(hostport[j:], '[') != -1 {
 		throw &AddrError{Err: "unexpected '[' in address", Addr: hostport}
 	}
-	if byteslite::IndexByteStr(hostport[k:], ']') != -1 {
+	if byteslite::IndexByteString(hostport[k:], ']') != -1 {
 		throw &AddrError{Err: "unexpected ']' in address", Addr: hostport}
 	}
 	port = hostport[i+1:]
@@ -91,7 +91,7 @@ fn SplitHostPort(hostport: string)!: (host: string, port: string) {
 fn splitHostZone(s: string): (host: string, zone: string) {
 	// The IPv6 scoped addressing zone identifier starts after the
 	// last percent sign.
-	i := byteslite::LastIndexByteStr(s, '%')
+	i := byteslite::LastIndexByteString(s, '%')
 	if i > 0 {
 		host, zone = s[:i], s[i+1:]
 	} else {
@@ -206,10 +206,10 @@ impl addrList {
 		match network {
 		| IP:
 			// IPv6 literal (address does NOT contain a port)
-			want6 = byteslite::CountStr(address, ':') > 0
+			want6 = byteslite::CountString(address, ':') > 0
 		| TCP | UDP:
 			// IPv6 literal. (address contains a port, so look for '[')
-			want6 = byteslite::CountStr(address, '[') > 0
+			want6 = byteslite::CountString(address, '[') > 0
 		|:
 			want6 = false
 		}

@@ -73,7 +73,7 @@ impl lazybuf {
 		if self.buf == nil {
 			ret self.s[:self.w]
 		}
-		ret unsafe::StrFromBytes(self.buf[:self.w])
+		ret unsafe::StringFromBytes(self.buf[:self.w])
 	}
 }
 
@@ -169,7 +169,7 @@ fn Clean(path: string): string {
 // file set to path.
 // The returned values have the property that path = dir+file.
 fn Split(path: string): (dir: string, file: string) {
-	let i = byteslite::LastIndexByteStr(path, '/')
+	let i = byteslite::LastIndexByteString(path, '/')
 	ret path[:i+1], path[i+1:]
 }
 
@@ -194,7 +194,7 @@ fn Join(elem: ...string): string {
 			buf = append(buf, e...)
 		}
 	}
-	ret Clean(unsafe::StrFromBytes(buf))
+	ret Clean(unsafe::StringFromBytes(buf))
 }
 
 // Returns the file name extension used by path.
@@ -224,7 +224,7 @@ fn Base(mut path: string): string {
 		path = path[0 : len(path)-1]
 	}
 	// Find the last element
-	let i = byteslite::LastIndexByteStr(path, '/')
+	let i = byteslite::LastIndexByteString(path, '/')
 	if i >= 0 {
 		path = path[i+1:]
 	}

@@ -262,7 +262,7 @@ async fn lookupStaticHost(mut host: string): (ips: []string, canonical: string) 
 		if hasUpperCase(host) {
 			mut lowerHost := []byte(host)
 			lowerASCIIBytes(lowerHost)
-			host = unsafe::StrFromBytes(lowerHost)
+			host = unsafe::StringFromBytes(lowerHost)
 		}
 		byName, ok := hosts.byName[absDomainName(host)]
 		if ok {

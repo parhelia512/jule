@@ -563,7 +563,7 @@ const (
 )
 
 fn Fstatat(fd: int, path: string, mut &stat: *SysStat, flags: int)! {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	_, e := syscall(SYS_NEWFSTATAT, uintptr(fd), uintptr(&cpath[0]), uintptr(stat), uintptr(flags), 0, 0)
 	if e != _NO_ERROR {
 		throw e

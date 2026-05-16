@@ -48,11 +48,11 @@ fn extractCAPS(desc: string): string {
 // Returns the abbreviations to use for the given zone z.
 fn abbrev(&z: *timezoneinformation): (std: string, dst: string) {
 	stdNameU16 := unsafe::Slice(&z.StandardName[0], len(z.StandardName), len(z.StandardName))
-	stdName := integ::UTF16ToStr(stdNameU16)
+	stdName := integ::UTF16ToString(stdNameU16)
 	mut a, mut ok := abbrs[stdName]
 	if !ok {
 		dstNameU16 := unsafe::Slice(&z.DaylightName[0], len(z.DaylightName), len(z.DaylightName))
-		dstName := integ::UTF16ToStr(dstNameU16)
+		dstName := integ::UTF16ToString(dstNameU16)
 		// fallback to using capital letters
 		ret extractCAPS(stdName), extractCAPS(dstName)
 	}

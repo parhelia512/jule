@@ -1451,7 +1451,7 @@ impl sema {
 		}
 
 		supportsIota := types::IsInt(t.Str())
-		if !t.IsStr() && !supportsIota {
+		if !t.IsString() && !supportsIota {
 			self.pushErr(e.Token, "invalid type for enum: "+t.Str())
 			ret
 		}
@@ -1724,7 +1724,7 @@ impl sema {
 					t2f := self.getTraitCheckFuncKind(t2m)
 					if !t1f.equalTrait(t2f) {
 						self.pushErr(it.Decl.Token, "trait @ inherits trait @, but the same identifiers are implemented different:\n       @\n       @",
-							t.Name, t2.Name, t1f.GetKindStr(true), t2f.GetKindStr(true))
+							t.Name, t2.Name, t1f.GetKindString(true), t2f.GetKindString(true))
 						ret
 					}
 				}
@@ -2020,7 +2020,7 @@ impl sema {
 			}
 			if !exist {
 				const Name = true
-				self.pushErr(strct.Token, "trait @ implements but structure @ does not; @", trt.Name, strct.Name, tfK.GetKindStr(Name))
+				self.pushErr(strct.Token, "trait @ implements but structure @ does not; @", trt.Name, strct.Name, tfK.GetKindString(Name))
 				ok = false
 			}
 		}
@@ -2167,10 +2167,10 @@ impl sema {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", st1, st2)
 		m := message.Str()
-		message.WriteStr(strings::Repeat(" ", Padding))!
-		message.WriteStr(refersTo)!
+		message.WriteString(strings::Repeat(" ", Padding))!
+		message.WriteString(refersTo)!
 		message.WriteByte('\n')!
-		message.WriteStr(m)!
+		message.WriteString(m)!
 	}
 
 	// Checks declarations of all package files.
@@ -2319,7 +2319,7 @@ impl sema {
 						v.ValueSym.Expr.Token = v.Token
 						prim := v.TypeSym.Type.Prim() // Enum fields must be primitive.
 						match {
-						| prim.IsStr():
+						| prim.IsString():
 							v.ValueSym.Expr.Data = &ast::LitExpr{
 								Token: v.Token,
 								Value: "\"" + v.Name + "\"",
@@ -2879,8 +2879,8 @@ impl sema {
 		pushIllegalCycleError := fn(v1: string, v2: string) {
 			const Padding = 7
 			refersTo := log::Logf("@ refers to @", v1, v2)
-			message.WriteStr(strings::Repeat(" ", Padding))!
-			message.WriteStr(refersTo)!
+			message.WriteString(strings::Repeat(" ", Padding))!
+			message.WriteString(refersTo)!
 			message.WriteByte('\n')!
 		}
 		mut cached := make([]&ReferenceStack, 0, 10)
@@ -3560,11 +3560,11 @@ fn pushRuntimeToStr(mut s: &sema, mut t: &Type, mut token: &token::Token,
 	if s.meta.runtime == nil || t.IsNil() || refers == nil {
 		ret
 	}
-	mut f := runtimeFindFunc(s.meta.runtime, "toStr").instanceForce()
+	mut f := runtimeFindFunc(s.meta.runtime, "toString").instanceForce()
 	f.Generics = append(f.Generics, &InsGeneric{Type: t})
 	ok, _ := s.checkGenericFunc(&f, token)
 	if !ok {
-		panic("sema: toStr evaluation failed, this is an implementation mistake")
+		panic("sema: toString evaluation failed, this is an implementation mistake")
 	}
 	refers.Push(f)
 }
@@ -3592,7 +3592,7 @@ fn isValidImpAlias(mut alias: string): (valid: bool) {
 	if token::IsKeyword(alias) {
 		ret false
 	}
-	mut r, mut size := utf8::DecodeRuneStr(alias)
+	mut r, mut size := utf8::DecodeRuneString(alias)
 	if !isLetter(r) {
 		ret false
 	}
@@ -3601,7 +3601,7 @@ fn isValidImpAlias(mut alias: string): (valid: bool) {
 		if len(alias) == 0 {
 			break
 		}
-		r, size = utf8::DecodeRuneStr(alias)
+		r, size = utf8::DecodeRuneString(alias)
 		if !isLetter(r) && !isDigit(r) {
 			ret false
 		}
@@ -3629,8 +3629,8 @@ fn checkTypeEnumRefCycle(mut s: &sema, mut e: &TypeEnum, mut item: &TypeEnumItem
 	pushIllegalCycleError := fn(v1: string, v2: string) {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", v1, v2)
-		message.WriteStr(strings::Repeat(" ", Padding))!
-		message.WriteStr(refersTo)!
+		message.WriteString(strings::Repeat(" ", Padding))!
+		message.WriteString(refersTo)!
 		message.WriteByte('\n')!
 	}
 	mut checkCycles := (fn(mut e2: &TypeEnum): bool)(nil)

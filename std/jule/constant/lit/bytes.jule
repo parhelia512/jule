@@ -30,7 +30,7 @@ fn ToRune(mut lit: string): (rune, errors: []Error) {
 		mut i := 0
 		r, _ = runeFromEsqSeq(lit, &i, &errors)
 	} else {
-		r, _ = utf8::DecodeRuneStr(lit)
+		r, _ = utf8::DecodeRuneString(lit)
 	}
 	ret r, errors
 }
@@ -46,14 +46,14 @@ fn GetRune(mut lit: string): (r: rune, length: int, errors: []Error) {
 		}
 		r, _ = runeFromEsqSeq(lit, &length, &errors)
 	} else {
-		r, length = utf8::DecodeRuneStr(lit)
+		r, length = utf8::DecodeRuneString(lit)
 	}
 	ret
 }
 
 // Returns raw-string value string from literal, literal includes quotes.
 // Assumes lit is syntactically correct.
-fn ToRawStr(lit: string): string {
+fn ToRawString(lit: string): string {
 	if len(lit) == 2 {
 		ret ""
 	}
@@ -63,12 +63,12 @@ fn ToRawStr(lit: string): string {
 // Returns string value string from literal, literal includes quotes.
 // Allows escape sequences.
 // Assumes lit is syntactically correct.
-fn ToStr(mut lit: string): (string, errors: []Error) {
+fn ToString(mut lit: string): (string, errors: []Error) {
 	if len(lit) == 2 {
 		ret "", nil
 	}
 	// If no escape sequence used, return the string directly with no quotes.
-	escapeseq := byteslite::IndexByteStr(lit, '\\') >= 0
+	escapeseq := byteslite::IndexByteString(lit, '\\') >= 0
 	if !escapeseq {
 		ret lit[1 : len(lit)-1], nil
 	}
@@ -83,12 +83,12 @@ fn ToStr(mut lit: string): (string, errors: []Error) {
 		if b == '\\' {
 			strEsqSeq(&s, lit, &i, &errors)
 		} else {
-			r, size := utf8::DecodeRuneStr(lit[i:])
+			r, size := utf8::DecodeRuneString(lit[i:])
 			i += size
 			s = utf8::AppendRune(s, r)
 		}
 	}
-	ret unsafe::StrFromBytes(s), errors
+	ret unsafe::StringFromBytes(s), errors
 }
 
 // Checks the first escape sequence is syntacticaly correct.

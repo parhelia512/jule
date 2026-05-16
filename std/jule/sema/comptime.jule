@@ -609,10 +609,10 @@ impl comptimeTypeInfo {
 			e.pushSuggestion("call like; Str()")
 			ret nil
 		}
-		mut constant := constant::NewStr(self.base.Str())
+		mut constant := constant::NewString(self.base.Str())
 		ret &Value{
 			untyped:  true,
-			Type:     primStr,
+			Type:     primString,
 			Constant: constant,
 			Model:    constant,
 		}
@@ -663,8 +663,8 @@ impl comptimeTypeInfo {
 				c = constant::NewI64(comptime::Any)
 			| prim.IsBool():
 				c = constant::NewI64(comptime::Bool)
-			| prim.IsStr():
-				c = constant::NewI64(comptime::Str)
+			| prim.IsString():
+				c = constant::NewI64(comptime::String)
 			| prim.IsF32():
 				c = constant::NewI64(comptime::F32)
 			| prim.IsF64():
@@ -1243,11 +1243,11 @@ impl comptimeValue {
 			ret nil
 		}
 		prim := v.Type.Prim()
-		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
+		if prim == nil || !prim.IsString() {
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::String), v.Type.Str())
 			ret nil
 		}
-		name := v.Constant.ReadStr()
+		name := v.Constant.ReadString()
 		mut f := s.FindField(name)
 		if f == nil {
 			e.pushErr(arg.Token, "type @ has no field or method: @", s.Decl.Name, name)
@@ -1323,11 +1323,11 @@ impl comptimeValue {
 			ret nil
 		}
 		prim := v.Type.Prim()
-		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
+		if prim == nil || !prim.IsString() {
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::String), v.Type.Str())
 			ret nil
 		}
-		name := v.Constant.ReadStr()
+		name := v.Constant.ReadString()
 		const Static = false
 		mut m := s.FindMethod(name, Static)
 		if m == nil {
@@ -1467,10 +1467,10 @@ impl comptimeFile {
 			e.pushSuggestion("call like; Path()")
 			ret nil
 		}
-		mut constant := constant::NewStr(self.file.File.Path)
+		mut constant := constant::NewString(self.file.File.Path)
 		ret &Value{
 			untyped:  true,
-			Type:     primStr,
+			Type:     primString,
 			Constant: constant,
 			Model:    constant,
 		}
@@ -1482,10 +1482,10 @@ impl comptimeFile {
 			e.pushSuggestion("call like; Name()")
 			ret nil
 		}
-		mut constant := constant::NewStr(self.file.File.Name())
+		mut constant := constant::NewString(self.file.File.Name())
 		ret &Value{
 			untyped:  true,
-			Type:     primStr,
+			Type:     primString,
 			Constant: constant,
 			Model:    constant,
 		}
@@ -1497,10 +1497,10 @@ impl comptimeFile {
 			e.pushSuggestion("call like; Dir()")
 			ret nil
 		}
-		mut constant := constant::NewStr(self.file.File.Dir())
+		mut constant := constant::NewString(self.file.File.Dir())
 		ret &Value{
 			untyped:  true,
-			Type:     primStr,
+			Type:     primString,
 			Constant: constant,
 			Model:    constant,
 		}
@@ -1670,10 +1670,10 @@ impl comptimeDecl {
 		|:
 			panic("sema: comptimeDecl.Name: unimplemented declaration kind")
 		}
-		mut constant := constant::NewStr(name)
+		mut constant := constant::NewString(name)
 		ret &Value{
 			untyped:  true,
-			Type:     primStr,
+			Type:     primString,
 			Constant: constant,
 			Model:    constant,
 		}
@@ -2055,16 +2055,16 @@ impl comptimeDecl {
 			ret nil
 		}
 		prim := v.Type.Prim()
-		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
+		if prim == nil || !prim.IsString() {
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::String), v.Type.Str())
 			ret nil
 		}
-		key := v.Constant.ReadStr()
+		key := v.Constant.ReadString()
 		value, _ := f.Tags[key]
-		mut constant := constant::NewStr(value)
+		mut constant := constant::NewString(value)
 		ret &Value{
 			untyped:  true,
-			Type:     primStr,
+			Type:     primString,
 			Constant: constant,
 			Model:    constant,
 		}
@@ -2091,11 +2091,11 @@ impl comptimeDecl {
 			ret nil
 		}
 		prim := v.Type.Prim()
-		if prim == nil || !prim.IsStr() {
-			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::Str), v.Type.Str())
+		if prim == nil || !prim.IsString() {
+			e.pushErr(arg.Token, "mismatched types: @ and @", string(types::String), v.Type.Str())
 			ret nil
 		}
-		key := v.Constant.ReadStr()
+		key := v.Constant.ReadString()
 		_, exist := f.Tags[key]
 		mut constant := constant::NewBool(exist)
 		ret &Value{

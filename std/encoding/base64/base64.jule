@@ -264,10 +264,10 @@ impl Encoding {
 	}
 
 	// Returns the base64 encoding of src.
-	fn EncodeToStr(*self, src: []byte): string {
+	fn EncodeToString(*self, src: []byte): string {
 		mut buf := make([]byte, self.EncodedLen(len(src)))
 		self.Encode(buf, src)
-		ret unsafe::StrFromBytes(buf)
+		ret unsafe::StringFromBytes(buf)
 	}
 
 	// Decodes up to 4 base64 bytes. The received parameters are
@@ -454,9 +454,9 @@ impl Encoding {
 	// Returns the bytes represented by the base64 string s.
 	// If the input is malformed, it returns the partially decoded data and
 	// [CorruptInputError]. New line characters (\r and \n) are ignored.
-	fn DecodeStr(*self, s: string)!: []byte {
+	fn DecodeString(*self, s: string)!: []byte {
 		mut dbuf := make([]byte, self.DecodedLen(len(s)))
-		n := self.Decode(dbuf, unsafe::BytesFromStr(s))?
+		n := self.Decode(dbuf, unsafe::BytesFromString(s))?
 		ret dbuf[:n]
 	}
 }

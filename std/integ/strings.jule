@@ -43,7 +43,7 @@ fn encodeWTF16(s: string, mut buf: []u16): []u16 {
 	for i < len(s) {
 		// Cannot use 'for range s' because it expects valid
 		// UTF-8 runes.
-		mut r, size := utf8::DecodeRuneStr(s[i:])
+		mut r, size := utf8::DecodeRuneString(s[i:])
 		if r == utf8::RuneError {
 			// Check if s[i:] contains a valid WTF-8 encoded surrogate.
 			sc := s[i:]
@@ -95,7 +95,7 @@ fn decodeWTF16(s: []u16, mut buf: []byte): []byte {
 // Returns the UTF-16 encoding of the UTF-8 string
 // s, with a terminating NULL added. If s includes NULL
 // character at any location, ignores followed characters.
-fn UTF16FromStr(mut s: string): []u16 {
+fn UTF16FromString(mut s: string): []u16 {
 	// In the worst case all characters require two u16.
 	// Also account for the terminating NULL character.
 	// See: C Strings and Windows UTF16.
@@ -120,7 +120,7 @@ fn UTF16FromStr(mut s: string): []u16 {
 // Returns the UTF-8 encoding of the UTF-16 sequence s,
 // with a terminating NULL removed. Returns empty string
 // if s is nil.
-fn UTF16ToStr(s: []u16): string {
+fn UTF16ToString(s: []u16): string {
 	mut maxLen := 0
 	for i, v in s {
 		if v == 0 {
@@ -143,12 +143,12 @@ fn UTF16ToStr(s: []u16): string {
 		}
 	}
 	buf := decodeWTF16(s, make([]byte, 0, maxLen))
-	ret unsafe::StrFromBytes(buf)
+	ret unsafe::StringFromBytes(buf)
 }
 
 // Returns the UTF-8 encoding of the UTF-16 sequence s in *u16 form,
 // with a terminating NULL removed. Returns empty string if s is nil.
-fn UTF16PtrToStr(s: *u16): string {
+fn UTF16PtrToString(s: *u16): string {
 	if s == nil {
 		ret ""
 	}
@@ -158,7 +158,7 @@ fn UTF16PtrToStr(s: *u16): string {
 	for ; i++ {
 		r := unsafe { *i }
 		if r == NUL {
-			ret UTF16ToStr(codePage)
+			ret UTF16ToString(codePage)
 		}
 		codePage = append(codePage, r)
 	}
@@ -168,7 +168,7 @@ fn UTF16PtrToStr(s: *u16): string {
 // Returns the string of s, with a terminating NULL removed.
 // Returns empty string if pointer is nil.
 #disable boundary
-fn BytePtrToStr(s: *byte): string {
+fn BytePtrToString(s: *byte): string {
 	if s == nil {
 		ret ""
 	}
@@ -193,7 +193,7 @@ fn BytePtrToStr(s: *byte): string {
 // Returns s as NULL terminated byte slice which is able to be used safely as
 // NULL terminated string pointer. If s contains NULL termination at any location,
 // accepts NULL termination is the end of s and skips following bytes.
-fn BytesFromStr(s: string): []byte {
+fn BytesFromString(s: string): []byte {
 	for i, c in []byte(s) {
 		if c == 0 {
 			mut bytes := make([]byte, i+1)

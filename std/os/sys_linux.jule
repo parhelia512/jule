@@ -21,7 +21,7 @@ fn hostname()!: (name: string) {
 	for i, b in un.Nodename {
 		buf[i] = u8(b)
 		if b == 0 {
-			name = unsafe::StrFromBytes(buf[:i])
+			name = unsafe::StringFromBytes(buf[:i])
 			break
 		}
 	}
@@ -45,5 +45,5 @@ fn hostname()!: (name: string) {
 	if n > 0 && buf[n-1] == '\n' {
 		n--
 	}
-	ret unsafe::StrFromBytes(buf[:n])
+	ret unsafe::StringFromBytes(buf[:n])
 }

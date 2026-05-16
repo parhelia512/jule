@@ -190,25 +190,25 @@ impl eval {
 		ret true
 	}
 
-	fn litStr(mut *self, l: &ast::LitExpr): &Value {
+	fn litString(mut *self, l: &ast::LitExpr): &Value {
 		mut s := ""
 		if l.Value[0] == '`' {
-			s = lit::ToRawStr(l.Value)
+			s = lit::ToRawString(l.Value)
 		} else {
 			mut errors := []lit::Error(nil)
-			s, errors = lit::ToStr(l.Value)
+			s, errors = lit::ToString(l.Value)
 			if len(errors) != 0 {
 				self.s.pushErrorsFromLitErrors(l.Token, errors)
 				ret nil
 			}
 		}
-		mut constant := constant::NewStr(s)
+		mut constant := constant::NewString(s)
 
 		ret &Value{
 			untyped:  true,
 			Mutable:  true,
 			Constant: constant,
-			Type:     primStr,
+			Type:     primString,
 			Model:    constant,
 		}
 	}
@@ -315,7 +315,7 @@ impl eval {
 
 		mut v := new(Value)
 		let mut i: big::Int
-		i.SetStr(l.Value, 0)
+		i.SetString(l.Value, 0)
 		if i.BitLen() > bitLimit {
 			self.pushErr(l.Token, "untyped value @ overflows integer type", l.Value)
 			ret nil
@@ -331,7 +331,7 @@ impl eval {
 	fn evalLit(mut *self, lit: &ast::LitExpr): &Value {
 		match lit.Token.ID {
 		| token::STRING:
-			ret self.litStr(lit)
+			ret self.litString(lit)
 		| token::RUNE:
 			ret self.litRune(lit)
 		| token::FLOAT:
@@ -1067,7 +1067,7 @@ impl eval {
 
 		if v.untyped {
 			idx := index.Constant.AsI64()
-			s := v.Constant.ReadStr()
+			s := v.Constant.ReadString()
 			if idx >= i64(len(s)) {
 				self.pushErr(i.Index.Token, "index @ overflows limits of the string type with length @",
 					conv::FormatInt(idx, 10), conv::Itoa(len(s)))
@@ -1120,7 +1120,7 @@ impl eval {
 		| (*v).Type.Prim() != nil:
 			prim := (*v).Type.Prim()
 			match {
-			| prim.IsStr():
+			| prim.IsString():
 				self.indexStr(*v, index, i)
 				ret
 			}
@@ -1379,7 +1379,7 @@ impl eval {
 				ret
 			}
 
-			sconst := v.Constant.ReadStr()
+			sconst := v.Constant.ReadString()
 			mut right := i64(0)
 			if r == nil {
 				right = i64(len(sconst))
@@ -1390,7 +1390,7 @@ impl eval {
 			if left > right {
 				ret
 			}
-			v.Constant.SetStr(sconst[left:right])
+			v.Constant.SetString(sconst[left:right])
 			v.Decl = true // Set Model: flag.
 		} else {
 			v.Constant = nil
@@ -1409,7 +1409,7 @@ impl eval {
 		| v.Type.Prim() != nil:
 			prim := v.Type.Prim()
 			match {
-			| prim.IsStr():
+			| prim.IsString():
 				self.slicingStr(s, v, l, c, r)
 				ret
 			}
@@ -1535,11 +1535,11 @@ impl eval {
 		v.untyped = false
 
 		if v.Type.Enum() != nil {
-			if v.Type.Enum().TypeSym.Type.Prim() == nil || !v.Type.Enum().TypeSym.Type.Prim().IsStr() {
+			if v.Type.Enum().TypeSym.Type.Prim() == nil || !v.Type.Enum().TypeSym.Type.Prim().IsString() {
 				self.pushErr(errorToken, "type @ does not support casting to type @", v.Type.Str(), t.Str())
 				ret
 			}
-		} else if v.Type.Prim() == nil || !v.Type.Prim().IsStr() {
+		} else if v.Type.Prim() == nil || !v.Type.Prim().IsString() {
 			self.pushErr(errorToken, "type @ does not support casting to type @", v.Type.Str(), t.Str())
 			ret
 		}
@@ -1555,7 +1555,7 @@ impl eval {
 		if c != nil {
 			match {
 			| prim.IsU8():
-				s := c.ReadStr()
+				s := c.ReadString()
 				mut model := &SliceExpr{
 					ElemType: t,
 					Elems:    make([]&Value, 0, len(s)),
@@ -1572,7 +1572,7 @@ impl eval {
 				v.Model = model
 				v.Decl = true // Prevent model changing.
 			| prim.IsI32():
-				s := c.ReadStr()
+				s := c.ReadString()
 				mut model := &SliceExpr{
 					ElemType: t,
 					Elems:    make([]&Value, 0, len(s)),
@@ -1602,7 +1602,7 @@ impl eval {
 	fn castStr(mut *self, mut t: &Type, mut v: &Value, errorToken: &token::Token) {
 		if v.Type.Enum() != nil {
 			mut e := v.Type.Enum()
-			if e.TypeSym.Type.Prim() != nil && e.TypeSym.Type.Prim().IsStr() {
+			if e.TypeSym.Type.Prim() != nil && e.TypeSym.Type.Prim().IsString() {
 				ret
 			}
 		}
@@ -1612,7 +1612,7 @@ impl eval {
 		v.untyped = false
 		mut prim := v.Type.Prim()
 		if prim != nil {
-			if prim.IsStr() {
+			if prim.IsString() {
 				ret
 			}
 			if !prim.IsU8() && !prim.IsI32() {
@@ -1623,11 +1623,11 @@ impl eval {
 			if c != nil {
 				match {
 				| prim.IsU8():
-					v.Constant = constant::NewStr(string(byte(c.AsU64())))
+					v.Constant = constant::NewString(string(byte(c.AsU64())))
 					v.Model = v.Constant
 					v.Decl = true // Prevent model changing.
 				| prim.IsI32():
-					v.Constant = constant::NewStr(string(rune(c.AsI64())))
+					v.Constant = constant::NewString(string(rune(c.AsI64())))
 					v.Model = v.Constant
 					v.Decl = true // Prevent model changing.
 				}
@@ -1749,7 +1749,7 @@ impl eval {
 		match {
 		| prim.IsAny():
 			panic("sema: castPrim: any case should be unreachable in this routine")
-		| prim.IsStr():
+		| prim.IsString():
 			self.castStr(t, v, errorToken)
 		| prim.IsBool():
 			self.castBool(t, v, errorToken)
@@ -4730,7 +4730,7 @@ impl binaryEval {
 		match {
 		| prim.IsBool():
 			ret self.evalBool()
-		| prim.IsStr():
+		| prim.IsString():
 			ret self.evalStr()
 		}
 
@@ -5564,7 +5564,7 @@ fn getUntypedCmpScore(k: string): int {
 	if types::IsFloat(k) {
 		ret 2
 	}
-	if k == types::Str {
+	if k == types::String {
 		ret 3
 	}
 	ret -1

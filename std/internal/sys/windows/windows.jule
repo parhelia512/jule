@@ -146,7 +146,7 @@ struct IpAdapterAddresses {
 fn GetSystemDirectory(): string {
 	mut path := make([]u16, sys::MAX_PATH)
 	n := sys::Addrcall[uint](uintptr(extern.GetSystemDirectoryW), uintptr(&path[0]), uint(len(path)))
-	ret integ::UTF16ToStr(path[:n])
+	ret integ::UTF16ToString(path[:n])
 }
 
 fn GetAdaptersAddresses(family: u32, flags: u32, reserved: uintptr, mut adapterAddresses: *IpAdapterAddresses, mut &sizePointer: *u32)! {

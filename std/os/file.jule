@@ -64,7 +64,7 @@ impl io::ReadWriteSeeker for File {}
 impl io::ReadSeeker for File {}
 impl io::WriteSeeker for File {}
 impl io::Seeker for File {}
-impl io::StrWriter for File {}
+impl io::StringWriter for File {}
 
 // Opens the named file for reading. If successful, methods on
 // the returned file can be used for reading; the associated file
@@ -258,8 +258,8 @@ impl File {
 	}
 
 	// Like Write, but writes the contents of string s rather than a slice of bytes.
-	async fn WriteStr(mut *self, s: string)!: (n: int) {
-		ret self.Write(unsafe::StrBytes(s)).await?
+	async fn WriteString(mut *self, s: string)!: (n: int) {
+		ret self.Write(unsafe::StringBytes(s)).await?
 	}
 
 	// Read bytes to buffer from handle and returns read byte count.

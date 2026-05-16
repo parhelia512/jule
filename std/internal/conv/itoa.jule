@@ -42,7 +42,7 @@ fn Utoa64(mut x: u64): string {
 	buf[i] = byte('0' + x)
 	buf = buf[:i+1]
 	rev(&buf)
-	ret unsafe::StrFromBytes(buf)
+	ret unsafe::StringFromBytes(buf)
 }
 
 fn rev(mut &b: *[]byte) {

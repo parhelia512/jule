@@ -7,7 +7,7 @@ use "std/runtime"
 use "std/sys"
 
 fn lookupenv(key: string): (val: string, found: bool) {
-	keyPtr := integ::UTF16FromStr(key)
+	keyPtr := integ::UTF16FromString(key)
 	mut n := u32(100)
 	for {
 		mut b := make([]u16, n)
@@ -16,14 +16,14 @@ fn lookupenv(key: string): (val: string, found: bool) {
 			ret "", false
 		}
 		if n <= u32(len(b)) {
-			ret integ::UTF16ToStr(b[:n]), true
+			ret integ::UTF16ToString(b[:n]), true
 		}
 	}
 }
 
 fn setenv(key: string, val: string)! {
-	keyPtr := integ::UTF16FromStr(key)
-	valPtr := integ::UTF16FromStr(val)
+	keyPtr := integ::UTF16FromString(key)
+	valPtr := integ::UTF16FromString(val)
 	ok := unsafe { sys::SetEnvironmentVariable(&keyPtr[0], &valPtr[0]) }
 	if !ok {
 		throw sys::GetLastErrno()

@@ -256,7 +256,7 @@ impl Time {
 			b = make([]byte, 0, max)
 		}
 		b = self.AppendFormat(b, layout)
-		ret unsafe::StrFromBytes(b)
+		ret unsafe::StringFromBytes(b)
 	}
 
 	// Returns the time formatted using the format string
@@ -745,7 +745,7 @@ fn quote(s: string): string {
 		}
 	}
 	buf = append(buf, '"')
-	ret unsafe::StrFromBytes(buf)
+	ret unsafe::StringFromBytes(buf)
 }
 
 // Describes a problem parsing a time string.

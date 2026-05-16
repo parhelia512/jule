@@ -48,15 +48,15 @@ const (
 
 // Reports whether the string contains the byte c.
 fn contains(s: string, c: byte): bool {
-	ret byteslite::IndexByteStr(s, c) != -1
+	ret byteslite::IndexByteString(s, c) != -1
 }
 
 fn quoteWith(s: string, quote: byte, ASCIIonly: bool, graphicOnly: bool): string {
-	ret unsafe::StrFromBytes(appendQuotedWith(make([]byte, 0, 3*len(s)/2), s, quote, ASCIIonly, graphicOnly))
+	ret unsafe::StringFromBytes(appendQuotedWith(make([]byte, 0, 3*len(s)/2), s, quote, ASCIIonly, graphicOnly))
 }
 
 fn quoteRuneWith(r: rune, quote: byte, ASCIIonly: bool, graphicOnly: bool): string {
-	ret unsafe::StrFromBytes(appendQuotedRuneWith(nil, r, quote, ASCIIonly, graphicOnly))
+	ret unsafe::StringFromBytes(appendQuotedRuneWith(nil, r, quote, ASCIIonly, graphicOnly))
 }
 
 fn appendQuotedWith(mut buf: []byte, mut s: string, quote: byte, ASCIIonly: bool, graphicOnly: bool): []byte {
@@ -73,7 +73,7 @@ fn appendQuotedWith(mut buf: []byte, mut s: string, quote: byte, ASCIIonly: bool
 		mut r := rune(s[0])
 		width = 1
 		if r >= utf8::RuneSelf {
-			r, width = utf8::DecodeRuneStr(s)
+			r, width = utf8::DecodeRuneString(s)
 		}
 		if width == 1 && r == utf8::RuneError {
 			buf = append(buf, `\x`...)
@@ -245,7 +245,7 @@ fn AppendQuoteRuneToGraphic(mut dst: []byte, r: rune): []byte {
 // characters other than tab.
 fn CanBackquote(mut s: string): bool {
 	for len(s) > 0 {
-		r, wid := utf8::DecodeRuneStr(s)
+		r, wid := utf8::DecodeRuneString(s)
 		s = s[wid:]
 		if wid > 1 {
 			if r == '\ufeff' {
@@ -300,7 +300,7 @@ fn UnquoteChar(mut s: string, quote: byte)!: (value: rune, multibyte: bool, tail
 	| c == quote && (quote == '\'' || quote == '"'):
 		throw ErrSyntax
 	| c >= utf8::RuneSelf:
-		r, size := utf8::DecodeRuneStr(s)
+		r, size := utf8::DecodeRuneString(s)
 		ret r, true, s[size:]
 	| c != '\\':
 		ret rune(s[0]), false, s[1:]
@@ -430,7 +430,7 @@ fn unquote(mut input: string, unescape: bool): (out: string, rem: string, err: &
 		ret "", input, ErrSyntax
 	}
 	quote := input[0]
-	mut end := byteslite::IndexByteStr(input[1:], quote)
+	mut end := byteslite::IndexByteString(input[1:], quote)
 	if end < 0 {
 		ret "", input, ErrSyntax
 	}
@@ -452,7 +452,7 @@ fn unquote(mut input: string, unescape: bool): (out: string, rem: string, err: &
 					buf = append(buf, input[i])
 				}
 			}
-			out = unsafe::StrFromBytes(buf)
+			out = unsafe::StringFromBytes(buf)
 		}
 		// NOTE: Prior implementations did not verify that raw strings consist
 		// of valid UTF-8 characters and we continue to not verify it as such.
@@ -466,9 +466,9 @@ fn unquote(mut input: string, unescape: bool): (out: string, rem: string, err: &
 			let mut valid: bool
 			match quote {
 			| '"':
-				valid = utf8::ValidStr(input[len(`"`) : end-len(`"`)])
+				valid = utf8::ValidString(input[len(`"`) : end-len(`"`)])
 			| '\'':
-				r, n := utf8::DecodeRuneStr(input[len("'") : end-len("'")])
+				r, n := utf8::DecodeRuneString(input[len("'") : end-len("'")])
 				valid = len("'")+n+len("'") == end && (r != utf8::RuneError || n != 1)
 			}
 			if valid {
@@ -520,7 +520,7 @@ fn unquote(mut input: string, unescape: bool): (out: string, rem: string, err: &
 		input = input[1:] // skip terminating quote
 
 		if unescape {
-			ret unsafe::StrFromBytes(buf), input, nil
+			ret unsafe::StringFromBytes(buf), input, nil
 		}
 		ret in0[:len(in0)-len(input)], input, nil
 	|:

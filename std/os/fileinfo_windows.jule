@@ -21,7 +21,7 @@ fn loadFileId(mut &fi: *FileInfo)! {
 		// already done
 		ret
 	}
-	utf16path := integ::UTF16FromStr(fi.sys.path)
+	utf16path := integ::UTF16FromString(fi.sys.path)
 
 	// Per https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-points-and-file-operations,
 	// “Applications that use the CreateFile function should specify the

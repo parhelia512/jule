@@ -59,10 +59,10 @@ fn applyFmt(mut fmt: string, args: ...any): string {
 		if i == -1 {
 			break
 		}
-		s.WriteStr(fmt[:i])!
-		s.WriteStr(argToStr(arg))!
+		s.WriteString(fmt[:i])!
+		s.WriteString(argToStr(arg))!
 		fmt = fmt[i+1:]
 	}
-	s.WriteStr(fmt)!
+	s.WriteString(fmt)!
 	ret s.Str()
 }

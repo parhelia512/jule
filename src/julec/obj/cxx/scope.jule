@@ -118,7 +118,7 @@ impl scopeCoder {
 			if ref {
 				sb.WriteByte('*')!
 			}
-			sb.WriteStr("expr")!
+			sb.WriteString("expr")!
 			model := any(sb.Str())
 			mut expr := new(sema::ChanRecv)
 			expr.Token = it.ExprToken
@@ -246,7 +246,7 @@ impl scopeCoder {
 					},
 				}
 				mut keyBIdent := strings::Builder{}
-				keyBIdent.WriteStr("(*")!
+				keyBIdent.WriteString("(*")!
 				self.oc.ic.var(&keyBIdent, it.KeyB)
 				keyBIdent.WriteByte(')')!
 				name := keyBIdent.Str()
@@ -1405,24 +1405,24 @@ impl scopeCoder {
 		self.oc.write(" __selectIndex;\n")
 
 		registerChan := fn(mut &buf: *strings::Builder, mut ch: &sema::Chan, data: string, n: int) {
-			buf.WriteStr(scase)!
-			buf.WriteStr("{.")!
-			buf.WriteStr(scaseCh)!
-			buf.WriteStr("=&__chanArr[")!
-			buf.WriteStr(conv::Itoa(n))!
-			buf.WriteStr("], .")!
+			buf.WriteString(scase)!
+			buf.WriteString("{.")!
+			buf.WriteString(scaseCh)!
+			buf.WriteString("=&__chanArr[")!
+			buf.WriteString(conv::Itoa(n))!
+			buf.WriteString("], .")!
 			if data != "" {
-				buf.WriteStr(scaseData)!
-				buf.WriteStr("=(")!
-				buf.WriteStr(typeUintptr)!
-				buf.WriteStr(")")!
+				buf.WriteString(scaseData)!
+				buf.WriteString("=(")!
+				buf.WriteString(typeUintptr)!
+				buf.WriteString(")")!
 				if data[0] == '*' { // Data is pointer already.
-					buf.WriteStr(data[1:])!
+					buf.WriteString(data[1:])!
 				} else {
 					buf.WriteByte('&')!
-					buf.WriteStr(data)!
+					buf.WriteString(data)!
 				}
-				buf.WriteStr(", .")!
+				buf.WriteString(", .")!
 			}
 			mut ins := obj::FindStructGenericInstance(meta::Program.Runtime.Pchan, ch.Value)
 			const Extern = false
@@ -1431,27 +1431,27 @@ impl scopeCoder {
 			mut trySend := ins.FindMethod("trySend", Extern).Instances[0]
 			mut trySendImmediate := ins.FindMethod("trySendImmediate", Extern).Instances[0]
 
-			buf.WriteStr(scaseTryRecv)!
-			buf.WriteStr("=(")!
-			buf.WriteStr(typeUintptr)!
+			buf.WriteString(scaseTryRecv)!
+			buf.WriteString("=(")!
+			buf.WriteString(typeUintptr)!
 			buf.WriteByte(')')!
 			self.oc.ic.funcIns(buf, tryRecv)
-			buf.WriteStr(", .")!
-			buf.WriteStr(scaseTryRecvImmediate)!
-			buf.WriteStr("=(")!
-			buf.WriteStr(typeUintptr)!
+			buf.WriteString(", .")!
+			buf.WriteString(scaseTryRecvImmediate)!
+			buf.WriteString("=(")!
+			buf.WriteString(typeUintptr)!
 			buf.WriteByte(')')!
 			self.oc.ic.funcIns(buf, tryRecvImmediate)
-			buf.WriteStr(", .")!
-			buf.WriteStr(scaseTrySend)!
-			buf.WriteStr("=(")!
-			buf.WriteStr(typeUintptr)!
+			buf.WriteString(", .")!
+			buf.WriteString(scaseTrySend)!
+			buf.WriteString("=(")!
+			buf.WriteString(typeUintptr)!
 			buf.WriteByte(')')!
 			self.oc.ic.funcIns(buf, trySend)
-			buf.WriteStr(", .")!
-			buf.WriteStr(scaseTrySendImmediate)!
-			buf.WriteStr("=(")!
-			buf.WriteStr(typeUintptr)!
+			buf.WriteString(", .")!
+			buf.WriteString(scaseTrySendImmediate)!
+			buf.WriteString("=(")!
+			buf.WriteString(typeUintptr)!
 			buf.WriteByte(')')!
 			self.oc.ic.funcIns(buf, trySendImmediate)
 
@@ -1519,7 +1519,7 @@ impl scopeCoder {
 			match type value {
 			| &sema::ChanSend:
 				if nsend > 0 {
-					sendArr.WriteStr(", ")!
+					sendArr.WriteString(", ")!
 				}
 				nsend++
 
@@ -1529,7 +1529,7 @@ impl scopeCoder {
 				registerChan(&sendArr, chanValue.Type.Chan(), data, nchan)
 			| &sema::ChanRecv:
 				if nrecv > 0 {
-					recvArr.WriteStr(", ")!
+					recvArr.WriteString(", ")!
 				}
 				nrecv++
 
@@ -1542,7 +1542,7 @@ impl scopeCoder {
 			}
 
 			if nchan > 0 {
-				chanArr.WriteStr(", ")!
+				chanArr.WriteString(", ")!
 			}
 			nchan++
 			n := self.oc.Buf.Len()
@@ -1550,9 +1550,9 @@ impl scopeCoder {
 			mut buf := unsafe { self.oc.Buf.Buf() }
 			chanArr.Write(buf[n:])!
 			unsafe { self.oc.Buf.SetBuf(buf[:n]) }
-			chanArr.WriteStr(".as<")!
-			chanArr.WriteStr(typeUintptr)!
-			chanArr.WriteStr(">()")!
+			chanArr.WriteString(".as<")!
+			chanArr.WriteString(typeUintptr)!
+			chanArr.WriteString(">()")!
 		}
 
 		self.oc.indent()

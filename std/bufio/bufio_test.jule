@@ -86,12 +86,12 @@ let readMakers: []readMaker = [
 	{"data+err", iotest::DataErrReader},
 ]
 
-// Call ReadStr (which ends up calling everything else)
+// Call ReadString (which ends up calling everything else)
 // to accumulate the text of a file.
 async fn readLines(mut b: &Reader): string {
 	mut s := ""
 	for {
-		s1 := b.ReadStr('\n').await else {
+		s1 := b.ReadString('\n').await else {
 			if error == io::EOF {
 				break
 			}
@@ -206,12 +206,12 @@ async fn testZeroReader(t: &testing::T) {
 }
 
 // Delivers its data one string segment at a time via Read.
-struct StrReader {
+struct StringReader {
 	data: []string
 	step: int
 }
 
-impl io::Reader for StrReader {
+impl io::Reader for StringReader {
 	async fn Read(mut *self, mut p: []byte)!: (n: int) {
 		if self.step < len(self.data) {
 			s := self.data[self.step]
@@ -227,7 +227,7 @@ impl io::Reader for StrReader {
 async fn readRuneSegments(t: &testing::T, mut segments: []string) {
 	mut got := ""
 	want := strings::Join(segments, "")
-	mut r := Reader.New(&StrReader{data: segments})
+	mut r := Reader.New(&StringReader{data: segments})
 	for {
 		rn, _ := r.ReadRune().await else {
 			if error == io::EOF {
@@ -263,7 +263,7 @@ async fn testReadRune(t: &testing::T) {
 #test
 async fn testUnreadRune(t: &testing::T) {
 	mut segments := ["Hello, world:", "日本語"]
-	mut r := Reader.New(&StrReader{data: segments})
+	mut r := Reader.New(&StringReader{data: segments})
 	mut got := ""
 	want := strings::Join(segments, "")
 	// Normal execution.
@@ -350,7 +350,7 @@ async fn testNoUnreadByteAfterWriteTo(t: &testing::T) {
 #test
 async fn testUnreadByte(t: &testing::T) {
 	mut segments := ["Hello, ", "world"]
-	mut r := Reader.New(&StrReader{data: segments})
+	mut r := Reader.New(&StringReader{data: segments})
 	mut got := ""
 	want := strings::Join(segments, "")
 	// Normal execution.
@@ -388,7 +388,7 @@ async fn testUnreadByteMultiple(t: &testing::T) {
 	data := strings::Join(segments, "")
 	mut n := 0
 	for n <= len(data); n++ {
-		mut r := Reader.New(&StrReader{data: segments})
+		mut r := Reader.New(&StringReader{data: segments})
 		// Read n bytes.
 		mut i := 0
 		for i < n; i++ {
@@ -417,7 +417,7 @@ async fn testUnreadByteMultiple(t: &testing::T) {
 #test
 async fn testUnreadRuneError(t: &testing::T) {
 	mut buf := make([]byte, 3) // All runes in this test are 3 bytes long
-	mut r := Reader.New(&StrReader{data: ["日本語日本語日本語"]})
+	mut r := Reader.New(&StringReader{data: ["日本語日本語日本語"]})
 	let mut err: bool
 	r.UnreadRune().await else { err = true }
 	if !err {
@@ -1311,17 +1311,17 @@ async fn testWriteString(t: &testing::T) {
 	const BufSize = 8
 	mut buf := new(strings::Builder)
 	mut b := Writer.NewSize(buf.Async(), BufSize)
-	b.WriteStr("0").await!                         // easy
-	b.WriteStr("123456").await!                    // still easy
-	b.WriteStr("7890").await!                      // easy after flush
-	b.WriteStr("abcdefghijklmnopqrstuvwxy").await! // hard
-	b.WriteStr("z").await!
+	b.WriteString("0").await!                         // easy
+	b.WriteString("123456").await!                    // still easy
+	b.WriteString("7890").await!                      // easy after flush
+	b.WriteString("abcdefghijklmnopqrstuvwxy").await! // hard
+	b.WriteString("z").await!
 	b.Flush().await else {
-		t.Errorf("WriteStr", error)
+		t.Errorf("WriteString", error)
 	}
 	s := "01234567890abcdefghijklmnopqrstuvwxyz"
 	if buf.Str() != s {
-		t.Errorf("WriteStr wants {} gets {}", s, buf.Str())
+		t.Errorf("WriteString wants {} gets {}", s, buf.Str())
 	}
 }
 
@@ -1452,12 +1452,12 @@ impl io::Writer for writeCountingDiscard {
 async fn testWriterReadFromCounts(t: &testing::T) {
 	mut w0 := new(writeCountingDiscard)
 	mut b0 := Writer.NewSize(w0, 1234)
-	b0.WriteStr(strings::Repeat("x", 1000)).await!
+	b0.WriteString(strings::Repeat("x", 1000)).await!
 	if *w0 != 0 {
 		t.Errorf("write 1000 'x's: got {} writes, want 0", w0)
 		ret
 	}
-	b0.WriteStr(strings::Repeat("x", 200)).await!
+	b0.WriteString(strings::Repeat("x", 200)).await!
 	if *w0 != 0 {
 		t.Errorf("write 1200 'x's: got {} writes, want 0", w0)
 		ret
@@ -1475,13 +1475,13 @@ async fn testWriterReadFromCounts(t: &testing::T) {
 
 	mut w1 := new(writeCountingDiscard)
 	mut b1 := Writer.NewSize(w1, 1234)
-	b1.WriteStr(strings::Repeat("x", 1200)).await!
+	b1.WriteString(strings::Repeat("x", 1200)).await!
 	b1.Flush().await!
 	if *w1 != 1 {
 		t.Errorf("flush 1200 'x's: got {} writes, want 1", w1)
 		ret
 	}
-	b1.WriteStr(strings::Repeat("x", 89)).await!
+	b1.WriteString(strings::Repeat("x", 89)).await!
 	if *w1 != 1 {
 		t.Errorf("write 1200 + 89 'x's: got {} writes, want 1", w1)
 		ret
@@ -1613,10 +1613,10 @@ async fn testWriterReset(t: &testing::T) {
 	mut buf4 := new(strings::Builder)
 	mut buf5 := new(strings::Builder)
 	mut w := Writer.New(buf1.Async())
-	w.WriteStr("foo").await!
+	w.WriteString("foo").await!
 
 	w.Reset(buf2.Async()) // and not flushed
-	w.WriteStr("bar").await!
+	w.WriteString("bar").await!
 	w.Flush().await!
 	if buf1.Str() != "" {
 		t.Errorf("buf1 = {}; want empty", buf1.Str())
@@ -1627,7 +1627,7 @@ async fn testWriterReset(t: &testing::T) {
 
 	*w = Writer{}         // zero out the Writer
 	w.Reset(buf3.Async()) // and not flushed
-	w.WriteStr("bar").await!
+	w.WriteString("bar").await!
 	w.Flush().await!
 	if buf1.Str() != "" {
 		t.Errorf("buf1 = {}; want empty", buf1.Str())
@@ -1639,14 +1639,14 @@ async fn testWriterReset(t: &testing::T) {
 	// Wrap a writer and then Reset to that writer.
 	w.Reset(buf4.Async())
 	mut w2 := Writer.New(w)
-	w2.WriteStr("recur").await!
+	w2.WriteString("recur").await!
 	w2.Flush().await!
 	if buf4.Str() != "recur" {
 		t.Errorf("buf4 = {}, want {}", buf4.Str(), "recur")
 	}
 	w.Reset(buf5.Async())
 	w2.Reset(w)
-	w2.WriteStr("recur2").await!
+	w2.WriteString("recur2").await!
 	w2.Flush().await!
 	if buf5.Str() != "recur2" {
 		t.Errorf("buf5 = {}, want {}", buf5.Str(), "recur2")
@@ -1668,7 +1668,7 @@ async fn testWriterReadFromMustReturnUnderlyingError(t: &testing::T) {
 	mut wr := Writer.New(writeErrorOnlyWriter{})
 	s := "test1"
 	wantBuffered := len(s)
-	wr.WriteStr(s).await else {
+	wr.WriteString(s).await else {
 		t.Errorf("unexpected error: {}", error)
 		ret
 	}

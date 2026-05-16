@@ -44,10 +44,10 @@ impl asciiSet {
 fn Count(s: string, substr: string): int {
 	// special case
 	if len(substr) == 0 {
-		ret utf8::RuneCountStr(s) + 1
+		ret utf8::RuneCountString(s) + 1
 	}
 	if len(substr) == 1 {
-		ret byteslite::CountStr(s, substr[0])
+		ret byteslite::CountString(s, substr[0])
 	}
 	mut n := 0
 	mut i := 0
@@ -83,7 +83,7 @@ fn ContainsFunc(s: string, f: fn(rune): bool): bool {
 
 // Returns the index of the first instance of c in b, or -1 if c is not present in s.
 fn IndexByte(s: string, c: byte): int {
-	ret byteslite::IndexByteStr(s, c)
+	ret byteslite::IndexByteString(s, c)
 }
 
 // Returns the index of the last instance of substr in s, or -1 if substr is not present in s.
@@ -92,7 +92,7 @@ fn LastIndex(s: string, substr: string): int {
 	| len(substr) == 0:
 		ret len(s)
 	| len(substr) == 1:
-		ret byteslite::LastIndexByteStr(s, substr[0])
+		ret byteslite::LastIndexByteString(s, substr[0])
 	| len(substr) == len(s):
 		if substr == s {
 			ret 0
@@ -125,7 +125,7 @@ fn LastIndex(s: string, substr: string): int {
 
 // Returns the index of the last instance of c in s, or -1 if c is not present in s.
 fn LastIndexByte(s: string, c: byte): int {
-	ret byteslite::LastIndexByteStr(s, c)
+	ret byteslite::LastIndexByteString(s, c)
 }
 
 // Returns the index of the first instance of the Unicode code point
@@ -139,7 +139,7 @@ fn IndexRune(s: string, r: rune): int {
 	| r == utf8::RuneError:
 		mut i := 0
 		for i < len(s) {
-			r1, n := utf8::DecodeRuneStr(s[i:])
+			r1, n := utf8::DecodeRuneString(s[i:])
 			if r1 == utf8::RuneError {
 				ret i
 			}
@@ -272,7 +272,7 @@ fn LastIndexAny(s: string, chars: string): int {
 			rc = utf8::RuneError
 		}
 		for i > 0 {
-			r, size := utf8::DecodeLastRuneStr(s[:i])
+			r, size := utf8::DecodeLastRuneString(s[:i])
 			i -= size
 			if rc == r {
 				ret i
@@ -281,7 +281,7 @@ fn LastIndexAny(s: string, chars: string): int {
 		ret -1
 	}
 	for i > 0 {
-		r, size := utf8::DecodeLastRuneStr(s[:i])
+		r, size := utf8::DecodeLastRuneString(s[:i])
 		i -= size
 		if IndexRune(chars, r) >= 0 {
 			ret i
@@ -294,14 +294,14 @@ fn LastIndexAny(s: string, chars: string): int {
 // one string per Unicode character up to a maximum of n (n < 0 means no limit).
 // Invalid UTF-8 bytes are sliced individually.
 fn explode(mut s: string, mut n: int): []string {
-	l := utf8::RuneCountStr(s)
+	l := utf8::RuneCountString(s)
 	if n < 0 || n > l {
 		n = l
 	}
 	mut a := make([]string, n)
 	mut i := 0
 	for i < n-1; i++ {
-		_, size := utf8::DecodeRuneStr(s)
+		_, size := utf8::DecodeRuneString(s)
 		a[i] = s[:size]
 		s = s[size:]
 	}
@@ -425,10 +425,10 @@ fn Join(elems: []string, sep: string): string {
 
 	mut b := Builder{}
 	b.Grow(n)
-	b.WriteStr(elems[0])!
+	b.WriteString(elems[0])!
 	for _, s in elems[1:] {
-		b.WriteStr(sep)!
-		b.WriteStr(s)!
+		b.WriteString(sep)!
+		b.WriteString(s)!
 	}
 	ret b.Str()
 }
@@ -463,7 +463,7 @@ fn Map(mapping: fn(rune): rune, mut s: string): string {
 
 		mut width := 0
 		if c == utf8::RuneError {
-			c, width = utf8::DecodeRuneStr(s[i:])
+			c, width = utf8::DecodeRuneString(s[i:])
 			if width != 1 && r == c {
 				continue
 			}
@@ -471,7 +471,7 @@ fn Map(mapping: fn(rune): rune, mut s: string): string {
 			width = utf8::RuneLen(c)
 		}
 		b.Grow(len(s) + utf8::UTFMax)
-		b.WriteStr(s[:i])!
+		b.WriteString(s[:i])!
 		if r >= 0 {
 			b.WriteRune(r)!
 		}
@@ -590,7 +590,7 @@ fn Repeat(s: string, count: int): string {
 
 	mut b := Builder{}
 	b.Grow(n)
-	b.WriteStr(s)!
+	b.WriteString(s)!
 	for b.Len() < n {
 		mut chunk := chunkMax
 		if chunk > b.Len() {
@@ -599,7 +599,7 @@ fn Repeat(s: string, count: int): string {
 		if chunk > n-b.Len() {
 			chunk = n - b.Len()
 		}
-		b.WriteStr(b.Str()[:chunk])!
+		b.WriteString(b.Str()[:chunk])!
 	}
 	ret b.Str()
 }
@@ -624,7 +624,7 @@ fn indexFunc(s: string, f: fn(rune): bool, truth: bool): int {
 		mut wid := 1
 		mut r := rune(s[start])
 		if r >= utf8::RuneSelf {
-			r, wid = utf8::DecodeRuneStr(s[start:])
+			r, wid = utf8::DecodeRuneString(s[start:])
 		}
 		if f(r) == truth {
 			ret start
@@ -639,7 +639,7 @@ fn indexFunc(s: string, f: fn(rune): bool, truth: bool): int {
 fn lastIndexFunc(s: string, f: fn(rune): bool, truth: bool): int {
 	mut i := len(s)
 	for i > 0 {
-		r, size := utf8::DecodeLastRuneStr(s[0:i])
+		r, size := utf8::DecodeLastRuneString(s[0:i])
 		i -= size
 		if f(r) == truth {
 			ret i
@@ -681,7 +681,7 @@ fn TrimRight(s: string, cutset: string): string {
 fn TrimRightFunc(s: string, f: fn(rune): bool): string {
 	mut i := lastIndexFunc(s, f, false)
 	if i >= 0 && s[i] >= utf8::RuneSelf {
-		_, wid := utf8::DecodeRuneStr(s[i:])
+		_, wid := utf8::DecodeRuneString(s[i:])
 		i += wid
 	} else {
 		i++
@@ -768,7 +768,7 @@ fn trimLeftUnicode(mut s: string, cutset: string): string {
 	for len(s) > 0 {
 		mut r, mut n := rune(s[0]), 1
 		if r >= utf8::RuneSelf {
-			r, n = utf8::DecodeRuneStr(s)
+			r, n = utf8::DecodeRuneString(s)
 		}
 		if !ContainsRune(cutset, r) {
 			break
@@ -799,7 +799,7 @@ fn trimRightUnicode(mut s: string, cutset: string): string {
 	for len(s) > 0 {
 		mut r, mut n := rune(s[len(s)-1]), 1
 		if r >= utf8::RuneSelf {
-			r, n = utf8::DecodeLastRuneStr(s)
+			r, n = utf8::DecodeLastRuneString(s)
 		}
 		if !ContainsRune(cutset, r) {
 			break
@@ -879,17 +879,17 @@ fn Replace(s: string, old: string, new: string, mut n: int): string {
 		mut j := start
 		if len(old) == 0 {
 			if i > 0 {
-				_, wid := utf8::DecodeRuneStr(s[start:])
+				_, wid := utf8::DecodeRuneString(s[start:])
 				j += wid
 			}
 		} else {
 			j += Index(s[start:], old)
 		}
-		b.WriteStr(s[start:j])!
-		b.WriteStr(new)!
+		b.WriteString(s[start:j])!
+		b.WriteString(new)!
 		start = j + len(old)
 	}
-	b.WriteStr(s[start:])!
+	b.WriteString(s[start:])!
 	ret b.Str()
 }
 
@@ -947,7 +947,7 @@ hasUnicode:
 		if t[0] < utf8::RuneSelf {
 			tr, t = rune(t[0]), t[1:]
 		} else {
-			r, size := utf8::DecodeRuneStr(t)
+			r, size := utf8::DecodeRuneString(t)
 			tr, t = r, t[size:]
 		}
 
@@ -1088,14 +1088,14 @@ fn ToUpper(s: string): string {
 			if 'a' <= c && c <= 'z' {
 				c -= 'a' - 'A'
 				if pos < i {
-					b.WriteStr(s[pos:i])!
+					b.WriteString(s[pos:i])!
 				}
 				b.WriteByte(byte(c))!
 				pos = i + 1
 			}
 		}
 		if pos < len(s) {
-			b.WriteStr(s[pos:])!
+			b.WriteString(s[pos:])!
 		}
 		ret b.Str()
 	}
@@ -1124,14 +1124,14 @@ fn ToLower(s: string): string {
 			if 'A' <= c && c <= 'Z' {
 				c += 'a' - 'A'
 				if pos < i {
-					b.WriteStr(s[pos:i])!
+					b.WriteString(s[pos:i])!
 				}
 				b.WriteByte(byte(c))!
 				pos = i + 1
 			}
 		}
 		if pos < len(s) {
-			b.WriteStr(s[pos:])!
+			b.WriteString(s[pos:])!
 		}
 		ret b.Str()
 	}

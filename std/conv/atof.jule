@@ -673,7 +673,7 @@ fn atof32(s: string): (f: f32, n: int, err: &NumError) {
 
 	// Slow fallback.
 	mut d := decimal{}
-	if !d.Set(unsafe::StrBytes(s)[:n]) {
+	if !d.Set(unsafe::StringBytes(s)[:n]) {
 		ret 0, n, syntaxError(fnParseFloat, s)
 	}
 	b, ovf := d.FloatBits(&f32info)
@@ -729,7 +729,7 @@ fn atof64(s: string): (f: f64, n: int, err: &NumError) {
 
 	// Slow fallback.
 	mut d := decimal{}
-	if !d.Set(unsafe::StrBytes(s)[:n]) {
+	if !d.Set(unsafe::StringBytes(s)[:n]) {
 		ret 0, n, syntaxError(fnParseFloat, s)
 	}
 	b, ovf := d.FloatBits(&f64info)

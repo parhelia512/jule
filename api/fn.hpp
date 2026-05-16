@@ -41,7 +41,7 @@ public:
     inline __jule_Fn<Ret, Args...> &must_ok(const char *file) noexcept {
 #ifndef __JULE_DISABLE__SAFETY
         if (this->f == nullptr) {
-            __jule_panicStr(
+            __jule_panicString(
                 __jule_String(__JULE_ERROR__INVALID_MEMORY "\nfile: ") + file);
         }
 #endif // SAFETY

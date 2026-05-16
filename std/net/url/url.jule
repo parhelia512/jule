@@ -313,7 +313,7 @@ fn escape(s: string, mode: int): string {
 				t[i] = '+'
 			}
 		}
-		ret unsafe::StrFromBytes(t)
+		ret unsafe::StringFromBytes(t)
 	}
 
 	mut j := 0
@@ -334,7 +334,7 @@ fn escape(s: string, mode: int): string {
 			j++
 		}
 	}
-	ret unsafe::StrFromBytes(t)
+	ret unsafe::StringFromBytes(t)
 }
 
 // Reports whether s is a valid encoded path or fragment, according to mode.
@@ -404,13 +404,13 @@ fn resolvePath(base: string, ref: string): string {
 			if index == -1 {
 				first = true
 			} else {
-				dst.WriteStr(s[:index])!
+				dst.WriteString(s[:index])!
 			}
 		} else {
 			if !first {
 				dst.WriteByte('/')!
 			}
-			dst.WriteStr(elem)!
+			dst.WriteString(elem)!
 			first = false
 		}
 	}
@@ -730,25 +730,25 @@ impl URL {
 		buf.Grow(n)
 
 		if self.Scheme != "" {
-			buf.WriteStr(self.Scheme)!
+			buf.WriteString(self.Scheme)!
 			buf.WriteByte(':')!
 		}
 		if self.Opaque != "" {
-			buf.WriteStr(self.Opaque)!
+			buf.WriteString(self.Opaque)!
 		} else {
 			if self.Scheme != "" || self.Host != "" || self.User != nil {
 				if self.OmitHost && self.Host == "" && self.User == nil {
 					// omit empty host
 				} else {
 					if self.Host != "" || self.Path != "" || self.User != nil {
-						buf.WriteStr("//")!
+						buf.WriteString("//")!
 					}
 					if self.User != nil {
-						buf.WriteStr(self.User.Str())!
+						buf.WriteString(self.User.Str())!
 						buf.WriteByte('@')!
 					}
 					if self.Host != "" {
-						buf.WriteStr(escape(self.Host, encodingHost))!
+						buf.WriteString(escape(self.Host, encodingHost))!
 					}
 				}
 			}
@@ -765,18 +765,18 @@ impl URL {
 				// path reference
 				segment, _, _ := strings::Cut(path, "/")
 				if strings::Contains(segment, ":") {
-					buf.WriteStr("./")!
+					buf.WriteString("./")!
 				}
 			}
-			buf.WriteStr(path)!
+			buf.WriteString(path)!
 		}
 		if self.ForceQuery || self.RawQuery != "" {
 			buf.WriteByte('?')!
-			buf.WriteStr(self.RawQuery)!
+			buf.WriteString(self.RawQuery)!
 		}
 		if self.Fragment != "" {
 			buf.WriteByte('#')!
-			buf.WriteStr(self.EscapedFragment())!
+			buf.WriteString(self.EscapedFragment())!
 		}
 		ret buf.Str()
 	}
@@ -1159,9 +1159,9 @@ impl Values {
 				if buf.Len() > 0 {
 					buf.WriteByte('&')!
 				}
-				buf.WriteStr(keyEscaped)!
+				buf.WriteString(keyEscaped)!
 				buf.WriteByte('=')!
-				buf.WriteStr(QueryEscape(v))!
+				buf.WriteString(QueryEscape(v))!
 			}
 		}
 		ret buf.Str()

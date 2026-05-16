@@ -65,8 +65,8 @@ struct cmdAttrs {
 
 impl Cmd {
 	fn spawn(*self, path: string, stdin: &File, stdout: &File, stderr: &File)! {
-		utf16path := integ::UTF16FromStr(path)
-		argv := integ::UTF16FromStr(makeCmdLine(self.args()))
+		utf16path := integ::UTF16FromString(path)
+		argv := integ::UTF16FromString(makeCmdLine(self.args()))
 
 		mut env := self.env()?
 		envblock := createEnvBlock(env)?
@@ -75,7 +75,7 @@ impl Cmd {
 		mut utf16dir := []u16(nil)
 		mut dirp := (*u16)(nil)
 		if self.Dir != "" {
-			utf16dir = integ::UTF16FromStr(self.Dir)
+			utf16dir = integ::UTF16FromString(self.Dir)
 			dirp = &utf16dir[0]
 		}
 
@@ -147,7 +147,7 @@ impl Cmd {
 // Escapes the string s, as per escapeArg, appends the result to s.
 fn appendEscapeArg(mut &s: *strings::Builder, arg: string) {
 	if len(arg) == 0 {
-		s.WriteStr(`""`)!
+		s.WriteString(`""`)!
 		ret
 	}
 
@@ -165,13 +165,13 @@ fn appendEscapeArg(mut &s: *strings::Builder, arg: string) {
 
 	if !needsBackslash && !hasSpace {
 		// No special handling required; normal case.
-		s.WriteStr(arg)!
+		s.WriteString(arg)!
 		ret
 	}
 	if !needsBackslash {
 		// hasSpace is true, so we need to quote the string.
 		s.WriteByte('"')!
-		s.WriteStr(arg)!
+		s.WriteString(arg)!
 		s.WriteByte('"')!
 		ret
 	}

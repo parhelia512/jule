@@ -89,7 +89,7 @@ impl Reader {
 			self.i++
 			ret rune(c), 1
 		}
-		ch, size = utf8::DecodeRuneStr(self.s[self.i:])
+		ch, size = utf8::DecodeRuneString(self.s[self.i:])
 		self.i += i64(size)
 		ret
 	}
@@ -134,9 +134,9 @@ impl Reader {
 			throw io::EOF
 		}
 		s := self.s[self.i:]
-		m := io::WriteStr(w, s).await?
+		m := io::WriteString(w, s).await?
 		if m > len(s) {
-			panic("strings::Reader.WriteTo: invalid WriteStr count")
+			panic("strings::Reader.WriteTo: invalid WriteString count")
 		}
 		self.i += i64(m)
 		n = i64(m)

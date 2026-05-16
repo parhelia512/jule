@@ -10,7 +10,7 @@ fn winstat(path: string, followSurrogates: bool)!: FileInfo {
 	if path == "" {
 		throw sys::Errno(sys::ERROR_PATH_NOT_FOUND)
 	}
-	utf16Path := integ::UTF16FromStr(fixLongPath(path))
+	utf16Path := integ::UTF16FromString(fixLongPath(path))
 
 	// Try GetFileAttributesEx first, because it is faster than CreateFile.
 	// See https://golang.org/issues/19922#issuecomment-300031421 for details.

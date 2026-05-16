@@ -49,7 +49,7 @@ impl EncodeError {
 	fn Str(*self): string {
 		ret "json: error calling " +
 			self.sourceFunc + " for type " +
-			self.Type + ": " + runtime::toStr(self.Err)
+			self.Type + ": " + runtime::toString(self.Err)
 	}
 }
 
@@ -99,15 +99,15 @@ impl encoder {
 
 	#disable nilptr
 	fn encodeNil(mut *self) {
-		self.buf.writeStr("null")
+		self.buf.writeString("null")
 	}
 
 	#disable nilptr
 	fn encodeBool(mut *self, b: bool) {
 		if b {
-			self.buf.writeStr("true")
+			self.buf.writeString("true")
 		} else {
-			self.buf.writeStr("false")
+			self.buf.writeString("false")
 		}
 	}
 
@@ -153,9 +153,9 @@ impl encoder {
 	}
 
 	#disable nilptr
-	fn encodeStr(mut *self, s: string) {
+	fn encodeString(mut *self, s: string) {
 		ss := ubuf::Ubuf{}
-		ss.SetData(unsafe::StrBytes(s))
+		ss.SetData(unsafe::StringBytes(s))
 		self.buf.writeByte('"')
 		mut start := 0
 		mut i := 0
@@ -169,26 +169,26 @@ impl encoder {
 				self.buf.write(ss.Slice2(start, i))
 				match b {
 				| '\\':
-					self.buf.writeStr(`\\`)
+					self.buf.writeString(`\\`)
 				| '"':
-					self.buf.writeStr(`\"`)
+					self.buf.writeString(`\"`)
 				| '\b':
-					self.buf.writeStr(`\b`)
+					self.buf.writeString(`\b`)
 				| '\f':
-					self.buf.writeStr(`\f`)
+					self.buf.writeString(`\f`)
 				| '\n':
-					self.buf.writeStr(`\n`)
+					self.buf.writeString(`\n`)
 				| '\r':
-					self.buf.writeStr(`\r`)
+					self.buf.writeString(`\r`)
 				| '\t':
-					self.buf.writeStr(`\t`)
+					self.buf.writeString(`\t`)
 				|:
 					// This encodes bytes < 0x20 except for \b, \f, \n, \r and \t.
 					// If escapeHTML is set, it also escapes <, >, and &
 					// because they can lead to security holes when
 					// user-controlled strings are rendered into JSON
 					// and served to some browsers.
-					self.buf.writeStr(`\u00`)
+					self.buf.writeString(`\u00`)
 					self.buf.writeByte(hex[b>>4])
 					self.buf.writeByte(hex[b&0xF])
 				}
@@ -203,7 +203,7 @@ impl encoder {
 			c, size := utf8::DecodeRune(ss.Slice2(i, i+n))
 			if c == utf8::RuneError && size == 1 {
 				self.buf.write(ss.Slice2(start, i))
-				self.buf.writeStr(`\ufffd`)
+				self.buf.writeString(`\ufffd`)
 				i += size
 				start = i
 				continue
@@ -217,7 +217,7 @@ impl encoder {
 			// See https://en.wikipedia.org/wiki/JSON#Safety.
 			if c == '\u2028' || c == '\u2029' {
 				self.buf.write(ss.Slice2(start, i))
-				self.buf.writeStr(`\u202`)
+				self.buf.writeString(`\u202`)
 				self.buf.writeByte(hex[c&0xF])
 				i += size
 				start = i
@@ -253,15 +253,15 @@ impl encoder {
 			const match {
 			| useIndent:
 				self.buf.writeByte('\n')
-				self.buf.writeStr(strings::Repeat(self.indent, self.depth))
+				self.buf.writeString(strings::Repeat(self.indent, self.depth))
 			}
 			self.buf.writeByte('"')
 			if self.escapeHTML {
-				self.buf.writeStr(fieldCache.nameEscHTML)
+				self.buf.writeString(fieldCache.nameEscHTML)
 			} else {
-				self.buf.writeStr(fieldCache.nameNonEsc)
+				self.buf.writeString(fieldCache.nameNonEsc)
 			}
-			self.buf.writeStr("\":")
+			self.buf.writeString("\":")
 			const match {
 			| useIndent:
 				self.buf.writeByte(' ')
@@ -271,13 +271,13 @@ impl encoder {
 			}
 		}
 		if next == '{' {
-			self.buf.writeStr("{}")
+			self.buf.writeString("{}")
 		} else {
 			const match {
 			| useIndent:
 				self.depth--
 				self.buf.writeByte('\n')
-				self.buf.writeStr(strings::Repeat(self.indent, self.depth))
+				self.buf.writeString(strings::Repeat(self.indent, self.depth))
 			}
 			self.buf.writeByte('}')
 		}
@@ -305,7 +305,7 @@ impl encoder {
 			throw &UnsupportedTypeError{Type: tt.Str()}
 		}
 		if t == nil {
-			self.buf.writeStr("{}")
+			self.buf.writeString("{}")
 			ret
 		}
 		const useIndent = comptime::TypeOf(Flag) == comptime::TypeOf(encodeIndent)
@@ -321,13 +321,13 @@ impl encoder {
 			const match {
 			| useIndent:
 				self.buf.writeByte('\n')
-				self.buf.writeStr(strings::Repeat(self.indent, self.depth))
+				self.buf.writeString(strings::Repeat(self.indent, self.depth))
 			}
 			// No need to check Flag. The key type cannot be/include
 			// indentation-sensitive type. Look at this function's
 			// implementation to see match-type conditions for the key type.
 			key := resolveKeyName(k)
-			self.encodeStr(key)
+			self.encodeString(key)
 			self.buf.writeByte(':')
 			const match {
 			| useIndent:
@@ -339,7 +339,7 @@ impl encoder {
 		| useIndent:
 			self.depth--
 			self.buf.writeByte('\n')
-			self.buf.writeStr(strings::Repeat(self.indent, self.depth))
+			self.buf.writeString(strings::Repeat(self.indent, self.depth))
 		}
 		self.buf.writeByte('}')
 	}
@@ -359,18 +359,18 @@ impl encoder {
 			const match {
 			| useIndent:
 				self.buf.writeByte('\n')
-				self.buf.writeStr(strings::Repeat(self.indent, self.depth))
+				self.buf.writeString(strings::Repeat(self.indent, self.depth))
 			}
 			self.encode[valueTyp, Flag](e)?
 		}
 		if next == '[' {
-			self.buf.writeStr("[]")
+			self.buf.writeString("[]")
 		} else {
 			const match {
 			| useIndent:
 				self.depth--
 				self.buf.writeByte('\n')
-				self.buf.writeStr(strings::Repeat(self.indent, self.depth))
+				self.buf.writeString(strings::Repeat(self.indent, self.depth))
 			}
 			self.buf.writeByte(']')
 		}
@@ -382,7 +382,7 @@ impl encoder {
 	#disable nilptr
 	fn encodeSlice[T, Flag](mut *self, t: T)! {
 		if t == nil {
-			self.buf.writeStr("[]")
+			self.buf.writeString("[]")
 			ret
 		}
 		const match comptime::TypeOf(T).Value().Kind() {
@@ -417,7 +417,7 @@ impl encoder {
 								}
 								const match name {
 								| "EncodeText":
-									self.encodeStr(unsafe::BytesStr(bytes))
+									self.encodeString(unsafe::BytesString(bytes))
 								|:
 									panic("std/encoding/json: unimplemented encoding method")
 								}
@@ -446,7 +446,7 @@ impl encoder {
 			self.encodeBool(bool(t))
 			ret
 		| comptime::Str:
-			self.encodeStr(string(t))
+			self.encodeString(string(t))
 			ret
 		| comptime::Smartptr:
 			// Avoid to implement as a function.
@@ -636,10 +636,10 @@ fn cachedFields[T](): []field {
 				fieldCache.nameNonEsc = name
 
 				// Cache name for escape-HTML.
-				if isNeedHTMLEscape(unsafe::StrBytes(name)) {
+				if isNeedHTMLEscape(unsafe::StringBytes(name)) {
 					mut buf := buffer{}
-					appendHTMLEscape(&buf, unsafe::StrBytes(name))
-					fieldCache.nameEscHTML = unsafe::StrFromBytes(buf.bytes())
+					appendHTMLEscape(&buf, unsafe::StringBytes(name))
+					fieldCache.nameEscHTML = unsafe::StringFromBytes(buf.bytes())
 				} else {
 					fieldCache.nameEscHTML = fieldCache.nameNonEsc
 				}

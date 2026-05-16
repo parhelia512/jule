@@ -26,7 +26,7 @@ impl IP {
 	}
 
 	// Like self.Str except that it returns and empty string when IP is empty.
-	fn ipEmptyStr(*self): string {
+	fn ipEmptyString(*self): string {
 		if self.Empty() {
 			ret ""
 		}
@@ -130,7 +130,7 @@ impl IP {
 			ret "<nil>"
 		}
 		if len(*self) != IPv4Len && len(*self) != IPv6Len {
-			ret "?" + hexStr(*self)
+			ret "?" + hexString(*self)
 		}
 		ip4 := unsafe { (*(&self)).To4() }
 		if len(ip4) == IPv4Len {
@@ -211,12 +211,12 @@ fn isZeros(ip: IP): bool {
 }
 
 #disable boundary
-fn hexStr(b: IP): string {
+fn hexString(b: IP): string {
 	mut s := make([]byte, (len(b)<<1)+1)
 	for i, tn in b {
 		s[i<<1], s[i<<1+1] = hexDigit[tn>>4], hexDigit[tn&0xF]
 	}
-	ret unsafe::StrFromBytes(s[:len(s)-1])
+	ret unsafe::StringFromBytes(s[:len(s)-1])
 }
 
 // Parses s as an IP address, returning the result.

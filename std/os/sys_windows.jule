@@ -24,6 +24,6 @@ fn hostname()!: (name: string) {
 				throw error
 			}
 		}
-		ret integ::UTF16ToStr(b[:n])
+		ret integ::UTF16ToString(b[:n])
 	}
 }

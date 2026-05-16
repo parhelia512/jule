@@ -1756,7 +1756,7 @@ impl scopeChecker {
 			ret
 		}
 		c, (ok) := m.Expr.(&constant::Const)
-		if !ok || !c.IsStr() {
+		if !ok || !c.IsString() {
 			ret
 		}
 		if callToken == nil {
@@ -1767,7 +1767,7 @@ impl scopeChecker {
 				callToken = root.calledFrom
 			}
 		}
-		self.s.pushErr(callToken, "comptime panic: "+c.ReadStr())
+		self.s.pushErr(callToken, "comptime panic: "+c.ReadString())
 		self.stop()
 	}
 
@@ -1851,9 +1851,9 @@ impl scopeChecker {
 				continue
 			}
 			if sb.Len() > 0 {
-				sb.WriteStr(", ")!
+				sb.WriteString(", ")!
 			}
-			sb.WriteStr(item.TypeSym.Type.Str())!
+			sb.WriteString(item.TypeSym.Type.Str())!
 		}
 		ret
 	}
@@ -1920,9 +1920,9 @@ impl scopeChecker {
 		for _, item in enm.Items {
 			if countMatchEnum(m, item.Name, 1) == 0 {
 				if sb.Len() > 0 {
-					sb.WriteStr(", ")!
+					sb.WriteString(", ")!
 				}
-				sb.WriteStr(item.Name)!
+				sb.WriteString(item.Name)!
 			}
 		}
 		if sb.Len() > 0 {

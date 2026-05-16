@@ -103,10 +103,10 @@ fn addExtendedPrefix(path: string): string {
 	}
 
 	// If path contains zero-byte; don't fix, return path.
-	if byteslite::IndexByteStr(path, 0) != -1 {
+	if byteslite::IndexByteString(path, 0) != -1 {
 		ret path
 	}
-	p := integ::UTF16FromStr(path)
+	p := integ::UTF16FromString(path)
 	// Estimate the required buffer size using the path length plus the null terminator.
 	// pathLength includes the working directory. This should be accurate unless
 	// the working directory has changed without using os.Chdir.
@@ -128,5 +128,5 @@ fn addExtendedPrefix(path: string): string {
 		buf = buf[2:]
 	}
 	copy(buf, prefix)
-	ret integ::UTF16ToStr(buf)
+	ret integ::UTF16ToString(buf)
 }

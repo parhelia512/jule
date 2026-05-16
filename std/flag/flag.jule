@@ -51,7 +51,7 @@ type FloatFlag = &Flag[f64]
 type BoolFlag = &Flag[bool]
 
 // Flag for string type
-type StrFlag = &Flag[string]
+type StringFlag = &Flag[string]
 
 // Flag parser for command-line arguments.
 //
@@ -240,8 +240,8 @@ impl argParser {
 			*ff.data = conv::ParseFloat(data, bitSize) else {
 				throw "--" + flag.Name() + ": expression must be valid floating-point"
 			}
-		| StrFlag:
-			*flag.(StrFlag).data = data
+		| StringFlag:
+			*flag.(StringFlag).data = data
 		}
 	}
 

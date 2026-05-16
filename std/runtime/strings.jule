@@ -7,8 +7,8 @@ use "std/unsafe"
 
 // See [strings::Compare] function for documentation.
 #disable boundary
-#export "__jule_compareStr"
-fn compareStr(&a: *string, &b: *string): int {
+#export "__jule_compareString"
+fn compareString(&a: *string, &b: *string): int {
 	mut l := len(*a)
 	if len(*b) < l {
 		l = len(*b)
@@ -33,30 +33,30 @@ fn compareStr(&a: *string, &b: *string): int {
 }
 
 // Converts []byte to string.
-#export "__jule_bytesToStr"
-fn bytesToStr(bytes: []byte): string {
+#export "__jule_bytesToString"
+fn bytesToString(bytes: []byte): string {
 	mut buf := make([]byte, len(bytes))
 	copy(buf, bytes)
-	ret unsafe::StrFromBytes(buf)
+	ret unsafe::StringFromBytes(buf)
 }
 
 // Converts []rune to string.
-#export "__jule_runesToStr"
-fn runesToStr(runes: []rune): string {
+#export "__jule_runesToString"
+fn runesToString(runes: []rune): string {
 	mut buf := make([]byte, 0, len(runes)*utf8::UTFMax)
 	for _, r in runes {
 		buf = utf8::AppendRune(buf, r)
 	}
-	ret unsafe::StrFromBytes(buf)
+	ret unsafe::StringFromBytes(buf)
 }
 
 // Converts string to []rune.
-#export "__jule_strToRunes"
-fn strToRunes(s: string): []rune {
-	mut buf := make([]rune, 0, utf8::RuneCountStr(s))
+#export "__jule_stringToRunes"
+fn stringToRunes(s: string): []rune {
+	mut buf := make([]rune, 0, utf8::RuneCountString(s))
 	mut n := 0
 	for n < len(s) {
-		r, len := utf8::DecodeRuneStr(s[n:])
+		r, len := utf8::DecodeRuneString(s[n:])
 		n += len
 		buf = append(buf, r)
 	}
@@ -64,27 +64,27 @@ fn strToRunes(s: string): []rune {
 }
 
 // Converts string to []byte.
-#export "__jule_strToBytes"
-fn strToBytes(s: string): []byte {
+#export "__jule_stringToBytes"
+fn stringToBytes(s: string): []byte {
 	mut buf := make([]byte, len(s))
 	copy(buf, s)
 	ret buf
 }
 
 // Converts byte to string.
-#export "__jule_strFromByte"
-fn strFromByte(b: byte): string {
+#export "__jule_stringFromByte"
+fn stringFromByte(b: byte): string {
 	mut buf := make([]byte, 1)
 	buf[0] = b
-	ret unsafe::StrFromBytes(buf)
+	ret unsafe::StringFromBytes(buf)
 }
 
 // Converts rune to string.
-#export "__jule_strFromRune"
-fn strFromRune(r: rune): string {
+#export "__jule_stringFromRune"
+fn stringFromRune(r: rune): string {
 	mut buf := make([]byte, 0, utf8::UTFMax)
 	buf = utf8::AppendRune(buf, r)
-	ret unsafe::StrFromBytes(buf)
+	ret unsafe::StringFromBytes(buf)
 }
 
 // Designed for []rune(s) iterations.
@@ -104,5 +104,5 @@ unsafe fn runeStep(s: *byte, n: int, mut r: *rune, mut outLen: *int) {
 // Returns rune count of the string.
 #export "__jule_runeCount"
 fn runeCount(s: string): int {
-	ret utf8::RuneCountStr(s)
+	ret utf8::RuneCountString(s)
 }

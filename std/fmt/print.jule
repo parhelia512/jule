@@ -83,7 +83,7 @@ fn Sprint(args: ...any): string {
 // It uses comptime to analysis type T. If type T is a dynamic or unsupported type,
 // it jumps back to the [Sprint] algorithm.
 fn Sprintg[T](t: T): string {
-	ret unsafe::StrFromBytes(bprintg(t))
+	ret unsafe::StringFromBytes(bprintg(t))
 }
 
 // It places the passes arguments in the string relative to the corresponding
@@ -110,5 +110,5 @@ fn Sprintg[T](t: T): string {
 //	Sprintf("{} {}") = "{} {}"
 //	Sprintf("{} is the {}", "Pi Number") = "Pi Number is the {}"
 fn Sprintf(fmt: string, args: ...any): string {
-	ret unsafe::StrFromBytes(bprintf(fmt, args...))
+	ret unsafe::StringFromBytes(bprintf(fmt, args...))
 }

@@ -552,9 +552,9 @@ impl parser {
 
 		match tokens[0].ID {
 		| token::AND:
-			name.WriteStr("&")!
+			name.WriteString("&")!
 		| token::MUL:
-			name.WriteStr("*")!
+			name.WriteString("*")!
 		| token::SELF:
 			param.Token = tokens[0] // avoid nil error because of nil token
 			self.pushErr(tokens[0], "expected * or & before self receiver")
@@ -569,7 +569,7 @@ impl parser {
 		if tokens[1].ID != token::SELF {
 			ret nil
 		}
-		name.WriteStr("self")!
+		name.WriteString("self")!
 		param.Token = tokens[1]
 		if len(tokens) != 2 {
 			self.pushErr(tokens[1], "invalid syntax")

@@ -24,7 +24,7 @@ impl Builder {
 
 	// Writes bytes to buffer.
 	// Never throws an error.
-	fn WriteStr(mut *self, s: string)!: (n: int) {
+	fn WriteString(mut *self, s: string)!: (n: int) {
 		self.buf = append(self.buf, s...)
 		ret len(s)
 	}
@@ -71,7 +71,7 @@ impl Builder {
 
 	// Returns buffer as string. Will not reset the underlying content.
 	fn Str(*self): string {
-		ret unsafe::StrFromBytes(self.buf)
+		ret unsafe::StringFromBytes(self.buf)
 	}
 
 	// Clears buffer.
@@ -115,7 +115,7 @@ type asyncBuilder: &Builder
 impl io::Writer for asyncBuilder {}
 impl io::ByteWriter for asyncBuilder {}
 impl io::RuneWriter for asyncBuilder {}
-impl io::StrWriter for asyncBuilder {}
+impl io::StringWriter for asyncBuilder {}
 
 impl asyncBuilder {
 	// Implements the io::Writer trait.
@@ -123,9 +123,9 @@ impl asyncBuilder {
 		ret (&Builder)(*self).Write(b)?
 	}
 
-	// Implements the io::StrWriter trait.
-	async fn WriteStr(mut *self, s: string)!: (n: int) {
-		ret (&Builder)(*self).WriteStr(s)?
+	// Implements the io::StringWriter trait.
+	async fn WriteString(mut *self, s: string)!: (n: int) {
+		ret (&Builder)(*self).WriteString(s)?
 	}
 
 	// Implements the io::ByteWriter trait.

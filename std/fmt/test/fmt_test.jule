@@ -40,7 +40,7 @@ let formatTests: []formatTest = [
 	{"{{}} {{{}}} {} {{foo}} {foo}", [10, 20], "{} {{{}}} 10 {{foo}} {foo}"},
 	{"{} {}", [10, 20], "10 20"},
 	{"{} {}", ["hello", "world"], "hello world"},
-	{"{}", [fmtChan], runtime::toStr(fmtChan)},
+	{"{}", [fmtChan], runtime::toString(fmtChan)},
 	{"{}", [fmtPtr], "0x" + conv::FormatUint(u64(uintptr(fmtPtr)), 16)},
 	{"{}", [uintptr(fmtPtr)], "0x" + conv::FormatUint(u64(uintptr(fmtPtr)), 16)},
 	{"{}", [[1, 2, 3, 4, 5]], "[1, 2, 3, 4, 5]"},
@@ -75,7 +75,7 @@ fn testFprintf(t: &testing::T) {
 #test
 fn testSprintg(t: &testing::T) {
 	mut out := fmt::Sprintg(fmtChan)
-	mut testOut := runtime::toStr(fmtChan)
+	mut testOut := runtime::toString(fmtChan)
 	if out != testOut {
 		t.Errorf("Sprintg({}) = {}, want {}", fmtChan, out, testOut)
 	}

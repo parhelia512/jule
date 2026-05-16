@@ -42,7 +42,7 @@ impl float {
 		if prec > 0 {
 			cap += prec
 		}
-		ret unsafe::StrFromBytes(self.Append(make([]byte, 0, cap), format, prec))
+		ret unsafe::StringFromBytes(self.Append(make([]byte, 0, cap), format, prec))
 	}
 
 	// Appends to buf the string form of the floating-point number x(self),

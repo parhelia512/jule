@@ -297,7 +297,7 @@ impl decimal {
 			w += copy(buf[w:], self.d[0:self.nd])
 			w += digitZero(buf[w : w+self.dp-self.nd])
 		}
-		ret unsafe::StrFromBytes(buf[0:w])
+		ret unsafe::StringFromBytes(buf[0:w])
 	}
 }
 

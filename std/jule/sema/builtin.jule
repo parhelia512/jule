@@ -39,7 +39,7 @@ fn primTypeAlias(name: string, mut k: &Type): &TypeAlias {
 let mut primNil = &Type{Kind: nil}
 let mut primVoid = &Type{Kind: buildPrimType("void")}
 let mut primAny = &Type{Kind: buildPrimType(types::Any)}
-let mut primStr = &Type{Kind: buildPrimType(types::Str)}
+let mut primString = &Type{Kind: buildPrimType(types::String)}
 let mut primBool = &Type{Kind: buildPrimType(types::Bool)}
 let mut primUintptr = &Type{Kind: buildPrimType(types::Uintptr)}
 let mut primUint = &Type{Kind: buildPrimType(types::Uint)}
@@ -103,7 +103,7 @@ fn findBuiltinVar(name: string): &Var {
 
 let mut builtinTypeAliases: map[string]&TypeAlias = {
 	"any":      primTypeAlias("any", primAny),
-	"string":   primTypeAlias("string", primStr),
+	"string":   primTypeAlias("string", primString),
 	"bool":     primTypeAlias("bool", primBool),
 	"uintptr":  primTypeAlias("uintptr", primUintptr),
 	"uint":     primTypeAlias("uint", primUint),
@@ -346,7 +346,7 @@ fn builtinCallerPanic(mut e: &eval, mut fc: &ast::CallExpr, _: &Value): &Value {
 		ret nil
 	}
 
-	if expr.Type.Prim() == nil || !expr.Type.Prim().IsStr() {
+	if expr.Type.Prim() == nil || !expr.Type.Prim().IsString() {
 		e.pushErr(fc.Token, "message of panics calls must be string")
 	}
 
@@ -524,7 +524,7 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 			ret nil
 		}
 		if s.Value.Prim() != nil && s.Value.Prim().IsU8() { // []byte
-			if e1.Type.Prim() != nil && e1.Type.Prim().IsStr() {
+			if e1.Type.Prim() != nil && e1.Type.Prim().IsString() {
 				// append([]byte, string...)
 				v.Model = &BuiltinAppendCallExpr{
 					Dest:     t,
@@ -534,7 +534,7 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 				if e.s.meta.runtime != nil {
 					// Add instance to relevant runtime function for slice type if not exist.
 					mut f := runtimeFindFunc(e.s.meta.runtime, "memappend").instanceForce()
-					f.Generics = append(f.Generics, &InsGeneric{Type: t.Type}, &InsGeneric{Type: primStr})
+					f.Generics = append(f.Generics, &InsGeneric{Type: t.Type}, &InsGeneric{Type: primString})
 					ok, _ := e.s.checkGenericFunc(&f, fc.Token)
 					if !ok {
 						panic("sema: memappend evaluation failed, this is an implementation mistake")
@@ -681,7 +681,7 @@ fn callerCopySlice(mut dest: &Value, mut e: &eval, mut fc: &ast::CallExpr, mut v
 	} else {
 		destPrim := dest.Type.Slice().Value.Prim()
 		prim := src.Type.Prim()
-		if destPrim == nil || prim == nil || !prim.IsStr() || !destPrim.IsU8() {
+		if destPrim == nil || prim == nil || !prim.IsString() || !destPrim.IsU8() {
 			e.pushErr(fc.Args[1].Token, "mismatched types: @ and @", dest.Type.Str(), src.Type.Str())
 		}
 	}
@@ -779,7 +779,7 @@ fn callerLenStr(mut expr: &Value, mut v: &Value): &Value {
 	v.Constant = nil
 	v.Type = lenKind()
 	if expr.IsConst() {
-		v.Constant = constant::NewI64(i64(len(expr.Constant.ReadStr())))
+		v.Constant = constant::NewI64(i64(len(expr.Constant.ReadString())))
 		v.Model = v.Constant
 	} else {
 		v.Model = &BuiltinLenCallExpr{
@@ -817,7 +817,7 @@ fn builtinCallerLen(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Value
 		ret callerLenArray(dest, v)
 	| dest.Type.Map() != nil:
 		ret callerLenMap(dest, v)
-	| dest.Type.Prim() != nil && dest.Type.Prim().IsStr():
+	| dest.Type.Prim() != nil && dest.Type.Prim().IsString():
 		ret callerLenStr(dest, v)
 	| dest.Type.comptimeStructFields() != nil:
 		ret callerLenComptime(v, len(dest.Type.comptimeStructFields().fields))
@@ -1287,11 +1287,11 @@ fn builtinCallerStdComptimeIncludeBytes(mut e: &eval, mut fc: &ast::CallExpr, _:
 	if v == nil {
 		ret nil
 	}
-	if !v.IsConst() || !v.Constant.IsStr() {
+	if !v.IsConst() || !v.Constant.IsString() {
 		e.pushErr(fc.Args[0].Token, "expression must be constant and string")
 		ret nil
 	}
-	mut path := v.Constant.ReadStr()
+	mut path := v.Constant.ReadString()
 	if len(path) == 0 {
 		e.pushErr(fc.Args[0].Token, "empty path for IncludeBytes")
 		ret nil
@@ -1352,11 +1352,11 @@ fn builtinCallerStdComptimeIncludeStr(mut e: &eval, mut fc: &ast::CallExpr, _: &
 	if v == nil {
 		ret nil
 	}
-	if !v.IsConst() || !v.Constant.IsStr() {
+	if !v.IsConst() || !v.Constant.IsString() {
 		e.pushErr(fc.Args[0].Token, "expression must be constant and string")
 		ret nil
 	}
-	mut path := v.Constant.ReadStr()
+	mut path := v.Constant.ReadString()
 	if len(path) == 0 {
 		e.pushErr(fc.Args[0].Token, "empty path for IncludeStr")
 		ret nil
@@ -1380,9 +1380,9 @@ fn builtinCallerStdComptimeIncludeStr(mut e: &eval, mut fc: &ast::CallExpr, _: &
 		e.s.importer.IncludedFile(file)
 	}
 	data := file.Text()
-	mut cs := constant::NewStr(data)
+	mut cs := constant::NewString(data)
 	ret &Value{
-		Type:     primStr,
+		Type:     primString,
 		Constant: cs,
 		Model:    cs,
 		untyped:  true,
@@ -1460,12 +1460,12 @@ fn builtinCallerStdIntegEmit(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value
 		ret nil
 	}
 
-	if argVal.Type.Prim() == nil || !argVal.Type.Prim().IsStr() {
-		e.pushErr(fc.Args[0].Token, "mismatched types: @ and @", argVal.Type.Str(), primStr.Str())
+	if argVal.Type.Prim() == nil || !argVal.Type.Prim().IsString() {
+		e.pushErr(fc.Args[0].Token, "mismatched types: @ and @", argVal.Type.Str(), primString.Str())
 		ret nil
 	}
 
-	if !argVal.IsConst() || !argVal.Constant.IsStr() {
+	if !argVal.IsConst() || !argVal.Constant.IsString() {
 		e.pushErr(fc.Args[0].Token, "expression must be constant and string")
 		ret nil
 	}
@@ -1478,7 +1478,7 @@ fn builtinCallerStdIntegEmit(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value
 	}
 
 	mut model := &BackendEmitExpr{
-		Code: argVal.Constant.ReadStr(),
+		Code: argVal.Constant.ReadString(),
 	}
 
 	if len(fc.Args) > 1 {

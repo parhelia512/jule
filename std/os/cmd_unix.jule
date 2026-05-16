@@ -21,7 +21,7 @@ struct cmdAttrs {
 
 fn cmdsetenv(mut &envv: *[]string)! {
 	for j, env in *envv {
-		i := byteslite::IndexByteStr(env, '=')
+		i := byteslite::IndexByteString(env, '=')
 		if i == -1 {
 			throw sys::Errno(sys::EINVAL)
 		}
@@ -51,7 +51,7 @@ impl Cmd {
 
 			writeErrAndExit := fn(errno: sys::Errno) {
 				code := conv::Itoa(int(errno))
-				sys::Write(pipe1, unsafe::StrBytes(code))!
+				sys::Write(pipe1, unsafe::StringBytes(code))!
 				sys::Close(pipe1)!
 				Exit(1)
 			}
@@ -144,7 +144,7 @@ fn findExecutable(file: string)! {
 // If file contains a slash, it is tried directly and the PATH is not consulted.
 // Otherwise, on success, the result is an absolute path.
 fn lookPath(file: string)!: string {
-	if byteslite::IndexByteStr(file, '/') != -1 {
+	if byteslite::IndexByteString(file, '/') != -1 {
 		findExecutable(file) else {
 			throw &lookpathError{file, error}
 		}

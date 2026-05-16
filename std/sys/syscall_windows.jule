@@ -392,7 +392,7 @@ fn Open(path: string, flag: int, perm: u32)!: Handle {
 	if path == "" {
 		throw Errno(ERROR_FILE_NOT_FOUND)
 	}
-	utf16Path := integ::UTF16FromStr(path)
+	utf16Path := integ::UTF16FromString(path)
 	let mut access: u32
 	match flag & (O_RDONLY | O_WRONLY | O_RDWR) {
 	| O_RDONLY:
@@ -500,7 +500,7 @@ fn GetSystemTimeAsFileTime(mut &ft: *Filetime) {
 }
 
 fn LoadLibrary(libname: string)!: Handle {
-	utf16libname := integ::UTF16FromStr(libname)
+	utf16libname := integ::UTF16FromString(libname)
 	phandle := Addrcall[*unsafe](uintptr(extern.LoadLibraryW), &utf16libname[0])
 	if phandle == nil {
 		throw GetLastErrno()
@@ -509,7 +509,7 @@ fn LoadLibrary(libname: string)!: Handle {
 }
 
 fn LoadLibraryEx(libname: string, zero: Handle, flags: uintptr)!: Handle {
-	utf16libname := integ::UTF16FromStr(libname)
+	utf16libname := integ::UTF16FromString(libname)
 	phandle := Addrcall[*unsafe](uintptr(extern.LoadLibraryExW), &utf16libname[0], unsafe { (*unsafe)(zero) }, flags)
 	if phandle == nil {
 		throw GetLastErrno()
@@ -518,7 +518,7 @@ fn LoadLibraryEx(libname: string, zero: Handle, flags: uintptr)!: Handle {
 }
 
 fn GetProcAddress(module: Handle, procname: string)!: (proc: uintptr) {
-	_procname := integ::BytesFromStr(procname)
+	_procname := integ::BytesFromString(procname)
 	procp := Addrcall[*unsafe](uintptr(extern.GetProcAddress), unsafe { (*unsafe)(module) }, &_procname[0])
 	if procp == nil {
 		throw GetLastErrno()

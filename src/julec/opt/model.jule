@@ -6,11 +6,11 @@ use "std/jule/constant"
 use "std/jule/sema"
 use "std/jule/token"
 
-struct StrFromBytes {
+struct StringFromBytes {
 	Expr: sema::Expr
 }
 
-struct BytesFromStr {
+struct BytesFromString {
 	Expr: sema::Expr
 }
 

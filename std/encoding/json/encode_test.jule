@@ -17,7 +17,7 @@ fn encodeMapXKey[Map](t: &testing::T, m: Map, kind: string) {
 }
 
 #test
-fn testEncodeMapStrKey(t: &testing::T) {
+fn testEncodeMapStringKey(t: &testing::T) {
 	let encodeMap: map[string]string = {
 		"foo": "foo value",
 		"bar": "bar value",
@@ -204,7 +204,7 @@ let strCases: []strCase = [
 ]
 
 #test
-fn testEncodeStr(t: &testing::T) {
+fn testEncodeString(t: &testing::T) {
 	for _, case in strCases {
 		bytes := Encode(case.input) else {
 			t.Errorf("Encode(stsr) failed")

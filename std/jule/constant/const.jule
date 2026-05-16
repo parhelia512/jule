@@ -31,7 +31,7 @@ fn NewU64(x: u64): &Const {
 fn NewBool(x: bool): &Const { ret &Const{data: x} }
 
 // Returns new constant value instance from string.
-fn NewStr(x: string): &Const { ret &Const{data: x} }
+fn NewString(x: string): &Const { ret &Const{data: x} }
 
 // Returns new constant value instance from 64-bit floating-point.
 fn NewF64(x: f64): &Const { ret &Const{data: x} }
@@ -65,8 +65,8 @@ impl Const {
 
 	// Reads string data.
 	// Returns empty string if data is not string.
-	fn ReadStr(*self): string {
-		if !self.IsStr() {
+	fn ReadString(*self): string {
+		if !self.IsString() {
 			ret ""
 		}
 		ret self.data.(string)
@@ -175,7 +175,7 @@ impl Const {
 	fn SetBool(mut *self, x: bool) { self.data = x }
 
 	// Sets constant value from string.
-	fn SetStr(mut *self, x: string) { self.data = x }
+	fn SetString(mut *self, x: string) { self.data = x }
 
 	// Sets constant value from 64-bit floating-point.
 	fn SetF64(mut *self, x: f64) { self.data = x }
@@ -199,7 +199,7 @@ impl Const {
 	}
 
 	// Reports whether data is string.
-	fn IsStr(*self): bool {
+	fn IsString(*self): bool {
 		_, ok := self.data.(string)
 		ret ok
 	}
@@ -230,7 +230,7 @@ impl Const {
 			ret true
 		| self.IsBool() == x.IsBool():
 			ret true
-		| self.IsStr() == x.IsStr():
+		| self.IsString() == x.IsString():
 			ret true
 		| self.IsNil() == x.IsNil():
 			ret true
@@ -269,8 +269,8 @@ impl Const {
 			ret x.IsNil()
 		| self.IsBool():
 			ret x.IsBool() && self.ReadBool() == x.ReadBool()
-		| self.IsStr():
-			ret x.IsStr() && self.ReadStr() == x.ReadStr()
+		| self.IsString():
+			ret x.IsString() && self.ReadString() == x.ReadString()
 		| self.IsInt():
 			a := self.data.(big::Int)
 			if x.IsInt() {
@@ -300,8 +300,8 @@ impl Const {
 	//	- 64-bit floating-point
 	fn LSS(*self, x: Const): bool {
 		match {
-		| self.IsStr():
-			ret x.IsStr() && self.ReadStr() < x.ReadStr()
+		| self.IsString():
+			ret x.IsString() && self.ReadString() < x.ReadString()
 		| self.IsInt():
 			a := self.data.(big::Int)
 			if x.IsInt() {
@@ -329,8 +329,8 @@ impl Const {
 	//	- 64-bit floating-point
 	fn LEQ(*self, x: Const): bool {
 		match {
-		| self.IsStr():
-			ret x.IsStr() && self.ReadStr() <= x.ReadStr()
+		| self.IsString():
+			ret x.IsString() && self.ReadString() <= x.ReadString()
 		| self.IsInt():
 			a := self.data.(big::Int)
 			if x.IsInt() {
@@ -358,8 +358,8 @@ impl Const {
 	//	- 64-bit floating-point
 	fn GTR(*self, x: Const): bool {
 		match {
-		| self.IsStr():
-			ret x.IsStr() && self.ReadStr() > x.ReadStr()
+		| self.IsString():
+			ret x.IsString() && self.ReadString() > x.ReadString()
 		| self.IsInt():
 			a := self.data.(big::Int)
 			if x.IsInt() {
@@ -387,8 +387,8 @@ impl Const {
 	//	- 64-bit floating-point
 	fn GEQ(*self, x: Const): bool {
 		match {
-		| self.IsStr():
-			ret x.IsStr() && self.ReadStr() >= x.ReadStr()
+		| self.IsString():
+			ret x.IsString() && self.ReadString() >= x.ReadString()
 		| self.IsInt():
 			a := self.data.(big::Int)
 			if x.IsInt() {
@@ -410,11 +410,11 @@ impl Const {
 	// Reports whether operation is success.
 	fn ADD(mut *self, x: Const): bool {
 		match {
-		| self.IsStr():
-			if !x.IsStr() {
+		| self.IsString():
+			if !x.IsString() {
 				ret false
 			}
-			self.SetStr(self.ReadStr() + x.ReadStr())
+			self.SetString(self.ReadString() + x.ReadString())
 		| self.IsCmplx128() || x.IsCmplx128():
 			a := self.AsCmplx128()
 			b := x.AsCmplx128()
@@ -663,7 +663,7 @@ impl Const {
 				ret "true"
 			}
 			ret "false"
-		| self.IsStr():
+		| self.IsString():
 			ret self.data.(string)
 		| self.IsInt():
 			i := self.data.(big::Int)

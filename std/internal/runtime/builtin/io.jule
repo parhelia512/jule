@@ -34,12 +34,12 @@ fn readStdin(mut buf: []byte): int {
 // The runtime implementation of the built-in print function.
 #export "__jule_print"
 fn zprint(s: string) {
-	writeStdout(unsafe::StrBytes(s))
+	writeStdout(unsafe::StringBytes(s))
 }
 
 // The runtime implementation of the built-in println function.
 #export "__jule_println"
 fn zprintln(s: string) {
-	writeStdout(unsafe::StrBytes(s))
-	writeStdout(unsafe::StrBytes("\n"))
+	writeStdout(unsafe::StringBytes(s))
+	writeStdout(unsafe::StringBytes("\n"))
 }

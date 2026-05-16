@@ -18,7 +18,7 @@ async fn readServices() {
 	mut line, ok := file.readLine().await
 	for ok; line, ok = file.readLine().await {
 		// "http 80/tcp www www-http # World Wide Web HTTP"
-		mut i := byteslite::IndexByteStr(line, '#')
+		mut i := byteslite::IndexByteString(line, '#')
 		if i >= 0 {
 			line = line[:i]
 		}

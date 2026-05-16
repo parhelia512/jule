@@ -44,7 +44,7 @@ const (
 	digits     = "0123456789abcdefghijklmnopqrstuvwxyz"
 	host32bit  = ^uint(0)>>32 == 0
 
-	smallsStr = "00010203040506070809" +
+	smallsString = "00010203040506070809" +
 		"10111213141516171819" +
 		"20212223242526272829" +
 		"30313233343536373839" +
@@ -109,9 +109,9 @@ fn small(i: int): string {
 		ret string(byte('0' + i))
 	}
 	mut buf := make([]byte, 3)
-	buf[0] = smallsStr[i<<1]
-	buf[1] = smallsStr[i<<1+1]
-	ret unsafe::StrFromBytes(buf[:2])
+	buf[0] = smallsString[i<<1]
+	buf[1] = smallsString[i<<1+1]
+	ret unsafe::StringFromBytes(buf[:2])
 }
 
 fn isPowerOfTwo(x: int): bool {
@@ -157,14 +157,14 @@ fn formatBits(mut dst: []byte, mut u: u64, base: int, neg: bool, append_: bool):
 					is := us % 100 * 2
 					us /= 100
 					i -= 2
-					a[i+1] = smallsStr[is+1]
-					a[i+0] = smallsStr[is+0]
+					a[i+1] = smallsString[is+1]
+					a[i+0] = smallsString[is+0]
 				}
 
 				// us < 10, since it contains the last digit
 				// from the initial 9-digit us.
 				i--
-				a[i] = smallsStr[us*2+1]
+				a[i] = smallsString[us*2+1]
 
 				u = q
 			}
@@ -177,17 +177,17 @@ fn formatBits(mut dst: []byte, mut u: u64, base: int, neg: bool, append_: bool):
 			is := us % 100 * 2
 			us /= 100
 			i -= 2
-			a[i+1] = smallsStr[is+1]
-			a[i+0] = smallsStr[is+0]
+			a[i+1] = smallsString[is+1]
+			a[i+0] = smallsString[is+0]
 		}
 
 		// us < 100
 		is := us * 2
 		i--
-		a[i] = smallsStr[is+1]
+		a[i] = smallsString[is+1]
 		if us >= 10 {
 			i--
-			a[i] = smallsStr[is]
+			a[i] = smallsString[is]
 		}
 	| isPowerOfTwo(base):
 		// Use shifts and masks instead of / and %.
@@ -236,6 +236,6 @@ fn formatBits(mut dst: []byte, mut u: u64, base: int, neg: bool, append_: bool):
 		ret
 	}
 	n := copy(a, a[i:])
-	s = unsafe::StrFromBytes(a[:n])
+	s = unsafe::StringFromBytes(a[:n])
 	ret
 }

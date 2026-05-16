@@ -64,12 +64,12 @@ impl FileSet {
 			}
 			n++
 			if n == row {
-				ret unsafe::StrFromBytes(self.data[lineStart:i])
+				ret unsafe::StringFromBytes(self.data[lineStart:i])
 			}
 			lineStart = i + 1
 		}
 		// EOF may be appear with no new-line character.
 		// So if there is any remaining content, take it as a line.
-		ret unsafe::StrFromBytes(self.data[lineStart:])
+		ret unsafe::StringFromBytes(self.data[lineStart:])
 	}
 }

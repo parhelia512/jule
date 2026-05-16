@@ -23,11 +23,11 @@ const (
 let mut Program = (&Meta)(nil)
 
 // Metadata for the strings::Builder.
-struct StrBuilder {
-	Write:     &sema::FuncIns
-	WriteByte: &sema::FuncIns
-	WriteRune: &sema::FuncIns
-	WriteStr:  &sema::FuncIns
+struct StringBuilder {
+	Write:       &sema::FuncIns
+	WriteByte:   &sema::FuncIns
+	WriteRune:   &sema::FuncIns
+	WriteString: &sema::FuncIns
 }
 
 // Metadata for the runtime package.
@@ -58,7 +58,7 @@ struct Runtime {
 
 	Rand:            &sema::FuncIns
 	Osyield:         &sema::FuncIns
-	ToStr:           &sema::Func
+	ToString:        &sema::Func
 	ArrayCmp:        &sema::Func
 	DynAssertAssign: &sema::Func
 	Maphash:         &sema::Func
@@ -78,10 +78,10 @@ struct Runtime {
 	RCLoadAtomic:    &sema::FuncIns
 	RCDropAtomic:    &sema::FuncIns
 	RuneCount:       &sema::FuncIns
-	StrBytePtr:      &sema::FuncIns
+	StringBytePtr:   &sema::FuncIns
 	SliceBytePtr:    &sema::FuncIns
-	StrAsSlice:      &sema::FuncIns
-	SliceAsStr:      &sema::FuncIns
+	StringAsSlice:   &sema::FuncIns
+	SliceAsString:   &sema::FuncIns
 	Stopm:           &sema::FuncIns
 	CheckNilRef:     &sema::FuncIns
 	Cmplx64Eq:       &sema::FuncIns
@@ -110,8 +110,8 @@ struct Runtime {
 
 // Metadata for common objects.
 struct Meta {
-	Runtime:    &Runtime
-	StrBuilder: &StrBuilder
+	Runtime:       &Runtime
+	StringBuilder: &StringBuilder
 
 	EntryPoint: &sema::Func
 }
@@ -120,7 +120,7 @@ struct Meta {
 fn Collect(mut ir: &obj::IR): &Meta {
 	mut meta := new(Meta)
 	meta.Runtime = CollectRuntime(ir)
-	meta.StrBuilder = CollectStrBuilder(ir)
+	meta.StringBuilder = CollectStringBuilder(ir)
 	ret meta
 }
 
@@ -159,7 +159,7 @@ fn CollectRuntime(mut ir: &obj::IR): &Runtime {
 	meta.Spawnmainc = obj::RuntimeFindFunc(p, "spawnmainc").Instances[0]
 	meta.Rand = obj::RuntimeFindFunc(p, "rand").Instances[0]
 	meta.Osyield = obj::RuntimeFindFunc(p, "osyield").Instances[0]
-	meta.ToStr = obj::RuntimeFindFunc(p, "toStr")
+	meta.ToString = obj::RuntimeFindFunc(p, "toString")
 	meta.ArrayCmp = obj::RuntimeFindFunc(p, "arrayCmp")
 	meta.DynAssertAssign = obj::RuntimeFindFunc(p, "dynAssertAssign")
 	meta.Maphash = obj::RuntimeFindFunc(p, "maphash")
@@ -177,10 +177,10 @@ fn CollectRuntime(mut ir: &obj::IR): &Runtime {
 	meta.RCLoadAtomic = obj::RuntimeFindFunc(p, "_RCLoadAtomic").Instances[0]
 	meta.RCDropAtomic = obj::RuntimeFindFunc(p, "_RCDropAtomic").Instances[0]
 	meta.RuneCount = obj::RuntimeFindFunc(p, "runeCount").Instances[0]
-	meta.StrBytePtr = obj::RuntimeFindFunc(p, "strBytePtr").Instances[0]
+	meta.StringBytePtr = obj::RuntimeFindFunc(p, "stringBytePtr").Instances[0]
 	meta.SliceBytePtr = obj::RuntimeFindFunc(p, "sliceBytePtr").Instances[0]
-	meta.StrAsSlice = obj::RuntimeFindFunc(p, "strAsSlice").Instances[0]
-	meta.SliceAsStr = obj::RuntimeFindFunc(p, "sliceAsStr").Instances[0]
+	meta.StringAsSlice = obj::RuntimeFindFunc(p, "stringAsSlice").Instances[0]
+	meta.SliceAsString = obj::RuntimeFindFunc(p, "sliceAsString").Instances[0]
 	meta.Stopm = obj::RuntimeFindFunc(p, "stopm").Instances[0]
 	meta.CheckNilRef = obj::RuntimeFindFunc(p, "checkNilRef").Instances[0]
 	meta.Cmplx64Eq = obj::RuntimeFindFunc(p, "cmplx64eq").Instances[0]
@@ -218,8 +218,8 @@ fn CollectRuntime(mut ir: &obj::IR): &Runtime {
 	ret meta
 }
 
-// Collects StrBuilder from IR if possible.
-fn CollectStrBuilder(mut ir: &obj::IR): &StrBuilder {
+// Collects StringBuilder from IR if possible.
+fn CollectStringBuilder(mut ir: &obj::IR): &StringBuilder {
 	const Extern = false
 	const Static = false
 	mut p := obj::SelectImport(ir.Used, linkpathStrings)
@@ -227,7 +227,7 @@ fn CollectStrBuilder(mut ir: &obj::IR): &StrBuilder {
 		ret nil
 	}
 	mut b := p.FindStruct("Builder", Extern).Instances[0]
-	mut meta := new(StrBuilder)
+	mut meta := new(StringBuilder)
 	const metav = comptime::ValueOf(*meta)
 	const for _, f in metav.Type().Decl().Fields() {
 		metav.Field(f.Name()).Unwrap() = b.FindMethod(f.Name(), Static).Instances[0]

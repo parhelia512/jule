@@ -89,8 +89,8 @@ fn Equal(a: []byte, b: []byte): bool {
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
 // A nil argument is equivalent to an empty slice.
 fn Compare(a: []byte, b: []byte): int {
-	as, bs := unsafe::BytesStr(a), unsafe::BytesStr(b)
-	ret runtime::compareStr(&as, &bs)
+	as, bs := unsafe::BytesString(a), unsafe::BytesString(b)
+	ret runtime::compareString(&as, &bs)
 }
 
 // Counts the number of non-overlapping instances of sep in s.
@@ -257,7 +257,7 @@ fn IndexAny(s: []byte, chars: string): int {
 			}
 			ret -1
 		}
-		if byteslite::IndexByteStr(chars, s[0]) >= 0 {
+		if byteslite::IndexByteString(chars, s[0]) >= 0 {
 			ret 0
 		}
 		ret -1
@@ -285,7 +285,7 @@ fn IndexAny(s: []byte, chars: string): int {
 	for i < len(s); i += width {
 		mut r := rune(s[i])
 		if r < utf8::RuneSelf {
-			if byteslite::IndexByteStr(chars, s[i]) >= 0 {
+			if byteslite::IndexByteString(chars, s[i]) >= 0 {
 				ret i
 			}
 			width = 1
@@ -341,7 +341,7 @@ fn LastIndexAny(s: []byte, chars: string): int {
 			}
 			ret -1
 		}
-		if byteslite::IndexByteStr(chars, s[0]) >= 0 {
+		if byteslite::IndexByteString(chars, s[0]) >= 0 {
 			ret 0
 		}
 		ret -1
@@ -365,7 +365,7 @@ fn LastIndexAny(s: []byte, chars: string): int {
 	for i > 0 {
 		mut r := rune(s[i-1])
 		if r < utf8::RuneSelf {
-			if byteslite::IndexByteStr(chars, s[i-1]) >= 0 {
+			if byteslite::IndexByteString(chars, s[i-1]) >= 0 {
 				ret i - 1
 			}
 			i--

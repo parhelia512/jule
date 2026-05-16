@@ -1679,7 +1679,7 @@ fn unlinkat(dirfd: int, path: []byte, flags: int)! {
 }
 
 fn Unlinkat(dirfd: int, path: string, flags: int)! {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	unlinkat(dirfd, cpath, flags)?
 }
 
@@ -1703,7 +1703,7 @@ fn mkdirat(dirfd: int, path: []byte, mode: u32)! {
 
 // Path should be NUL-terminated if it is not empty.
 fn Mkdirat(dirfd: int, path: string, mode: u32)! {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	mkdirat(dirfd, cpath, mode)?
 }
 
@@ -1712,7 +1712,7 @@ fn Mkdir(path: string, mode: u32)! {
 }
 
 fn Openat(dirfd: int, path: string, mode: int, perm: u32)!: (fd: int) {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	fd = unsafe { extern.openat(dirfd, (*c::Char)(&cpath[0]), mode, perm) }
 	if fd < _NO_ERROR {
 		throw GetLastErrno()
@@ -1737,7 +1737,7 @@ fn Getcwd(mut buf: []byte)!: (n: int) {
 }
 
 fn Chdir(path: string)! {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	e := unsafe { extern.chdir((*c::Char)(&cpath[0])) }
 	if e < _NO_ERROR {
 		throw GetLastErrno()
@@ -1753,7 +1753,7 @@ fn Fcntl(fd: int, cmd: int, arg: int)!: int {
 }
 
 fn Fstatat(fd: int, path: string, mut &stat: *SysStat, flags: int)! {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	e := unsafe { extern.fstatat(fd, (*c::Char)(&cpath[0]), (*extern.stat)(stat), flags) }
 	if e < _NO_ERROR {
 		throw GetLastErrno()
@@ -1906,7 +1906,7 @@ fn Sysctl(name: []i32, oldp: uintptr, oldplen: uintptr, newp: uintptr, newplen: 
 }
 
 fn Faccessat(dirfd: int, path: string, mode: u32, flags: int)! {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	e := unsafe { extern.faccessat(dirfd, (*c::Char)(&cpath[0]), mode, flags) }
 	if e < _NO_ERROR {
 		throw GetLastErrno()
@@ -1914,7 +1914,7 @@ fn Faccessat(dirfd: int, path: string, mode: u32, flags: int)! {
 }
 
 fn Open(path: string, mode: int, perm: u32)!: (fd: int) {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	fd = unsafe { extern.open((*c::Char)(&cpath[0]), mode, perm) }
 	if fd < _NO_ERROR {
 		throw GetLastErrno()
@@ -1951,11 +1951,11 @@ fn Fork()!: int {
 	ret int(r)
 }
 
-fn strSliceToCstrSlice(&s: *[]string, mut &args: *[][]byte): []*byte {
+fn stringSliceToCstringSlice(&s: *[]string, mut &args: *[][]byte): []*byte {
 	mut p_args := make([]*byte, len(*s)+1)
 	*args = make([][]byte, len(*s))
 	for i, arg in *s {
-		mut p_arg := integ::BytesFromStr(arg)
+		mut p_arg := integ::BytesFromString(arg)
 		(*args)[i] = p_arg
 		p_args[i] = &p_arg[0]
 	}
@@ -1966,9 +1966,9 @@ fn strSliceToCstrSlice(&s: *[]string, mut &args: *[][]byte): []*byte {
 fn Exec(file: string, args: []string, env: []string)! {
 	let mut c_args2: [][]byte // Avoid deallocation of converted args for safety.
 	let mut c_env2: [][]byte  // Avoid deallocation of converted env for safety.
-	c_file := integ::BytesFromStr(file)
-	c_args := strSliceToCstrSlice(&args, &c_args2)
-	c_env := strSliceToCstrSlice(&env, &c_env2)
+	c_file := integ::BytesFromString(file)
+	c_args := stringSliceToCstringSlice(&args, &c_args2)
+	c_env := stringSliceToCstringSlice(&env, &c_env2)
 	unsafe { extern.execve((*c::Char)(&c_file[0]), (**c::Char)(&c_args[0]), (**c::Char)(&c_env[0])) }
 	// If execve was successful, this statement would not be reached.
 	throw GetLastErrno()
@@ -1996,7 +1996,7 @@ fn Dup2(oldfd: int, newfd: int)! {
 }
 
 fn Readlinkat(dirfd: int, path: string, mut buf: []byte)!: (n: int) {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	mut _p0 := uintptr(0)
 	if len(buf) > 0 {
 		_p0 = uintptr(&buf[0])
@@ -2012,7 +2012,7 @@ fn Readlinkat(dirfd: int, path: string, mut buf: []byte)!: (n: int) {
 }
 
 fn Readlink(path: string, mut buf: []byte)!: (n: int) {
-	cpath := integ::BytesFromStr(path)
+	cpath := integ::BytesFromString(path)
 	mut _p0 := uintptr(0)
 	if len(buf) > 0 {
 		_p0 = uintptr(&buf[0])

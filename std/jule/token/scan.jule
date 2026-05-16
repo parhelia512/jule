@@ -180,7 +180,7 @@ impl Scanner {
 		for {
 			self.next()
 			if self.r == eof || self.r == '\n' {
-				token.Kind = unsafe::StrFromBytes(self.buf.Slice2(offs, self.offset))
+				token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
 				ret
 			}
 		}
@@ -198,7 +198,7 @@ impl Scanner {
 				if self.r != eof && self.r == '/' {
 					self.next()
 					token.ID = COMMENT
-					token.Kind = unsafe::StrFromBytes(self.buf.Slice2(offs, self.offset))
+					token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
 					ret
 				}
 			}
@@ -256,7 +256,7 @@ impl Scanner {
 
 	exit:
 		token.ID = NAME
-		token.Kind = unsafe::StrFromBytes(self.buf.Slice2(offs, self.offset))
+		token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
 		ret true
 	}
 
@@ -366,7 +366,7 @@ impl Scanner {
 			self.next()
 		}
 
-		lit := unsafe::StrFromBytes(self.buf.Slice2(offs, self.offset))
+		lit := unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
 		if tok == INT && invalid >= 0 {
 			self.pushErr(invalid, "invalid digit {} in {}", lit[invalid-offs], litname(prefix))
 		}
@@ -476,7 +476,7 @@ impl Scanner {
 				self.pushErr(self.col, "illegal rune literal")
 			}
 			token.ID = RUNE
-			token.Kind = unsafe::StrFromBytes(self.buf.Slice2(offs, self.offset))
+			token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
 		}
 	}
 
@@ -504,7 +504,7 @@ impl Scanner {
 
 		if valid {
 			token.ID = STRING
-			token.Kind = unsafe::StrFromBytes(self.buf.Slice2(offs, self.offset))
+			token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
 		}
 	}
 
@@ -537,7 +537,7 @@ impl Scanner {
 				lit = stripCR(lit, false)
 			}
 			token.ID = STRING
-			token.Kind = unsafe::StrFromBytes(lit)
+			token.Kind = unsafe::StringFromBytes(lit)
 		}
 	}
 
@@ -825,7 +825,7 @@ fn isDigit(ch: rune): bool {
 // Returns the index of the first invalid separator in z, or -1.
 fn invalidSep(z: string): int {
 	x := ubuf::Ubuf{}
-	x.SetData(unsafe::StrBytes(z))
+	x.SetData(unsafe::StringBytes(z))
 	mut x1 := rune(' ') // prefix char, we only care if it's 'x'
 	mut d := rune('.')  // digit, one of '_', '0' (a digit), or '.' (anything else)
 	mut i := 0

@@ -50,7 +50,7 @@ public:
             error += "\nruntime: string indexing with out of range index";
             error += "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
         return s[i];
@@ -306,23 +306,23 @@ public:
     }
 
     __jule_Bool operator<(const __jule_String &str) const noexcept {
-        return __jule_compareStr((__jule_String *)this,
-                                 (__jule_String *)&str) == -1;
+        return __jule_compareString((__jule_String *)this,
+                                    (__jule_String *)&str) == -1;
     }
 
     inline __jule_Bool operator<=(const __jule_String &str) const noexcept {
-        return __jule_compareStr((__jule_String *)this,
-                                 (__jule_String *)&str) <= 0;
+        return __jule_compareString((__jule_String *)this,
+                                    (__jule_String *)&str) <= 0;
     }
 
     __jule_Bool operator>(const __jule_String &str) const noexcept {
-        return __jule_compareStr((__jule_String *)this,
-                                 (__jule_String *)&str) == +1;
+        return __jule_compareString((__jule_String *)this,
+                                    (__jule_String *)&str) == +1;
     }
 
     inline __jule_Bool operator>=(const __jule_String &str) const noexcept {
-        return __jule_compareStr((__jule_String *)this,
-                                 (__jule_String *)&str) >= 0;
+        return __jule_compareString((__jule_String *)this,
+                                    (__jule_String *)&str) >= 0;
     }
 
     inline void boundary_check(const char *file,
@@ -334,7 +334,7 @@ public:
             error += "\nruntime: string indexing with out of range index";
             error += "\nfile: ";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
     }
@@ -349,7 +349,7 @@ public:
             error += "\nruntime: string slicing with out of range indexes";
             error += "\nfile:";
             error += file;
-            __jule_panicStr(error);
+            __jule_panicString(error);
         }
 #endif
     }

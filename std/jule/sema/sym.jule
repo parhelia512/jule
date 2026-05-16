@@ -478,8 +478,8 @@ impl symBuilder {
 	fn pushCycleError(mut &self, sb: &symBuilder, path: string, mut &message: *strings::Builder) {
 		const Padding = 7
 		refersTo := log::Logf("@ refers to @", conv::Quote(sb.importPath), conv::Quote(path))
-		message.WriteStr(strings::Repeat(" ", Padding))!
-		message.WriteStr(refersTo)!
+		message.WriteString(strings::Repeat(" ", Padding))!
+		message.WriteString(refersTo)!
 		message.WriteByte('\n')!
 	}
 

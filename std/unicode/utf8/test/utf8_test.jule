@@ -100,16 +100,16 @@ fn testFullRune(t: &testing::T) {
 			t.Errorf("FullRune({}) ({}) = false, want true", b, m.r)
 		}
 		s := m.s
-		if !utf8::FullRuneStr(s) {
-			t.Errorf("FullRuneStr({}) ({}) = false, want true", s, m.r)
+		if !utf8::FullRuneString(s) {
+			t.Errorf("FullRuneString({}) ({}) = false, want true", s, m.r)
 		}
 		b1 := b[0 : len(b)-1]
 		if utf8::FullRune(b1) {
 			t.Errorf("FullRune({}) = true, want false", b1)
 		}
 		s1 := string(b1)
-		if utf8::FullRuneStr(s1) {
-			t.Errorf("FullRuneStr({}) = true, want false", s1)
+		if utf8::FullRuneString(s1) {
+			t.Errorf("FullRuneString({}) = true, want false", s1)
 		}
 	}
 	for _, s in ["\xc0", "\xc1"] {
@@ -117,8 +117,8 @@ fn testFullRune(t: &testing::T) {
 		if !utf8::FullRune(b) {
 			t.Errorf("FullRune({}) = false, want true", s)
 		}
-		if !utf8::FullRuneStr(s) {
-			t.Errorf("FullRuneStr({}) = false, want true", s)
+		if !utf8::FullRuneString(s) {
+			t.Errorf("FullRuneString({}) = false, want true", s)
 		}
 	}
 }
@@ -160,9 +160,9 @@ fn testDecodeRune(t: &testing::T) {
 			t.Errorf("DecodeRune({}) = {}, {} want {}, {}", b, r, size, m.r, len(b))
 		}
 		mut s := m.s
-		r, size = utf8::DecodeRuneStr(s)
+		r, size = utf8::DecodeRuneString(s)
 		if r != m.r || size != len(b) {
-			t.Errorf("DecodeRuneStr({}) = {}, {} want {}, {}", s, r, size, m.r, len(b))
+			t.Errorf("DecodeRuneString({}) = {}, {} want {}, {}", s, r, size, m.r, len(b))
 		}
 
 		// there's an extra byte that bytes left behind - make sure trailing byte works
@@ -171,9 +171,9 @@ fn testDecodeRune(t: &testing::T) {
 			t.Errorf("DecodeRune({}) = {}, {} want {}, {}", b, r, size, m.r, len(b))
 		}
 		s = m.s + "\x00"
-		r, size = utf8::DecodeRuneStr(s)
+		r, size = utf8::DecodeRuneString(s)
 		if r != m.r || size != len(b) {
-			t.Errorf("DecodeRuneStr({}) = {}, {} want {}, {}", s, r, size, m.r, len(b))
+			t.Errorf("DecodeRuneString({}) = {}, {} want {}, {}", s, r, size, m.r, len(b))
 		}
 
 		// make sure missing bytes fail
@@ -186,9 +186,9 @@ fn testDecodeRune(t: &testing::T) {
 			t.Errorf("DecodeRune({}) = {}, {} want {}, {}", b[0:len(b)-1], r, size, utf8::RuneError, wantsize)
 		}
 		s = m.s[0 : len(m.s)-1]
-		r, size = utf8::DecodeRuneStr(s)
+		r, size = utf8::DecodeRuneString(s)
 		if r != utf8::RuneError || size != wantsize {
-			t.Errorf("DecodeRuneStr({}) = {}, {} want {}, {}", s, r, size, utf8::RuneError, wantsize)
+			t.Errorf("DecodeRuneString({}) = {}, {} want {}, {}", s, r, size, utf8::RuneError, wantsize)
 		}
 
 		// make sure bad sequences fail
@@ -202,9 +202,9 @@ fn testDecodeRune(t: &testing::T) {
 			t.Errorf("DecodeRune({}) = {}, {} want {}, {}", b, r, size, utf8::RuneError, 1)
 		}
 		s = string(b)
-		r, size = utf8::DecodeRuneStr(s)
+		r, size = utf8::DecodeRuneString(s)
 		if r != utf8::RuneError || size != 1 {
-			t.Errorf("DecodeRuneStr({}) = {}, {} want {}, {}", s, r, size, utf8::RuneError, 1)
+			t.Errorf("DecodeRuneString({}) = {}, {} want {}, {}", s, r, size, utf8::RuneError, 1)
 		}
 	}
 }
@@ -218,9 +218,9 @@ fn testDecodeSurrogateRune(t: &testing::T) {
 			t.Errorf("DecodeRune({}) = {}, {} want {}, {}", b, r, size, utf8::RuneError, 1)
 		}
 		s := m.s
-		r, size = utf8::DecodeRuneStr(s)
+		r, size = utf8::DecodeRuneString(s)
 		if r != utf8::RuneError || size != 1 {
-			t.Errorf("DecodeRuneStr({}) = {}, {} want {}, {}", b, r, size, utf8::RuneError, 1)
+			t.Errorf("DecodeRuneString({}) = {}, {} want {}, {}", b, r, size, utf8::RuneError, 1)
 		}
 	}
 }
@@ -236,17 +236,17 @@ fn runtimeRuneCount(s: string): int {
 #test
 fn testRuntimeConversion(t: &testing::T) {
 	for _, ts in testStrings {
-		count := utf8::RuneCountStr(ts)
+		count := utf8::RuneCountString(ts)
 		mut n := runtimeRuneCount(ts)
 		if n != count {
-			t.Errorf("{}: len([]rune()) counted {} runes; got {} from RuneCountStr", ts, n, count)
+			t.Errorf("{}: len([]rune()) counted {} runes; got {} from RuneCountString", ts, n, count)
 			break
 		}
 
 		runes := []rune(ts)
 		n = len(runes)
 		if n != count {
-			t.Errorf("{}: []rune() has length {}; got {} from RuneCountStr", ts, n, count)
+			t.Errorf("{}: []rune() has length {}; got {} from RuneCountString", ts, n, count)
 			break
 		}
 		mut i := 0
@@ -288,9 +288,9 @@ let runecountCases: []runeCountTest = [
 #test
 fn testRuneCount(t: &testing::T) {
 	for _, tt in runecountCases {
-		mut out := utf8::RuneCountStr(tt.inp)
+		mut out := utf8::RuneCountString(tt.inp)
 		if out != tt.out {
-			t.Errorf("RuneCountStr({}) = {}, want {}", tt.inp, out, tt.out)
+			t.Errorf("RuneCountString({}) = {}, want {}", tt.inp, out, tt.out)
 		}
 		out = utf8::RuneCount([]byte(tt.inp))
 		if out != tt.out {
@@ -359,8 +359,8 @@ fn testValid(t: &testing::T) {
 		if utf8::Valid([]byte(tt.inp)) != tt.out {
 			t.Errorf("Valid({}) = {}; want {}", tt.inp, !tt.out, tt.out)
 		}
-		if utf8::ValidStr(tt.inp) != tt.out {
-			t.Errorf("ValidStr({}) = {}; want {}", tt.inp, !tt.out, tt.out)
+		if utf8::ValidString(tt.inp) != tt.out {
+			t.Errorf("ValidString({}) = {}; want {}", tt.inp, !tt.out, tt.out)
 		}
 	}
 }
@@ -417,13 +417,13 @@ fn testSequence(t: &testing::T, s: string) {
 			t.Errorf("DecodeRune({}) = {}, want {}", s[i:], r1, r)
 			ret
 		}
-		r2, size2 := utf8::DecodeRuneStr(s[i:])
+		r2, size2 := utf8::DecodeRuneString(s[i:])
 		if r != r2 {
-			t.Errorf("DecodeRuneStr({}) = {}, want {}", s[i:], r2, r)
+			t.Errorf("DecodeRuneString({}) = {}, want {}", s[i:], r2, r)
 			ret
 		}
 		if size1 != size2 {
-			t.Errorf("DecodeRune/DecodeRuneStr({}) size mismatch {}/{}", s[i:], size1, size2)
+			t.Errorf("DecodeRune/DecodeRuneString({}) size mismatch {}/{}", s[i:], size1, size2)
 			ret
 		}
 		si += size1
@@ -432,9 +432,9 @@ fn testSequence(t: &testing::T, s: string) {
 	si = len(s)
 	for si > 0 {
 		r1, size1 := utf8::DecodeLastRune(b[0:si])
-		r2, size2 := utf8::DecodeLastRuneStr(s[0:si])
+		r2, size2 := utf8::DecodeLastRuneString(s[0:si])
 		if size1 != size2 {
-			t.Errorf("DecodeLastRune/DecodeLastRuneStr({}, {}) size mismatch {}/{}", s, si, size1, size2)
+			t.Errorf("DecodeLastRune/DecodeLastRuneString({}, {}) size mismatch {}/{}", s, si, size1, size2)
 			ret
 		}
 		if r1 != index[j].r {
@@ -442,7 +442,7 @@ fn testSequence(t: &testing::T, s: string) {
 			ret
 		}
 		if r2 != index[j].r {
-			t.Errorf("DecodeLastRuneStr({}, {}) = {}, want {}", s, si, r2, index[j].r)
+			t.Errorf("DecodeLastRuneString({}, {}) = {}, want {}", s, si, r2, index[j].r)
 			ret
 		}
 		si -= size1

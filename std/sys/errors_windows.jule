@@ -398,5 +398,5 @@ fn formatError(e: Errno): string {
 	// trim terminating \r and \n
 	for n > 0 && (b[n-1] == '\n' || b[n-1] == '\r'); n-- {
 	}
-	ret integ::UTF16ToStr(b[:n])
+	ret integ::UTF16ToString(b[:n])
 }

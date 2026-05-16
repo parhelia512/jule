@@ -47,7 +47,7 @@ impl resource::File for file {
 
 	fn Bytes(*self): []byte { ret self.data }
 
-	fn Text(*self): string { ret unsafe::StrFromBytes(self.data) }
+	fn Text(*self): string { ret unsafe::StringFromBytes(self.data) }
 }
 
 // Default importer for the reference Jule compiler.

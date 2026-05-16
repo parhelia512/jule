@@ -10,39 +10,39 @@ use "std/unicode/utf8"
 
 let mut gcdTests: []argNN = [
 	{
-		fromStrW("92347302572303208732805308602356328065738254"),
-		fromStrW("92347302572303208732805308602356328065738254"),
-		fromStrW("92347302572303208732805308602356328065738254"),
+		fromStringW("92347302572303208732805308602356328065738254"),
+		fromStringW("92347302572303208732805308602356328065738254"),
+		fromStringW("92347302572303208732805308602356328065738254"),
 	},
 	{
-		fromStrW("6"),
-		fromStrW("92347302572303208732805308602356328065738254"),
-		fromStrW("9234730257230320873280530860"),
+		fromStringW("6"),
+		fromStringW("92347302572303208732805308602356328065738254"),
+		fromStringW("9234730257230320873280530860"),
 	},
 	{
-		fromStrW("3"),
-		fromStrW("1234567890"),
-		fromStrW("123"),
+		fromStringW("3"),
+		fromStringW("1234567890"),
+		fromStringW("123"),
 	},
 	{
-		fromStrW("2"),
-		fromStrW("34"),
-		fromStrW("123234"),
+		fromStringW("2"),
+		fromStringW("34"),
+		fromStringW("123234"),
 	},
 	{
-		fromStrW("3"),
-		fromStrW("9090909090999"),
-		fromStrW("111111"),
+		fromStringW("3"),
+		fromStringW("9090909090999"),
+		fromStringW("111111"),
 	},
 	{
-		fromStrW("1"),
-		fromStrW("213243546576879889674523"),
-		fromStrW("1000"),
+		fromStringW("1"),
+		fromStringW("213243546576879889674523"),
+		fromStringW("1000"),
 	},
 	{
-		fromStrW("101"),
-		fromStrW("213243546576879889674523"),
-		fromStrW("1010"),
+		fromStringW("101"),
+		fromStringW("213243546576879889674523"),
+		fromStringW("1010"),
 	},
 ]
 
@@ -173,7 +173,7 @@ fn testProbablyPrime(t: &testing::T) {
 	const nreps = 20
 	for i, s in primes {
 		let mut p: Int
-		p.SetStr(s, 10)
+		p.SetString(s, 10)
 		if !p.ProbablyPrime(nreps) || nreps != 1 && !p.ProbablyPrime(1) || !p.ProbablyPrime(0) {
 			t.Errorf("{} prime found to be non-prime ({})", i, s)
 		}
@@ -182,7 +182,7 @@ fn testProbablyPrime(t: &testing::T) {
 	for (i, mut s) in composites {
 		s = strings::Map(cutSpace, s)
 		let mut c: Int
-		c.SetStr(s, 10)
+		c.SetString(s, 10)
 		if c.ProbablyPrime(nreps) || nreps != 1 && c.ProbablyPrime(1) || c.ProbablyPrime(0) {
 			t.Errorf("{} composite found to be prime ({})", i, s)
 		}
@@ -233,7 +233,7 @@ fn testBinomial(t: &testing::T) {
 fn testSetBytes(t: &testing::T) {
 	for _, prime in primes {
 		let mut i: Int
-		i.SetStr(prime, 0)
+		i.SetString(prime, 0)
 
 		bytes := i.Bytes()
 
@@ -250,7 +250,7 @@ fn testSetBytes(t: &testing::T) {
 fn testAppendBytes(t: &testing::T) {
 	for _, prime in primes {
 		let mut i: Int
-		i.SetStr(prime, 0)
+		i.SetString(prime, 0)
 
 		bytes := i.Bytes()
 

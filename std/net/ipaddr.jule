@@ -19,7 +19,7 @@ impl Addr for IPAddr {
 		if self == nil {
 			ret "<nil>"
 		}
-		ip := self.IP.ipEmptyStr()
+		ip := self.IP.ipEmptyString()
 		if self.Zone != "" {
 			ret ip + "%" + self.Zone
 		}

@@ -981,7 +981,7 @@ impl Int {
 
 	// Sets self to the value of s, interpreted in the given base,
 	// and returns a boolean indicating success. The entire string
-	// (not just a prefix) must be valid for success. If SetStr fails,
+	// (not just a prefix) must be valid for success. If SetString fails,
 	// the value of self is undefined.
 	//
 	// The base argument must be 0 or a value between 2 and [MaxBase].
@@ -1001,7 +1001,7 @@ impl Int {
 	// Incorrect placement of underscores is reported as an error if there
 	// are no other errors. If base != 0, underscores are not recognized
 	// and act like any other character that is not a valid digit.
-	fn SetStr(mut *self, mut s: string, base: int): (ok: bool) {
+	fn SetString(mut *self, mut s: string, base: int): (ok: bool) {
 		// determine sign
 		mut neg := false
 		if len(s) > 0 {
@@ -1015,7 +1015,7 @@ impl Int {
 		}
 
 		// parse abs
-		mut r := strScan.new(s)
+		mut r := stringScan.new(s)
 		(self.abs), _, _, ok := scanW(self.abs[:0], &r, base, false)
 		self.neg = len(self.abs) > 0 && neg // 0 has no sign
 		if !ok {
@@ -1069,7 +1069,7 @@ impl Int {
 	// the upper-case letters 'A' to 'Z' for digit values 36 to 61.
 	// No prefix (such as "0x") is added to the string.
 	fn Format(*self, b: int): string {
-		ret unsafe::StrFromBytes(itoaW(self.abs, self.neg, b))
+		ret unsafe::StringFromBytes(itoaW(self.abs, self.neg, b))
 	}
 
 	// Returns the f64 value nearest x(self),

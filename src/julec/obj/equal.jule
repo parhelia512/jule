@@ -25,8 +25,8 @@ fn equalConst(mut l: &constant::Const, mut r: &constant::Const): bool {
 		ret a.Cmp(&b) == 0
 	| l.IsF64():
 		ret r.IsF64() && l.ReadF64() == r.ReadF64()
-	| l.IsStr():
-		ret r.IsStr() && l.ReadStr() == r.ReadStr()
+	| l.IsString():
+		ret r.IsString() && l.ReadString() == r.ReadString()
 	| l.IsBool():
 		ret r.IsBool() && l.ReadBool() == r.ReadBool()
 	| l.IsNil():

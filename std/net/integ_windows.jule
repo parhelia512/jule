@@ -27,7 +27,7 @@ fn integLookupIP(net: Network, host: string)!: (addrs: []IPAddr) {
 	| IP6 | TCP6 | UDP6:
 		hints.Family = sys::AF_INET6
 	}
-	utf16host := integ::UTF16FromStr(host)
+	utf16host := integ::UTF16FromString(host)
 	let mut res: *windows::AddrinfoW
 	e := sys::Addrcall[int](uintptr(extern.GetAddrInfoW), uintptr(&utf16host[0]), uintptr(0), uintptr(&hints), uintptr(&res))
 	if e != 0 {

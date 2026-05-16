@@ -11,14 +11,14 @@ const panicExit = 2
 // The built-in panic call.
 #export "__jule_panic"
 unsafe fn panic1(m: *byte, n: int) {
-	writeStderr(unsafe::StrBytes("panic: "))
+	writeStderr(unsafe::StringBytes("panic: "))
 	writeStderr(unsafe::Slice(*(&m), n, n))
-	writeStderr(unsafe::StrBytes("\n"))
+	writeStderr(unsafe::StringBytes("\n"))
 	sys::Exit(panicExit)
 }
 
 // Calls the panic1 function by m.
-#export "__jule_panicStr"
-fn panicStr(m: string) {
+#export "__jule_panicString"
+fn panicString(m: string) {
 	unsafe { panic1(&m[0], len(m)) }
 }

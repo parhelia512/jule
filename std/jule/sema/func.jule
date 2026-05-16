@@ -195,11 +195,11 @@ impl ParamIns {
 	fn Str(*self): string {
 		mut s := strings::Builder{}
 		if self.Decl.Mutable {
-			s.WriteStr("mut ")!
+			s.WriteString("mut ")!
 		}
 
 		if self.Decl.Reference {
-			s.WriteStr("&_:")!
+			s.WriteString("&_:")!
 		}
 
 		if self.Decl.IsSelf() {
@@ -211,14 +211,14 @@ impl ParamIns {
 			|:
 				panic("unreachable")
 			}
-			s.WriteStr("self")!
+			s.WriteString("self")!
 			ret s.Str()
 		}
 
 		// Do not write variadic parameter "..." operator.
 		// Type.Str() will write it.
 		if self.Type != nil {
-			s.WriteStr(self.Type.Str())!
+			s.WriteString(self.Type.Str())!
 		}
 		ret s.Str()
 	}
@@ -249,7 +249,7 @@ impl Kind for FuncIns {
 	// Returns function's type kind as string.
 	fn Str(*self): string {
 		const Ident = false
-		ret self.GetKindStr(Ident)
+		ret self.GetKindString(Ident)
 	}
 
 	// Reports whether types are same.
@@ -396,30 +396,30 @@ impl FuncIns {
 	// Returns kind string of function instance.
 	// Appends identifier to kind of this instance.
 	// Does not appends identifier of this instance to kind if self.Decl is nil.
-	fn GetKindStr(*self, name: bool): string {
+	fn GetKindString(*self, name: bool): string {
 		mut s := strings::Builder{}
 		s.Grow(1 << 5)
 
 		if self.Decl != nil && self.Decl.Unsafe {
-			s.WriteStr("unsafe ")!
+			s.WriteString("unsafe ")!
 		}
 
 		if self.Decl != nil && self.Decl.Async {
-			s.WriteStr("async ")!
+			s.WriteString("async ")!
 		}
 
-		s.WriteStr("fn")!
+		s.WriteString("fn")!
 
 		if name && self.Decl != nil {
 			s.WriteByte(' ')!
-			s.WriteStr(self.Decl.Name)!
+			s.WriteString(self.Decl.Name)!
 		}
 
 		s.WriteByte('(')!
 		n := len(self.Params)
 		if n > 0 {
 			for i, p in self.Params {
-				s.WriteStr(p.Str())!
+				s.WriteString(p.Str())!
 				if i < len(self.Params)-1 {
 					s.WriteByte(',')!
 				}
@@ -431,7 +431,7 @@ impl FuncIns {
 		}
 		if self.Decl != nil && !self.Decl.IsVoid() {
 			s.WriteByte(':')!
-			s.WriteStr(self.Result.Str())!
+			s.WriteString(self.Result.Str())!
 		}
 		ret s.Str()
 	}

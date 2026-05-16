@@ -63,7 +63,7 @@ async fn readHosts() {
 	if ok {
 		mut line, (ok) := file.readLine().await
 		for ok; line, ok = file.readLine().await {
-			mut i := byteslite::IndexByteStr(line, '#')
+			mut i := byteslite::IndexByteString(line, '#')
 			if i >= 0 {
 				// Discard comments.
 				line = line[0:i]
@@ -83,7 +83,7 @@ async fn readHosts() {
 				name := absDomainName(f[i])
 				mut h := []byte(f[i])
 				lowerASCIIBytes(h)
-				key := absDomainName(unsafe::StrFromBytes(h))
+				key := absDomainName(unsafe::StringFromBytes(h))
 
 				if i == 1 {
 					canonical = key
@@ -125,7 +125,7 @@ async fn readHosts() {
 // (like "localhost" or "myhost") do not get trailing dots, but any other
 // names do.
 fn absDomainName(mut s: string): string {
-	if byteslite::IndexByteStr(s, '.') != -1 && s[len(s)-1] != '.' {
+	if byteslite::IndexByteString(s, '.') != -1 && s[len(s)-1] != '.' {
 		s += "."
 	}
 	ret s

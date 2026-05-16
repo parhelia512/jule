@@ -44,7 +44,7 @@ impl identCoder {
 			}
 		}
 		// identifier is ASCII, append directly.
-		buf.WriteStr(name)!
+		buf.WriteString(name)!
 		ret
 	unicode:
 		for _, r in name {
@@ -55,7 +55,7 @@ impl identCoder {
 				continue
 			}
 			// Unicode, handle as ASCII.
-			buf.WriteStr(conv::FormatInt(i64(r), 0xF))!
+			buf.WriteString(conv::FormatInt(i64(r), 0xF))!
 		}
 	}
 
@@ -67,7 +67,7 @@ impl identCoder {
 	fn toOut(*self, mut &buf: *strings::Builder, name: string, addr: uintptr) {
 		buf.WriteByte('_')!
 		if addr != 0 {
-			buf.WriteStr(conv::FormatUint(u64(addr), 0xF))!
+			buf.WriteString(conv::FormatUint(u64(addr), 0xF))!
 			buf.WriteByte('_')!
 		}
 		self.writeIdentTo(buf, name)
@@ -81,8 +81,8 @@ impl identCoder {
 	//	name: Identifier of definition.
 	fn toLocal(*self, mut &buf: *strings::Builder, row: int, col: int, name: string) {
 		buf.WriteByte('_')!
-		buf.WriteStr(conv::Itoa(row))!
-		buf.WriteStr(conv::Itoa(col))!
+		buf.WriteString(conv::Itoa(row))!
+		buf.WriteString(conv::Itoa(col))!
 		buf.WriteByte('_')!
 		self.writeIdentTo(buf, name)
 	}
@@ -105,12 +105,12 @@ impl identCoder {
 	fn func(*self, mut &buf: *strings::Builder, mut f: &sema::Func) {
 		match {
 		| f.Extern:
-			buf.WriteStr(f.Name)!
+			buf.WriteString(f.Name)!
 			ret
 		| f.IsMethod():
 			if f.Static {
 				self.structure(buf, f.Owner.(&sema::Struct))
-				buf.WriteStr("_static_")!
+				buf.WriteString("_static_")!
 				self.writeIdentTo(buf, f.Name)
 			} else {
 				match type f.Owner {
@@ -133,7 +133,7 @@ impl identCoder {
 			ret
 		}
 		name := self.needCacheHit(f.Token.File.Path)
-		buf.WriteStr(name)!
+		buf.WriteString(name)!
 		buf.WriteByte('_')!
 		self.writeIdentTo(buf, f.Name)
 	}
@@ -145,7 +145,7 @@ impl identCoder {
 			if f.Owner != nil && len(f.Owner.Generics) > 0 {
 				self.structureIns(buf, f.Owner)
 				if f.Decl.Static {
-					buf.WriteStr("_static_")!
+					buf.WriteString("_static_")!
 					self.writeIdentTo(buf, f.Decl.Name)
 				} else {
 					buf.WriteByte('_')!
@@ -165,7 +165,7 @@ impl identCoder {
 
 	fn traitDecl(*self, mut &buf: *strings::Builder, t: &sema::Trait) {
 		name := self.needCacheHit(t.Token.File.Path)
-		buf.WriteStr(name)!
+		buf.WriteString(name)!
 		buf.WriteByte('_')!
 		self.writeIdentTo(buf, t.Name)
 	}
@@ -175,7 +175,7 @@ impl identCoder {
 			ret
 		}
 		if p.IsSelf() {
-			buf.WriteStr(identSelf)!
+			buf.WriteString(identSelf)!
 			ret
 		}
 		if p.Token == nil {
@@ -188,13 +188,13 @@ impl identCoder {
 	fn structure(*self, mut &buf: *strings::Builder, s: &sema::Struct) {
 		if s.Extern {
 			if !obj::HasDirective(s.Directives, directive::Typedef) {
-				buf.WriteStr("struct ")!
+				buf.WriteString("struct ")!
 			}
-			buf.WriteStr(s.Name)!
+			buf.WriteString(s.Name)!
 			ret
 		}
 		name := self.needCacheHit(s.Token.File.Path)
-		buf.WriteStr(name)!
+		buf.WriteString(name)!
 		buf.WriteByte('_')!
 		self.writeIdentTo(buf, s.Name)
 	}
@@ -224,17 +224,17 @@ impl identCoder {
 		if f.Owner.Extern {
 			export, ok := f.Tags["#export"]
 			if ok {
-				buf.WriteStr(export)!
+				buf.WriteString(export)!
 			} else {
-				buf.WriteStr(f.Name)!
+				buf.WriteString(f.Name)!
 			}
 			ret
 		}
-		buf.WriteStr("_field_")!
+		buf.WriteString("_field_")!
 		if jule::IsBlank(f.Name) {
 			// If the identifier is blank, there may be other fields like that.
 			// So handle them with unique identifier, avoid duplication.
-			buf.WriteStr(conv::FormatUint(u64(uintptr(f)), 0xF))!
+			buf.WriteString(conv::FormatUint(u64(uintptr(f)), 0xF))!
 			ret
 		}
 		self.writeIdentTo(buf, f.Name)
@@ -254,7 +254,7 @@ impl identCoder {
 			// Use the common identifier coder.
 			if v.Name == "error" {
 				// The error variable captured, handle it as "__jule_error".
-				buf.WriteStr("__jule_error")!
+				buf.WriteString("__jule_error")!
 				ret
 			}
 			self.var(buf, v)
@@ -267,24 +267,24 @@ impl identCoder {
 		| NA:
 			// no-op
 		| Tuple:
-			buf.WriteStr(resultName + "." + resultArgName)!
-			buf.WriteStr(conv::Itoa(v.RetOrder))!
+			buf.WriteString(resultName + "." + resultArgName)!
+			buf.WriteString(conv::Itoa(v.RetOrder))!
 			ret
 		| Single:
 			// The single return variable is just this one.
 			// Return directly [resultName] because of generated with this identifier.
-			buf.WriteStr(resultName)!
+			buf.WriteString(resultName)!
 			ret
 		}
 		match {
 		| v.Extern:
-			buf.WriteStr(v.Name)!
+			buf.WriteString(v.Name)!
 		| v.Name == "error":
-			buf.WriteStr("__jule_error_")!
-			buf.WriteStr(conv::FormatUint(u64(uintptr(v.Scope)), 16))!
-			buf.WriteStr(".error")!
+			buf.WriteString("__jule_error_")!
+			buf.WriteString(conv::FormatUint(u64(uintptr(v.Scope)), 16))!
+			buf.WriteString(".error")!
 		| v.Name == "self":
-			buf.WriteStr(identSelf)!
+			buf.WriteString(identSelf)!
 		| v.Scope != nil:
 			self.toLocal(buf, v.Token.Row, v.Token.Column, v.Name)
 		|:
@@ -294,49 +294,49 @@ impl identCoder {
 				ret
 			}
 			name := self.needCacheHit(v.Token.File.Path)
-			buf.WriteStr(name)!
+			buf.WriteString(name)!
 			buf.WriteByte('_')!
 			self.writeIdentTo(buf, v.Name)
 		}
 	}
 
 	fn export(mut &buf: *strings::Builder, d: &ast::Directive) {
-		buf.WriteStr(d.Args[0].Kind)!
+		buf.WriteString(d.Args[0].Kind)!
 	}
 
 	fn iterBegin(*self, mut &buf: *strings::Builder, it: uintptr, addrmap: uintptr) {
-		buf.WriteStr("_iter_begin_")!
-		buf.WriteStr(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteStr(conv::FormatUint(u64(it), 16))!
+		buf.WriteString("_iter_begin_")!
+		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
+		buf.WriteString(conv::FormatUint(u64(it), 16))!
 	}
 
 	fn iterEnd(*self, mut &buf: *strings::Builder, it: uintptr, addrmap: uintptr) {
-		buf.WriteStr("_iter_end_")!
-		buf.WriteStr(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteStr(conv::FormatUint(u64(it), 16))!
+		buf.WriteString("_iter_end_")!
+		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
+		buf.WriteString(conv::FormatUint(u64(it), 16))!
 	}
 
 	fn iterNext(*self, mut &buf: *strings::Builder, it: uintptr, addrmap: uintptr) {
-		buf.WriteStr("_iter_next_")!
-		buf.WriteStr(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteStr(conv::FormatUint(u64(it), 16))!
+		buf.WriteString("_iter_next_")!
+		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
+		buf.WriteString(conv::FormatUint(u64(it), 16))!
 	}
 
 	fn label(*self, mut &buf: *strings::Builder, u: uintptr, addrmap: uintptr) {
-		buf.WriteStr("_julec_label_")!
-		buf.WriteStr(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteStr(conv::FormatUint(u64(u), 16))!
+		buf.WriteString("_julec_label_")!
+		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
+		buf.WriteString(conv::FormatUint(u64(u), 16))!
 	}
 
 	fn matchEnd(*self, mut &buf: *strings::Builder, m: uintptr, addrmap: uintptr) {
-		buf.WriteStr("_match_end_")!
-		buf.WriteStr(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteStr(conv::FormatUint(u64(m), 16))!
+		buf.WriteString("_match_end_")!
+		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
+		buf.WriteString(conv::FormatUint(u64(m), 16))!
 	}
 
 	fn caseBegin(*self, mut &buf: *strings::Builder, c: uintptr, addrmap: uintptr) {
-		buf.WriteStr("_case_begin_")!
-		buf.WriteStr(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteStr(conv::FormatUint(u64(c), 16))!
+		buf.WriteString("_case_begin_")!
+		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
+		buf.WriteString(conv::FormatUint(u64(c), 16))!
 	}
 }

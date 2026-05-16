@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 struct DynamicTypeMeta {
-	Dealloc: *unsafe
-	Hash:    *unsafe
-	Eq:      *unsafe
-	ToStr:   *unsafe
+	Dealloc:  *unsafe
+	Hash:     *unsafe
+	Eq:       *unsafe
+	ToString: *unsafe
 }
 
 struct DynamicType {

@@ -7,7 +7,7 @@ use "std/internal/os/filepathlite"
 use "std/sys"
 
 fn readDir(path: string)!: (dirents: []DirEntry) {
-	s := integ::BytesFromStr(path)
+	s := integ::BytesFromString(path)
 	mut dir := unsafe { sys::Opendir(&s[0]) }
 	if dir == nil {
 		throw sys::GetLastErrno()
@@ -17,7 +17,7 @@ fn readDir(path: string)!: (dirents: []DirEntry) {
 		if dirent == nil {
 			break
 		}
-		name := unsafe { integ::BytePtrToStr((*byte)(&dirent.Name[0])) }
+		name := unsafe { integ::BytePtrToString((*byte)(&dirent.Name[0])) }
 		mut stat := Stat(filepathlite::Join(path, name))?
 		dirents = append(dirents, DirEntry{
 			Name: name,
