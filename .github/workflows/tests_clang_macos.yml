@@ -9,7 +9,7 @@ jobs:
   build-and-exec:
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: julelang/ci@main
 
       - name: Test - Standard Library
