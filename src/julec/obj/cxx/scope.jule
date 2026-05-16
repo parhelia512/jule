@@ -2467,5 +2467,5 @@ fn returnKw(f: &sema::FuncIns): string {
 	if f.Decl == nil || !f.Decl.Async {
 		return "return"
 	}
-	return "__jule_AsyncRet"
+	return "__jule_AsyncReturn"
 }

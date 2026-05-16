@@ -288,7 +288,7 @@ impl ObjectCoder {
 		self.coSpawnObj.WriteByte(indentKind)!
 
 		// final return
-		self.coSpawnObj.WriteString("__jule_AsyncRet")!
+		self.coSpawnObj.WriteString("__jule_AsyncReturn")!
 		if f.Decl.IsVoid() {
 			self.coSpawnObj.WriteString(";\n")!
 		} else {
@@ -1269,7 +1269,7 @@ impl ObjectCoder {
 				self.indent()
 				if m.Async {
 					if !m.IsVoid() || m.Fallible {
-						self.write("__jule_AsyncRet ")
+						self.write("__jule_AsyncReturn ")
 					}
 					self.write("__jule_AsyncAwait ")
 				} else if m.Fallible || !m.IsVoid() {
