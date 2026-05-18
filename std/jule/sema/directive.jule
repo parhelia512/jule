@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/conv"
 use "std/jule/ast"
 use "std/jule/build"
 use "std/jule/directive"
@@ -120,20 +121,44 @@ impl directiveChecker {
 		match type self.o {
 		| &Func:
 			f := self.o.(&Func)
-			if f.Extern || f.IsInit() || f.IsEntryPoint() || f.IsMethod() || len(f.Generics) > 0 {
-				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
+			if f.Extern {
+				self.s.pushErr(d.Tag, "extern function does not supports directive: "+d.Tag.Kind)
+				return
+			}
+			if f.IsInit() {
+				self.s.pushErr(d.Tag, "initializer function does not supports directive: "+d.Tag.Kind)
+				return
+			}
+			if f.IsEntryPoint() {
+				self.s.pushErr(d.Tag, "entry point function does not supports directive: "+d.Tag.Kind)
+				return
+			}
+			if f.IsEntryPoint() {
+				self.s.pushErr(d.Tag, "method does not supports directive: "+d.Tag.Kind)
+				return
+			}
+			if len(f.Generics) > 0 {
+				self.s.pushErr(d.Tag, "generic function does not supports directive: "+d.Tag.Kind)
 				return
 			}
 		| &Var:
 			v := self.o.(&Var)
-			if v.Extern || v.Constant {
-				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
+			if v.Extern {
+				self.s.pushErr(d.Tag, "extern variable does not supports directive: "+d.Tag.Kind)
+				return
+			}
+			if v.Constant {
+				self.s.pushErr(d.Tag, "constant variable does not supports directive: "+d.Tag.Kind)
 				return
 			}
 		| &Struct:
 			s := self.o.(&Struct)
-			if s.Extern || len(s.Generics) > 0 {
-				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
+			if s.Extern {
+				self.s.pushErr(d.Tag, "extern struct does not supports directive: "+d.Tag.Kind)
+				return
+			}
+			if len(s.Generics) > 0 {
+				self.s.pushErr(d.Tag, "generic struct does not supports directive: "+d.Tag.Kind)
 				return
 			}
 		|:
