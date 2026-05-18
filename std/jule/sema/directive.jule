@@ -128,11 +128,13 @@ impl directiveChecker {
 			v := self.o.(&Var)
 			if v.Extern || v.Constant {
 				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
+				return
 			}
 		| &Struct:
 			s := self.o.(&Struct)
-			if s.Extern {
+			if s.Extern || len(s.Generics) > 0 {
 				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
+				return
 			}
 		|:
 			self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
