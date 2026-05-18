@@ -245,7 +245,7 @@ impl encoder {
 		| useIndent:
 			self.depth++
 		}
-		mut next := '{'
+		mut next := byte('{')
 		p := uintptr(&t)
 		for _, fieldCache in cachedFields[T]() {
 			self.buf.writeByte(next)
@@ -314,7 +314,7 @@ impl encoder {
 			self.depth++
 		}
 		comptime::TypeAlias(valueTyp, tt.Value())
-		mut next := '{'
+		mut next := byte('{')
 		for k, v in t {
 			self.buf.writeByte(next)
 			next = ','
@@ -352,7 +352,7 @@ impl encoder {
 			self.depth++
 		}
 		comptime::TypeAlias(valueTyp, comptime::TypeOf(t).Value())
-		mut next := '['
+		mut next := byte('[')
 		for _, e in t {
 			self.buf.writeByte(next)
 			next = ','
