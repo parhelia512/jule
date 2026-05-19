@@ -49,6 +49,7 @@ public:
         s._len = N;
         s._slice = this->begin();
         s.data.alloc = s._slice;
+        s.data.ref = nullptr;
         return s;
     }
 
