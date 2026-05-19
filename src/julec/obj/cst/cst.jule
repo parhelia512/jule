@@ -48,7 +48,7 @@ struct SwapExpr {
 }
 
 // Intended for optimization.
-// Optimizes empty string comparions.
+// Optimizes empty string comparisons.
 struct EmptyCompareExpr {
 	Expr: sema::Expr
 	Neg:  bool
@@ -85,7 +85,7 @@ struct UnsafeIndexingExpr {
 }
 
 // Intended for optimization.
-// Pushes append elements to the destination direcly.
+// Pushes append elements to the destination directly.
 struct PushToSliceExpr {
 	Base: &sema::BuiltinAppendCallExpr
 }
