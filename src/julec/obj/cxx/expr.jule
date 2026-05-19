@@ -49,7 +49,7 @@ impl exprCoder {
 			return
 		}
 		len := conv::FormatInt(i64(len(content)), 10)
-		strLit(&self.oc.Buf, content, len)
+		stringLit(&self.oc.Buf, content, len)
 	}
 
 	fn boolean(mut &self, b: bool) {
@@ -213,7 +213,7 @@ impl exprCoder {
 		self.oc.write("; if (")
 		self.oc.write(yVar)
 		self.oc.write(` == 0) __jule_panicString(`)
-		strLitF(&self.oc.Buf, fn|| {
+		stringLitF(&self.oc.Buf, fn|| {
 			self.oc.write("\"runtime: divide by zero")
 			mut len := 23 // runtime: divide by zero
 			if !env::Production {
@@ -1318,13 +1318,13 @@ impl exprCoder {
 			self.oc.write("if (!")
 			self.oc.write(errorName)
 			self.oc.write(".ok()) __jule_panicString(")
-			strLit(&self.oc.Buf, "unhandled error: ", "17")
+			stringLit(&self.oc.Buf, "unhandled error: ", "17")
 			self.oc.write(" + ")
 			self.oc.write(errorName)
 			self.oc.write(".error.type->to_str(")
 			self.oc.write(errorName)
 			self.oc.write(".error.data) + ")
-			strLitF(&self.oc.Buf, fn|| {
+			stringLitF(&self.oc.Buf, fn|| {
 				self.oc.write("\"\\nlocation: ")
 				mut len := 11 // \nlocation:
 				len += self.oc.locInfo(m.Token)
@@ -1729,9 +1729,9 @@ impl exprCoder {
 		self.oc.write("__jule_panicString(")
 		self.possibleRefExpr(m.Expr)
 		self.oc.write(" + ")
-		strLit(&self.oc.Buf, "\nlocation: ", "12")
+		stringLit(&self.oc.Buf, "\nlocation: ", "12")
 		self.oc.write(" + ")
-		strLitF(&self.oc.Buf, fn|| {
+		stringLitF(&self.oc.Buf, fn|| {
 			self.oc.write("\"")
 			len := self.oc.locInfo(m.Token)
 			self.oc.write("\"")
@@ -2618,10 +2618,10 @@ fn utoa(mut &s: *strings::Builder, x: u64) {
 
 // Writes string literal expression for constant literal to buf.
 // Literal is not including quotes, just string content in bytes.
-fn strLit(mut &buf: *strings::Builder, lit: string, len: string) {
+fn stringLit(mut &buf: *strings::Builder, lit: string, len: string) {
 	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.Directives, directive::Export)
 	if export == nil {
-		panic("strLit: expected exported functions")
+		panic("stringLit: expected exported functions")
 	}
 	identCoder.export(buf, export)
 	buf.WriteString("((" + typeU8 + "*)")!
@@ -2631,12 +2631,12 @@ fn strLit(mut &buf: *strings::Builder, lit: string, len: string) {
 	buf.WriteByte(')')!
 }
 
-// Same as the strLit function, but uses the lit function to write content.
+// Same as the stringLit function, but uses the lit function to write content.
 // The lit function should return the length of content.
-fn strLitF(mut &buf: *strings::Builder, lit: fn(): int) {
+fn stringLitF(mut &buf: *strings::Builder, lit: fn(): int) {
 	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.Directives, directive::Export)
 	if export == nil {
-		panic("strLitF: expected exported functions")
+		panic("stringLitF: expected exported functions")
 	}
 	identCoder.export(buf, export)
 	buf.WriteString("((" + typeU8 + "*)")!
@@ -2646,11 +2646,11 @@ fn strLitF(mut &buf: *strings::Builder, lit: fn(): int) {
 	buf.WriteByte(')')!
 }
 
-// Like the strLit function, but writes as slice (will not perform allocation).
-fn strLitAsSlice(mut &buf: *strings::Builder, lit: string, len: string) {
+// Like the stringLit function, but writes as slice (will not perform allocation).
+fn stringLitAsSlice(mut &buf: *strings::Builder, lit: string, len: string) {
 	export := obj::FindDirective(meta::Program.Runtime.SliceBytePtr.Decl.Directives, directive::Export)
 	if export == nil {
-		panic("strLitF: expected exported functions")
+		panic("stringLitAsSlice: expected exported functions")
 	}
 	identCoder.export(buf, export)
 	buf.WriteString("((" + typeU8 + "*)")!
@@ -2663,10 +2663,10 @@ fn strLitAsSlice(mut &buf: *strings::Builder, lit: string, len: string) {
 }
 
 // Returns string expr as byte slice (will not perform allocation).
-fn strToSlice(mut &buf: *strings::Builder, expr: string) {
+fn stringToSlice(mut &buf: *strings::Builder, expr: string) {
 	export := obj::FindDirective(meta::Program.Runtime.StringAsSlice.Decl.Directives, directive::Export)
 	if export == nil {
-		panic("strLitF: expected exported functions")
+		panic("stringToSlice: expected exported functions")
 	}
 	identCoder.export(buf, export)
 	buf.WriteByte('(')!

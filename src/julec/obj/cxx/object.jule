@@ -721,7 +721,7 @@ impl ObjectCoder {
 			}
 		}
 		self.anonObj.WriteString("__jule_panicString(")!
-		strLit(&self.anonObj, "trait casting failed because of an implementation mistake, this is a julec bug", "78")
+		stringLit(&self.anonObj, "trait casting failed because of an implementation mistake, this is a julec bug", "78")
 		self.anonObj.WriteString("); return nullptr; }\n")!
 	}
 
