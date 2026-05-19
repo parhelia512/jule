@@ -2035,15 +2035,15 @@ impl sema {
 		return ok
 	}
 
-	fn checkStructFields(mut &self, mut st: &Struct): (ok: bool) {
+	fn checkStructFields(mut &self, mut s: &Struct): (ok: bool) {
 		ok = true
-		for (_, mut f) in st.Fields {
-			f.Owner = st
+		for (_, mut f) in s.Fields {
+			f.Owner = s
 			if jule::IsBlank(f.Name) {
 				continue
 			}
 			// Check duplicated identifiers for fields.
-			for _, cf in st.Fields {
+			for _, cf in s.Fields {
 				if f == cf {
 					break
 				} else if f.Name == cf.Name {

@@ -4,6 +4,7 @@
 
 use "julec/env"
 use "julec/obj"
+use "julec/obj/cst"
 use "julec/obj/meta"
 use "std/comptime"
 use "std/jule/constant"
@@ -192,7 +193,7 @@ impl exprOptimizer {
 	// Optimizes string conversions if possible.
 	// It may apply optimizations with unsafe behaviors.
 	// So make sure this optimizations are always safe for the scope.
-	fn strConv(*self, mut m: &sema::OperandExpr) {
+	fn stringConv(*self, mut m: &sema::OperandExpr) {
 		p := m.Type.Prim()
 		if p == nil || !p.IsString() {
 			return
@@ -212,12 +213,12 @@ impl exprOptimizer {
 		}
 		if sp.IsU8() {
 			// string([]byte)
-			mut model := any(&StringFromBytes{Expr: c.Expr.Model})
+			mut model := any(&cst::StringFromBytes{Expr: c.Expr.Model})
 			m.Model = unsafe { *(*sema::Expr)(&model) }
 		}
 	}
 
-	fn strCond(*self, mut m: &sema::BinaryExpr): bool {
+	fn stringCond(*self, mut m: &sema::BinaryExpr): bool {
 		lp := m.Left.Type.Prim()
 		if lp == nil || !lp.IsString() {
 			return false
@@ -242,14 +243,14 @@ impl exprOptimizer {
 		match m.Op.ID {
 		| token::EQL:
 			if c.ReadString() == "" {
-				mut model := any(&EmptyCompareExpr{
+				mut model := any(&cst::EmptyCompareExpr{
 					Expr: m.Left.Model,
 					Neg:  false,
 				})
 				*self.model = unsafe { *(*sema::Expr)(&model) }
 				break
 			}
-			mut model := any(&StrCompExpr{
+			mut model := any(&cst::StringCompExpr{
 				Left:  m.Left.Model,
 				Right: c,
 				NotEq: false,
@@ -257,14 +258,14 @@ impl exprOptimizer {
 			*self.model = unsafe { *(*sema::Expr)(&model) }
 		| token::NEQ:
 			if c.ReadString() == "" {
-				mut model := any(&EmptyCompareExpr{
+				mut model := any(&cst::EmptyCompareExpr{
 					Expr: m.Left.Model,
 					Neg:  true,
 				})
 				*self.model = unsafe { *(*sema::Expr)(&model) }
 				break
 			}
-			mut model := any(&StrCompExpr{
+			mut model := any(&cst::StringCompExpr{
 				Left:  m.Left.Model,
 				Right: c,
 				NotEq: true,
@@ -275,7 +276,7 @@ impl exprOptimizer {
 	}
 
 	// Tries to optimize string concatenations and reports whether applied.
-	fn strConcat(*self, mut m: &sema::BinaryExpr): bool {
+	fn stringConcat(*self, mut m: &sema::BinaryExpr): bool {
 		lp := m.Left.Type.Prim()
 		if lp == nil || !lp.IsString() {
 			return false
@@ -299,7 +300,7 @@ impl exprOptimizer {
 			return false
 		}
 
-		mut model := new(StrConcatExpr)
+		mut model := new(cst::StringConcatExpr)
 		let mut step: fn(mut m: sema::Expr)
 		// Point to the step variable in the closure. Otherwise it will be copied,
 		// so the step function remains as nil, which is causes nil dereferencing.
@@ -322,7 +323,7 @@ impl exprOptimizer {
 				mut binary := m.(&sema::BinaryExpr)
 				unsafe {
 					// Apply common optimizations for each binary expression.
-					self.binaryStrCommon(binary)
+					self.binaryStringCommon(binary)
 
 					(*_step)(binary.Left.Model)
 					(*_step)(binary.Right.Model)
@@ -500,7 +501,7 @@ impl exprOptimizer {
 		// Set model to unsafe binary.
 		// Value is not overflows the bitsize of the type.
 		// So we can remove runtime cost of shifter checking.
-		mut model := any(&UnsafeBinaryExpr{Node: m})
+		mut model := any(&cst::UnsafeBinaryExpr{Node: m})
 		*self.model = unsafe { *(*sema::Expr)(&model) }
 	}
 
@@ -534,7 +535,7 @@ impl exprOptimizer {
 			m.Right.Model = constant::NewU64(1)
 			// Set model to unsafe expression model. Because it is safe.
 			// We can remove runtime cost of shifter checking.
-			mut model := any(&UnsafeBinaryExpr{Node: m})
+			mut model := any(&cst::UnsafeBinaryExpr{Node: m})
 			*self.model = unsafe { *(*sema::Expr)(&model) }
 			return true
 		| token::SUB:
@@ -636,24 +637,24 @@ impl exprOptimizer {
 		}
 		// Update model as UnsafeBinaryExpr because it is safe, comptime checked.
 		// There is no risk like zero-division.
-		mut model := any(&UnsafeBinaryExpr{Node: m})
+		mut model := any(&cst::UnsafeBinaryExpr{Node: m})
 		*self.model = unsafe { *(*sema::Expr)(&model) }
 		return true
 	}
 
 	// Common string optimizations for binary expressions.
 	// Always make sure this optimization will not block the following analysis.
-	fn binaryStrCommon(*self, mut m: &sema::BinaryExpr) {
-		self.strConv(m.Left)
-		self.strConv(m.Right)
+	fn binaryStringCommon(*self, mut m: &sema::BinaryExpr) {
+		self.stringConv(m.Left)
+		self.stringConv(m.Right)
 	}
 
 	fn binary(*self, mut m: &sema::BinaryExpr) {
 		if String {
-			self.binaryStrCommon(m)
+			self.binaryStringCommon(m)
 			match {
-			| self.strCond(m)
-			| self.strConcat(m):
+			| self.stringCond(m)
+			| self.stringConcat(m):
 				goto end
 			}
 		}
@@ -744,7 +745,7 @@ impl exprOptimizer {
 			if Access && self.data.nils != nil && isNilValidType(m.Expr.Type) {
 				var := getNilVar(m.Expr.Model)
 				if self.data.nils.isSafe(var) {
-					mut model := any(&UnsafeDerefExpr{Base: m})
+					mut model := any(&cst::UnsafeDerefExpr{Base: m})
 					*self.model = unsafe { *(*sema::Expr)(&model) }
 				} else {
 					// Now this variable is safe until it mutated.
@@ -774,7 +775,7 @@ impl exprOptimizer {
 		valid := isDynamicValidType(m.Expr.Type)
 		var := getDynamicVar(m.Expr.Model)
 		if valid && self.data.dynamic != nil && self.data.dynamic.isFits(var, m.Type) {
-			mut model := any(&UnsafeTypeAssertionExpr{Base: m})
+			mut model := any(&cst::UnsafeTypeAssertionExpr{Base: m})
 			*self.model = unsafe { *(*sema::Expr)(&model) }
 			self.inspector.SkipChild = true
 			return
@@ -832,7 +833,7 @@ impl exprOptimizer {
 		const meta = comptime::ValueOf(*meta::Program.StringBuilder)
 		const for _, f in meta.Type().Decl().Fields() {
 			if meta.Field(f.Name()).Unwrap() == m.Func {
-				mut model := any(&FuncCallIgnoreErrorExpr{Base: m})
+				mut model := any(&cst::FuncCallIgnoreErrorExpr{Base: m})
 				*self.model = unsafe { *(*sema::Expr)(&model) }
 				// Return function, skip following if statements if exist.
 				return
@@ -851,12 +852,12 @@ impl exprOptimizer {
 			mut ie := m.Src.Model.(&sema::SlicingExpr)
 
 			// Special case: already optimized.
-			_, ok := unsafe { *(*any)(&ie.Expr.Model) }.(&ArrayAsSlice)
+			_, ok := unsafe { *(*any)(&ie.Expr.Model) }.(&cst::ArrayAsSlice)
 			if ok {
 				return
 			}
 
-			mut model := any(&ArrayAsSlice{
+			mut model := any(&cst::ArrayAsSlice{
 				Expr: ie.Expr.Model,
 			})
 			ie.Expr.Model = unsafe { *(*sema::Expr)(&model) }
@@ -871,12 +872,12 @@ impl exprOptimizer {
 			mut ie := m.Elements.Model.(&sema::SlicingExpr)
 
 			// Special case: already optimized.
-			_, ok := unsafe { *(*any)(&ie.Expr.Model) }.(&ArrayAsSlice)
+			_, ok := unsafe { *(*any)(&ie.Expr.Model) }.(&cst::ArrayAsSlice)
 			if ok {
 				return
 			}
 
-			mut model := any(&ArrayAsSlice{
+			mut model := any(&cst::ArrayAsSlice{
 				Expr: ie.Expr.Model,
 			})
 			ie.Expr.Model = unsafe { *(*sema::Expr)(&model) }
@@ -949,7 +950,7 @@ impl exprOptimizer {
 		if array != nil {
 			// Constants checked by semantic analysis for arrays, safe.
 			if m.Index.IsConst() {
-				mut model := any(&UnsafeIndexingExpr{Node: m})
+				mut model := any(&cst::UnsafeIndexingExpr{Node: m})
 				*self.model = unsafe { *(*sema::Expr)(&model) }
 				return
 			}
@@ -962,14 +963,14 @@ impl exprOptimizer {
 					{
 						c, (ok) := bin.Left.Model.(&constant::Const)
 						if ok && c.AsU64() == mask {
-							mut model := any(&UnsafeIndexingExpr{Node: m})
+							mut model := any(&cst::UnsafeIndexingExpr{Node: m})
 							*self.model = unsafe { *(*sema::Expr)(&model) }
 						}
 					}
 					{
 						c, (ok) := bin.Right.Model.(&constant::Const)
 						if ok && c.AsU64() == mask {
-							mut model := any(&UnsafeIndexingExpr{Node: m})
+							mut model := any(&cst::UnsafeIndexingExpr{Node: m})
 							*self.model = unsafe { *(*sema::Expr)(&model) }
 						}
 					}
@@ -980,7 +981,7 @@ impl exprOptimizer {
 		if self.data.boundary != nil && isBoundaryValidType(m.Expr.Type) {
 			var := getBoundaryVar(m.Expr.Model)
 			if self.data.boundary.fitsMaxSize(var, m.Index.Model) {
-				mut model := any(&UnsafeIndexingExpr{Node: m})
+				mut model := any(&cst::UnsafeIndexingExpr{Node: m})
 				*self.model = unsafe { *(*sema::Expr)(&model) }
 				return
 			}

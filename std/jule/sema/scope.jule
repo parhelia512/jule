@@ -1320,14 +1320,14 @@ impl scopeChecker {
 		a.Op.ID = id
 	}
 
-	fn processEndPartOfMultiAssign(mut &self, mut st: &MultiAssign, mut a: &ast::Assign,
+	fn processEndPartOfMultiAssign(mut &self, mut stmt: &MultiAssign, mut a: &ast::Assign,
 		mut lexpr: &ast::AssignLeft, mut l: &Value, mut r: exprPart, strict: bool) {
 		if !lexpr.Reference && jule::IsBlank(lexpr.Name) {
 			if r.data.Type.Void() {
 				self.s.pushErr(a.Y.Token, "invalid expression")
 				self.s.pushSuggestion("expected value, found void type")
 			}
-			st.Left = append(st.Left, nil)
+			stmt.Left = append(stmt.Left, nil)
 			return
 		}
 		if a.Decl {
@@ -1365,14 +1365,14 @@ impl scopeChecker {
 				},
 			}
 			self.s.checkVarValue(v)
-			st.Left = append(st.Left, &Value{
+			stmt.Left = append(stmt.Left, &Value{
 				Lvalue:    !v.Constant,
 				Mutable:   v.Mutable,
 				Reference: v.Reference,
 				Type:      v.TypeSym.Type,
 				Model:     v,
 			})
-			st.Decls = append(st.Decls, v)
+			stmt.Decls = append(stmt.Decls, v)
 			self.table.Vars = append(self.table.Vars, v)
 			return
 		}
@@ -1397,7 +1397,7 @@ impl scopeChecker {
 			firstAssignToDest := reference
 			self.s.checkAssignType(reference, firstAssignToDest, l.Type, r.data, r.expr.Token, self.getOwnerRefers())
 		}
-		st.Left = append(st.Left, l)
+		stmt.Left = append(stmt.Left, l)
 	}
 
 	fn getRightExprsOfMultiAssign(mut &self, mut a: &ast::Assign,
@@ -2899,14 +2899,14 @@ fn isValidStmtForNext(mut n: ast::StmtData): bool {
 	}
 }
 
-fn isValidStmtForNext2(st: Stmt): bool {
-	match type st {
+fn isValidStmtForNext2(stmt: Stmt): bool {
+	match type stmt {
 	| &Postfix
 	| &Assign
 	| &MultiAssign:
 		return true
 	| &Value:
-		_, ok := st.(&Value).Model.(&FuncCallExpr)
+		_, ok := stmt.(&Value).Model.(&FuncCallExpr)
 		return ok
 	|:
 		return false

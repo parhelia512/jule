@@ -1,0 +1,144 @@
+// Copyright 2026 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+use "std/jule/constant"
+use "std/jule/sema"
+use "std/jule/token"
+
+// Intended for optimization.
+// Converts byte array to a string, without GC.
+struct StringFromBytes {
+	Expr: sema::Expr
+}
+
+// Intended for optimization.
+// Converts string to byte slice, without GC.
+struct BytesFromString {
+	Expr: sema::Expr
+}
+
+// Intended for optimization.
+// Optimizes fallible error forwarding.
+// This optimization used when fallible type of called function is
+// compatible with the parent function's fallible type.
+// It returns the result directly of the called function.
+struct ErrorForwardingExpr {
+	Func: &sema::FuncIns
+	Expr: &sema::FuncCallExpr
+}
+
+// Intended for optimization.
+// Eliminates error checking for fallible.
+struct FuncCallIgnoreErrorExpr {
+	Base: &sema::FuncCallExpr
+}
+
+// Intended for optimization.
+// Optimizes string concatenations.
+struct StringConcatExpr {
+	Parts: []sema::Expr
+}
+
+// Intended for optimization.
+// Optimizes swap expressions, if possible.
+struct SwapExpr {
+	Left:  &sema::Value
+	Right: &sema::Value
+}
+
+// Intended for optimization.
+// Optimizes empty string comparions.
+struct EmptyCompareExpr {
+	Expr: sema::Expr
+	Neg:  bool
+}
+
+// Intended for optimization.
+// Optimizes string comparison, eliminates memory allocation.
+struct StringCompExpr {
+	Left:  sema::Expr
+	Right: &constant::Const
+	NotEq: bool
+}
+
+// Intended for optimization.
+// Optimizes slicing assignments, like `slice = slice[x:y]`
+struct MutableSlicingExpr {
+	Token: &token::Token
+	Expr:  sema::Expr
+	Left:  sema::Expr
+	Right: sema::Expr
+	Cap:   sema::Expr
+}
+
+// Intended for optimization.
+// Removes safety checks for binary expression.
+struct UnsafeBinaryExpr {
+	Node: &sema::BinaryExpr
+}
+
+// Intended for optimization.
+// Access memory without boundary checks.
+struct UnsafeIndexingExpr {
+	Node: &sema::IndexingExpr
+}
+
+// Intended for optimization.
+// Pushes append elements to the destination direcly.
+struct PushToSliceExpr {
+	Base: &sema::BuiltinAppendCallExpr
+}
+
+// Intended for optimization.
+// Optimizes string iterations from runes, like `[]rune(string).`
+struct StringRuneIter {
+	Expr: &sema::Value
+	Base: &sema::RangeIter
+}
+
+// Intended for optimization.
+// Dereferences memory without safety checks.
+struct UnsafeDerefExpr {
+	Base: &sema::UnaryExpr
+}
+
+// Intended for optimization.
+// Asserts type without safety checks.
+struct UnsafeTypeAssertionExpr {
+	Base: &sema::TypeAssertionExpr
+}
+
+// Intended for optimization.
+// Converts array to a slice, without GC.
+struct ArrayAsSlice {
+	Expr: sema::Expr
+}
+
+// Common group of semantic analysis expression model types and optimizer specific types.
+enum Expr: type {
+	sema::Expr,
+	string,  // For built-in expressions.
+	&string, // For built-in expressions.
+	&UnsafeBinaryExpr,
+	&UnsafeIndexingExpr,
+	&StringCompExpr,
+	&EmptyCompareExpr,
+	&UnsafeDerefExpr,
+	&UnsafeTypeAssertionExpr,
+	&FuncCallIgnoreErrorExpr,
+	&StringConcatExpr,
+	&StringFromBytes,
+	&ArrayAsSlice,
+	&BytesFromString,
+}
+
+// Common group of semantic analysis stmt types and optimizer specific types.
+enum Stmt: type {
+	sema::Stmt,
+	&PushToSliceExpr,
+	&MutableSlicingExpr,
+	&SwapExpr,
+	&ErrorForwardingExpr,
+	&StringRuneIter,
+}

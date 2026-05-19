@@ -156,35 +156,35 @@ impl scopeDeadCode {
 		self.optimizeExpr(&assign.Right)
 	}
 
-	fn optimizeStmt(mut &self, mut st: sema::Stmt) {
-		match type st {
+	fn optimizeStmt(mut &self, mut stmt: sema::Stmt) {
+		match type stmt {
 		| &sema::Scope:
-			mut scope := st.(&sema::Scope)
+			mut scope := stmt.(&sema::Scope)
 			if scope.Deferred {
 				eliminateDeadCodeOfScope(scope)
 			} else {
 				self.optimizeChild(scope)
 			}
 		| &sema::RangeIter:
-			self.optimizeRangeIter(st.(&sema::RangeIter))
+			self.optimizeRangeIter(stmt.(&sema::RangeIter))
 		| &sema::WhileIter:
-			self.optimizeWhileIter(st.(&sema::WhileIter))
+			self.optimizeWhileIter(stmt.(&sema::WhileIter))
 		| &sema::InfIter:
-			self.optimizeInfIter(st.(&sema::InfIter))
+			self.optimizeInfIter(stmt.(&sema::InfIter))
 		| &sema::Conditional:
-			self.optimizeConditional(st.(&sema::Conditional))
+			self.optimizeConditional(stmt.(&sema::Conditional))
 		| &sema::Match:
-			self.optimizeMatch(st.(&sema::Match))
+			self.optimizeMatch(stmt.(&sema::Match))
 		| &sema::Assign:
-			self.optimizeAssign(st.(&sema::Assign))
+			self.optimizeAssign(stmt.(&sema::Assign))
 		| &sema::MultiAssign:
-			self.optimizeMultiAssign(st.(&sema::MultiAssign))
+			self.optimizeMultiAssign(stmt.(&sema::MultiAssign))
 		| &sema::Throw:
 			// Remove followed statements of the throw statements.
 			// Unreachable code.
 			self.eliminateFollowed()
 		| &sema::Value:
-			mut val := st.(&sema::Value)
+			mut val := stmt.(&sema::Value)
 			if self.handler {
 				break
 			}
@@ -201,19 +201,19 @@ impl scopeDeadCode {
 			// Unreachable code.
 			self.eliminateFollowed()
 		| &sema::Select:
-			sl := st.(&sema::Select)
+			sl := stmt.(&sema::Select)
 			if len(sl.Cases) == 0 && sl.Default == nil {
 				// Remove followed statements of the empty select statement.
 				// Unreachable code.
 				self.eliminateFollowed()
 			}
 		| &sema::Goto:
-			self.pushGoto(st.(&sema::Goto))
+			self.pushGoto(stmt.(&sema::Goto))
 			// Remove followed statements of the return statement.
 			// Unreachable code.
 			self.eliminateFollowed()
 		| &sema::Label:
-			self.pushLabel(st.(&sema::Label))
+			self.pushLabel(stmt.(&sema::Label))
 		|:
 			// no-op
 		}

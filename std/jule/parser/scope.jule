@@ -13,7 +13,7 @@ fn newScope(): &ast::ScopeTree {
 }
 
 // Reports whether token is statement finish point.
-fn isSt(current: &token::Token, prev: &token::Token): (ok: bool, terminated: bool) {
+fn isStmt(current: &token::Token, prev: &token::Token): (ok: bool, terminated: bool) {
 	ok = current.ID == token::SEMICOLON || prev.Row < current.Row
 	terminated = current.ID == token::SEMICOLON
 	return
@@ -46,7 +46,7 @@ fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
 		| token::LPAREN:
 			if braceN == 0 && i > start {
 				if !prevIsIncompleteExpr(tokens, &i) {
-					ok, terminated = isSt(tok, tokens[i-1])
+					ok, terminated = isStmt(tok, tokens[i-1])
 					if ok {
 						goto ret
 					}
@@ -59,7 +59,7 @@ fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
 		| token::RPAREN:
 			braceN--
 			if braceN == 0 && i+1 < len(tokens) {
-				ok, terminated = isSt(tokens[i+1], tok)
+				ok, terminated = isStmt(tokens[i+1], tok)
 				if ok {
 					i++
 					goto ret
@@ -76,9 +76,9 @@ fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
 			if prevIsIncompleteExpr(tokens, &i) {
 				continue
 			}
-			ok, terminated = isSt(tok, tokens[i-1])
+			ok, terminated = isStmt(tok, tokens[i-1])
 		} else {
-			ok, terminated = isSt(tok, tok)
+			ok, terminated = isStmt(tok, tok)
 		}
 		if !ok {
 			continue
@@ -95,14 +95,14 @@ fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
 
 // Returns current statement tokens.
 // Starts selection at i.
-fn skipSt(mut &i: *int, mut tokens: []&token::Token): ([]&token::Token, bool) {
+fn skipStmt(mut &i: *int, mut tokens: []&token::Token): ([]&token::Token, bool) {
 	start := *i
 	mut terminated := false
 	*i, terminated = nextStPos(tokens, start)
 	mut stTokens := tokens[start:*i]
 	if terminated {
 		if len(stTokens) == 1 {
-			return skipSt(i, tokens)
+			return skipStmt(i, tokens)
 		}
 		// -1 for eliminate the statement terminator.
 		stTokens = stTokens[:len(stTokens)-1]
@@ -120,7 +120,7 @@ fn splitStmts(mut tokens: []&token::Token): []&stmt {
 	mut stmts := make([]&stmt, 0, 20)
 	mut pos := 0
 	for pos < len(tokens) {
-		mut stmt, terminated := skipSt(&pos, tokens)
+		mut stmt, terminated := skipStmt(&pos, tokens)
 		stmts = append(stmts, &stmt{
 			tokens:     stmt,
 			terminated: terminated,
@@ -149,7 +149,7 @@ impl scopeParser {
 		return self.pos >= len(self.stmts)
 	}
 
-	fn isLastSt(*self): bool {
+	fn isLastStmt(*self): bool {
 		return self.pos+1 >= len(self.stmts)
 	}
 
@@ -182,7 +182,7 @@ impl scopeParser {
 		return s
 	}
 
-	fn buildVarSt(mut *self, mut tokens: []&token::Token): &ast::Var {
+	fn buildVarStmt(mut *self, mut tokens: []&token::Token): &ast::Var {
 		mut v := self.p.buildVar(tokens)
 		if v != nil {
 			v.Scope = self.s
@@ -190,7 +190,7 @@ impl scopeParser {
 		return v
 	}
 
-	fn buildReturnSt(mut *self, mut tokens: []&token::Token): &ast::Return {
+	fn buildReturnStmt(mut *self, mut tokens: []&token::Token): &ast::Return {
 		mut st := &ast::Return{
 			Token: tokens[0],
 		}
@@ -220,7 +220,7 @@ impl scopeParser {
 			}
 		}
 
-		if self.isLastSt() {
+		if self.isLastStmt() {
 			self.pushErr(it.Token, "invalid syntax")
 			return nil
 		}
@@ -233,7 +233,7 @@ impl scopeParser {
 				tokens:     stTokens,
 			}
 			kind.NextToken = stTokens[0]
-			kind.Next = self.buildSt(stmt)
+			kind.Next = self.buildStmt(stmt)
 		}
 
 		mut i := len(stTokens)
@@ -412,11 +412,11 @@ impl scopeParser {
 		return it
 	}
 
-	fn buildIterSt(mut *self, mut st: &stmt): &ast::Iter {
-		if st.terminated {
-			return self.buildWhileNextIter(st)
+	fn buildIterStmt(mut *self, mut stmt: &stmt): &ast::Iter {
+		if stmt.terminated {
+			return self.buildWhileNextIter(stmt)
 		}
-		return self.buildCommonIter(st.tokens)
+		return self.buildCommonIter(stmt.tokens)
 	}
 
 	fn buildBreak(mut *self, mut tokens: []&token::Token): &ast::Break {
@@ -437,7 +437,7 @@ impl scopeParser {
 		return brk
 	}
 
-	fn buildContSt(mut *self, mut tokens: []&token::Token): &ast::Continue {
+	fn buildContStmt(mut *self, mut tokens: []&token::Token): &ast::Continue {
 		mut cont := &ast::Continue{
 			Token: tokens[0],
 		}
@@ -532,7 +532,7 @@ impl scopeParser {
 		return chain
 	}
 
-	fn buildCoCallSt(mut *self, mut tokens: []&token::Token): &ast::Expr {
+	fn buildCoCallStmt(mut *self, mut tokens: []&token::Token): &ast::Expr {
 		token := tokens[0]
 		tokens = tokens[1:] // Start 1 to skip "co" token.
 		if len(tokens) == 0 {
@@ -582,7 +582,7 @@ impl scopeParser {
 		return fll
 	}
 
-	fn buildTypeAliasSt(mut *self, mut tokens: []&token::Token): &ast::TypeAlias {
+	fn buildTypeAliasStmt(mut *self, mut tokens: []&token::Token): &ast::TypeAlias {
 		mut tad := self.p.buildTypeAliasDecl(tokens)
 		tad.Scope = self.s
 		return tad
@@ -660,7 +660,7 @@ impl scopeParser {
 		mut n := 0
 		for {
 			mut i := 0
-			mut next, _ := skipSt(&i, (*tokens)[n:])
+			mut next, _ := skipStmt(&i, (*tokens)[n:])
 			if len(next) == 0 {
 				break
 			}
@@ -807,7 +807,7 @@ impl scopeParser {
 				*colon = tok
 				mut exprTokens := (*tokens)[j:i]
 				if len(exprTokens) > 0 {
-					mut assignStmt, ok := self.buildAssignSt(exprTokens)
+					mut assignStmt, ok := self.buildAssignStmt(exprTokens)
 				StmtCheck:
 					match {
 					| ok:
@@ -940,7 +940,7 @@ impl scopeParser {
 		}
 	}
 
-	fn buildScopeSt(mut *self, mut tokens: []&token::Token): &ast::ScopeTree {
+	fn buildScopeStmt(mut *self, mut tokens: []&token::Token): &ast::ScopeTree {
 		mut isUnsafe := false
 		mut isDeferred := false
 		mut token := tokens[0]
@@ -998,7 +998,7 @@ impl scopeParser {
 		return lbl
 	}
 
-	fn buildIdSt(mut *self, mut tokens: []&token::Token): (ast::StmtData, ok: bool) {
+	fn buildIdStmt(mut *self, mut tokens: []&token::Token): (ast::StmtData, ok: bool) {
 		if len(tokens) == 1 {
 			return
 		}
@@ -1052,7 +1052,7 @@ impl scopeParser {
 				// The setter token is not a postfix operator.
 				// Probably the following statement is the expression.
 				// We must try to handle next statement as expression.
-				if self.isLastSt() {
+				if self.isLastStmt() {
 					self.pushErr(info.setter, "expected expression")
 					break
 				}
@@ -1255,7 +1255,7 @@ impl scopeParser {
 			if assign.Op.ID != token::ASSIGN {
 				self.pushErr(assign.Op, "assignment operation @ requires single-valued expressions", assign.Op.Kind)
 			}
-			if self.isLastSt() {
+			if self.isLastStmt() {
 				self.pushErr(assign.Op, "expected expression")
 				return nil, false
 			}
@@ -1267,15 +1267,15 @@ impl scopeParser {
 		return assign, ok
 	}
 
-	fn buildAssignSt(mut *self, mut tokens: []&token::Token): (st: ast::StmtData, ok: bool) {
+	fn buildAssignStmt(mut *self, mut tokens: []&token::Token): (stmt: ast::StmtData, ok: bool) {
 		if !checkAssignTokens(tokens) {
 			return nil, false
 		}
 		match tokens[0].ID {
 		| token::LET:
-			st, ok = self.buildDeclAssign(tokens)
+			stmt, ok = self.buildDeclAssign(tokens)
 		|:
-			st, ok = self.buildPlainAssign(tokens)
+			stmt, ok = self.buildPlainAssign(tokens)
 		}
 		return
 	}
@@ -1293,100 +1293,100 @@ impl scopeParser {
 		return ue
 	}
 
-	fn buildConstSt(mut *self, mut st: &stmt): ast::StmtData {
-		if len(st.tokens) == 1 {
-			self.pushErr(st.tokens[0], "invalid syntax")
+	fn buildConstStmt(mut *self, mut stmt: &stmt): ast::StmtData {
+		if len(stmt.tokens) == 1 {
+			self.pushErr(stmt.tokens[0], "invalid syntax")
 			return nil
 		}
-		match st.tokens[1].ID {
+		match stmt.tokens[1].ID {
 		| token::FOR:
-			st.tokens = st.tokens[1:]
-			mut iter := self.buildIterSt(st)
+			stmt.tokens = stmt.tokens[1:]
+			mut iter := self.buildIterStmt(stmt)
 			if iter != nil {
 				iter.Comptime = true
 			}
 			return iter
 		| token::MATCH:
-			st.tokens = st.tokens[1:]
-			mut mt := self.buildMatch(st.tokens)
+			stmt.tokens = stmt.tokens[1:]
+			mut mt := self.buildMatch(stmt.tokens)
 			if mt != nil {
 				mt.Comptime = true
 			}
 			return mt
 		|:
-			return self.buildVarSt(st.tokens)
+			return self.buildVarStmt(stmt.tokens)
 		}
 	}
 
-	fn buildSt(mut *self, mut st: &stmt): ast::StmtData {
-		if len(st.tokens) == 0 {
+	fn buildStmt(mut *self, mut stmt: &stmt): ast::StmtData {
+		if len(stmt.tokens) == 0 {
 			// Empty statement, skip immediately.
 			// Typically caused by empty statements explicitly terminated by semicolon.
 			return nil
 		}
-		mut token := st.tokens[0]
+		mut token := stmt.tokens[0]
 		if token.ID == token::NAME {
-			mut s, ok := self.buildIdSt(st.tokens)
+			mut s, ok := self.buildIdStmt(stmt.tokens)
 			if ok {
 				return s
 			}
 		}
 
-		mut s, ok := self.buildAssignSt(st.tokens)
+		mut s, ok := self.buildAssignStmt(stmt.tokens)
 		if ok {
 			return s
 		}
 
 		match token.ID {
 		| token::USE:
-			return self.buildUseExpr(st.tokens)
+			return self.buildUseExpr(stmt.tokens)
 		| token::CONST:
-			return self.buildConstSt(st)
+			return self.buildConstStmt(stmt)
 		| token::LET
 		| token::MUT:
-			return self.buildVarSt(st.tokens)
+			return self.buildVarStmt(stmt.tokens)
 		| token::RETURN:
-			return self.buildReturnSt(st.tokens)
+			return self.buildReturnStmt(stmt.tokens)
 		| token::FOR:
-			return self.buildIterSt(st)
+			return self.buildIterStmt(stmt)
 		| token::BREAK:
-			return self.buildBreak(st.tokens)
+			return self.buildBreak(stmt.tokens)
 		| token::CONTINUE:
-			return self.buildContSt(st.tokens)
+			return self.buildContStmt(stmt.tokens)
 		| token::IF:
-			return self.buildIfElseChain(st.tokens)
+			return self.buildIfElseChain(stmt.tokens)
 		| token::CO:
-			return self.buildCoCallSt(st.tokens)
+			return self.buildCoCallStmt(stmt.tokens)
 		| token::GOTO:
-			return self.buildGoto(st.tokens)
+			return self.buildGoto(stmt.tokens)
 		| token::FALL:
-			return self.buildFall(st.tokens)
+			return self.buildFall(stmt.tokens)
 		| token::TYPE:
-			return self.buildTypeAliasSt(st.tokens)
+			return self.buildTypeAliasStmt(stmt.tokens)
 		| token::MATCH:
-			return self.buildMatch(st.tokens)
+			return self.buildMatch(stmt.tokens)
 		| token::SELECT:
-			return self.buildSelect(st.tokens)
+			return self.buildSelect(stmt.tokens)
 		| token::THROW:
-			return self.buildThrow(st.tokens, false)
+			return self.buildThrow(stmt.tokens, false)
 		| token::UNSAFE:
-			if len(st.tokens) < 1 {
+			if len(stmt.tokens) < 1 {
 				break
 			}
-			tok1 := st.tokens[1]
+			tok1 := stmt.tokens[1]
 			match tok1.ID {
 			| token::DEFER | token::LBRACE: // Scope.
-				return self.buildScopeSt(st.tokens)
+				return self.buildScopeStmt(stmt.tokens)
 			| token::THROW: // Throw statement.
-				st.tokens = st.tokens[1:] // Trim unsafe keyword.
-				return self.buildThrow(st.tokens, true)
+				stmt.tokens = stmt.tokens[1:] // Trim unsafe keyword.
+				return self.buildThrow(stmt.tokens, true)
 			}
 		| token::DEFER:
-			return self.buildScopeSt(st.tokens)
+			return self.buildScopeStmt(stmt.tokens)
 		| token::LBRACE:
-			return self.buildScopeSt(st.tokens)
+			return self.buildScopeStmt(stmt.tokens)
 		}
-		mut expr := self.p.buildExpr(st.tokens)
+		mut expr := self.p.buildExpr(stmt.tokens)
 		// Return expression if not nil, otherwise return nil StmtData.
 		// Avoid to return StmtData with nil &ast::Expr.
 		if expr != nil {
@@ -1403,13 +1403,13 @@ impl scopeParser {
 		self.stmts = splitStmts(tokens)
 		self.pos = -1 // self.next() must be called first to increase position properly
 		self.s = s
-		for !self.isLastSt() && !self.finished() {
-			mut st := self.next()
-			mut data := self.buildSt(st)
+		for !self.isLastStmt() && !self.finished() {
+			mut stmt := self.next()
+			mut data := self.buildStmt(stmt)
 			if data != nil {
 				self.s.Stmts = append(self.s.Stmts, ast::Stmt{
-					Token: st.tokens[0],
-					End:   st.tokens[len(st.tokens)-1],
+					Token: stmt.tokens[0],
+					End:   stmt.tokens[len(stmt.tokens)-1],
 					Data:  data,
 				})
 			}

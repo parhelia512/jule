@@ -1728,16 +1728,16 @@ impl parser {
 		return false
 	}
 
-	fn parseNode(mut &self, mut st: []&token::Token): ast::Node {
+	fn parseNode(mut &self, mut stmt: []&token::Token): ast::Node {
 		mut node := ast::Node{
-			Token: st[0],
+			Token: stmt[0],
 		}
 
-		if self.pushMetaNodes(st) {
+		if self.pushMetaNodes(stmt) {
 			return node
 		}
 
-		mut data := self.buildNodeData(st)
+		mut data := self.buildNodeData(stmt)
 		if data == nil {
 			return node
 		}
@@ -1752,11 +1752,11 @@ impl parser {
 		return node
 	}
 
-	fn appendNode(mut &self, mut st: []&token::Token) {
-		if len(st) == 0 {
+	fn appendNode(mut &self, mut stmt: []&token::Token) {
+		if len(stmt) == 0 {
 			return
 		}
-		mut node := self.parseNode(st)
+		mut node := self.parseNode(stmt)
 		if node.Data != nil && !self.stopped() {
 			self.ast.Nodes = append(self.ast.Nodes, node)
 		}

@@ -4,6 +4,7 @@
 
 use "julec/env"
 use "julec/obj"
+use "julec/obj/cst"
 use "julec/obj/meta"
 use "julec/opt"
 use "std/conv"
@@ -25,24 +26,6 @@ const (
 	collectionIdent   = "__jule_collection"
 	collectionItIdent = "it"
 )
-
-// Common group of semantic analysis expression model types and optimizer specific types.
-enum compExpr: type {
-	sema::Expr,
-	string,  // For built-in expressions.
-	&string, // For built-in expressions.
-	&opt::UnsafeBinaryExpr,
-	&opt::UnsafeIndexingExpr,
-	&opt::StrCompExpr,
-	&opt::EmptyCompareExpr,
-	&opt::UnsafeDerefExpr,
-	&opt::UnsafeTypeAssertionExpr,
-	&opt::FuncCallIgnoreErrorExpr,
-	&opt::StrConcatExpr,
-	&opt::StringFromBytes,
-	&opt::ArrayAsSlice,
-	&opt::BytesFromString,
-}
 
 struct exprCoder {
 	oc: &ObjectCoder
@@ -188,7 +171,11 @@ impl exprCoder {
 		}
 	}
 
-	fn divByZeroBinary(mut &self, loc: &token::Token, opID: int, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn divByZeroBinary(mut &self,
+		loc: &token::Token,
+		opID: int,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type) {
 		lp, rp := lt.Prim(), rt.Prim()
 
 		// We are using IEEE 754 (we must), and the behavior is safe.
@@ -453,7 +440,9 @@ impl exprCoder {
 		self._unsafeBinary(&self.oc.Buf, *m.Left, *m.Right, m.Op.ID, m.Op.Kind)
 	}
 
-	fn shl(mut &self, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn shl(mut &self,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type) {
 		const (
 			xVar = "__jule_x"
 			yVar = "__jule_y"
@@ -483,7 +472,9 @@ impl exprCoder {
 		self.oc.write(")); })")
 	}
 
-	fn shr(mut &self, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn shr(mut &self,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type) {
 		const (
 			xVar = "__jule_x"
 			yVar = "__jule_y"
@@ -694,7 +685,7 @@ impl exprCoder {
 		self.oc.write("))))")
 	}
 
-	fn possibleRefExpr(mut &self, mut expr: compExpr) {
+	fn possibleRefExpr(mut &self, mut expr: cst::Expr) {
 		// This function equals to self.model.
 		// But historically, it used to dereference reference variables implicitly,
 		// if expression model is a reference variable.
@@ -965,7 +956,7 @@ impl exprCoder {
 		}
 	}
 
-	fn modelForCall(mut &self, mut expr: compExpr) {
+	fn modelForCall(mut &self, mut expr: cst::Expr) {
 		match type expr {
 		| &sema::FuncIns:
 			self.funcIns(expr.(&sema::FuncIns))
@@ -1029,13 +1020,13 @@ impl exprCoder {
 		return false
 	}
 
-	fn writeReceiver(mut &self, mut m: compExpr): (safeDeref: bool) {
+	fn writeReceiver(mut &self, mut m: cst::Expr): (safeDeref: bool) {
 		match type m {
 		| &sema::UnaryExpr:
 			self.possibleRefExpr(m.(&sema::UnaryExpr).Expr.Model)
 			return true
-		| &opt::UnsafeDerefExpr:
-			self.possibleRefExpr(m.(&opt::UnsafeDerefExpr).Base.Expr.Model)
+		| &cst::UnsafeDerefExpr:
+			self.possibleRefExpr(m.(&cst::UnsafeDerefExpr).Base.Expr.Model)
 			return false
 		|:
 			self.possibleRefExpr(m)
@@ -1508,7 +1499,7 @@ impl exprCoder {
 		}
 	}
 
-	fn unsafeIndexing(mut &self, mut m: &opt::UnsafeIndexingExpr) {
+	fn unsafeIndexing(mut &self, mut m: &cst::UnsafeIndexingExpr) {
 		self.indexingWithSafety(m.Node, false)
 	}
 
@@ -1753,7 +1744,7 @@ impl exprCoder {
 		// We have to use mutable memory for the dest argument of copy due to lang spec.
 		if opt::IsZCopyArray(m.Dest.Model) {
 			mut ie := m.Dest.Model.(&sema::SlicingExpr)
-			mut model := any(&opt::ArrayAsSlice{
+			mut model := any(&cst::ArrayAsSlice{
 				Expr: ie.Expr.Model,
 			})
 			ie.Expr.Model = unsafe { *(*sema::Expr)(&model) }
@@ -1945,7 +1936,7 @@ impl exprCoder {
 		}
 	}
 
-	fn pushToSlice(mut &self, mut m: &opt::PushToSliceExpr) {
+	fn pushToSlice(mut &self, mut m: &cst::PushToSliceExpr) {
 		// Use l-value advantage and define reference variable to destination
 		// in the child scope to avoid potential repeated high-cost memory access overhead.
 		const destIdent = "__jule_push_dest"
@@ -2132,7 +2123,7 @@ impl exprCoder {
 		self.oc.write(")")
 	}
 
-	fn strComp(mut &self, mut m: &opt::StrCompExpr) {
+	fn stringComp(mut &self, mut m: &cst::StringCompExpr) {
 		if m.NotEq {
 			self.oc.write("(!")
 		}
@@ -2148,7 +2139,7 @@ impl exprCoder {
 		}
 	}
 
-	fn emptyCompare(mut &self, mut m: &opt::EmptyCompareExpr) {
+	fn emptyCompare(mut &self, mut m: &cst::EmptyCompareExpr) {
 		if m.Neg {
 			self.oc.write("!")
 		}
@@ -2157,7 +2148,7 @@ impl exprCoder {
 		self.oc.write(").empty()")
 	}
 
-	fn unsafeDeref(mut &self, mut m: &opt::UnsafeDerefExpr) {
+	fn unsafeDeref(mut &self, mut m: &cst::UnsafeDerefExpr) {
 		match {
 		| m.Base.Expr.Type.Ptr() != nil:
 			self.oc.write("(*")
@@ -2172,7 +2163,7 @@ impl exprCoder {
 		}
 	}
 
-	fn unsafeTypeAssertion(mut &self, mut m: &opt::UnsafeTypeAssertionExpr) {
+	fn unsafeTypeAssertion(mut &self, mut m: &cst::UnsafeTypeAssertionExpr) {
 		match {
 		| obj::IsAny(m.Base.Expr.Type):
 			self.possibleRefExpr(m.Base.Expr.Model)
@@ -2203,7 +2194,7 @@ impl exprCoder {
 		}
 	}
 
-	fn strConcat(mut &self, mut m: &opt::StrConcatExpr) {
+	fn stringConcat(mut &self, mut m: &cst::StringConcatExpr) {
 		self.oc.write("({ " + typeInt + " size = 0; ")
 		for (i, mut p) in m.Parts {
 			ident := "part" + conv::Itoa(i)
@@ -2225,27 +2216,27 @@ impl exprCoder {
 		self.oc.write(typeStr + " result; result._len = buf._len; result.buffer = std::move(buf.data); result._slice = buf._slice; std::move(result); })")
 	}
 
-	fn stringFromBytes(mut &self, mut m: &opt::StringFromBytes) {
+	fn stringFromBytes(mut &self, mut m: &cst::StringFromBytes) {
 		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.SliceAsString)
 		self.oc.write("(")
 		self.possibleRefExpr(m.Expr)
 		self.oc.write(")")
 	}
 
-	fn bytesFromString(mut &self, mut m: &opt::BytesFromString) {
+	fn bytesFromString(mut &self, mut m: &cst::BytesFromString) {
 		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.StringAsSlice)
 		self.oc.write("(")
 		self.possibleRefExpr(m.Expr)
 		self.oc.write(")")
 	}
 
-	fn arrayAsSlice(mut &self, mut m: &opt::ArrayAsSlice) {
+	fn arrayAsSlice(mut &self, mut m: &cst::ArrayAsSlice) {
 		self.oc.write("(")
 		self.possibleRefExpr(m.Expr)
 		self.oc.write(").as_slice()")
 	}
 
-	fn model(mut &self, mut m: compExpr) {
+	fn model(mut &self, mut m: cst::Expr) {
 		match type m {
 		| string:
 			self.oc.write(m.(string))
@@ -2277,8 +2268,8 @@ impl exprCoder {
 			self.slice(m.(&sema::SliceExpr))
 		| &sema::ArrayExpr:
 			self.array(m.(&sema::ArrayExpr))
-		| &opt::UnsafeIndexingExpr:
-			self.unsafeIndexing(m.(&opt::UnsafeIndexingExpr))
+		| &cst::UnsafeIndexingExpr:
+			self.unsafeIndexing(m.(&cst::UnsafeIndexingExpr))
 		| &sema::IndexingExpr:
 			self.indexing(m.(&sema::IndexingExpr))
 		| &sema::AnonFuncExpr:
@@ -2339,26 +2330,26 @@ impl exprCoder {
 			self.typeAssertion(m.(&sema::TypeAssertionExpr))
 		| &sema::AddrcallExpr:
 			self.addrcallExpr(m.(&sema::AddrcallExpr))
-		| &opt::UnsafeBinaryExpr:
-			self.unsafeBinary(m.(&opt::UnsafeBinaryExpr).Node)
-		| &opt::StrCompExpr:
-			self.strComp(m.(&opt::StrCompExpr))
-		| &opt::EmptyCompareExpr:
-			self.emptyCompare(m.(&opt::EmptyCompareExpr))
-		| &opt::UnsafeDerefExpr:
-			self.unsafeDeref(m.(&opt::UnsafeDerefExpr))
-		| &opt::UnsafeTypeAssertionExpr:
-			self.unsafeTypeAssertion(m.(&opt::UnsafeTypeAssertionExpr))
-		| &opt::FuncCallIgnoreErrorExpr:
-			self.funcCall(m.(&opt::FuncCallIgnoreErrorExpr).Base, true)
-		| &opt::StrConcatExpr:
-			self.strConcat(m.(&opt::StrConcatExpr))
-		| &opt::StringFromBytes:
-			self.stringFromBytes(m.(&opt::StringFromBytes))
-		| &opt::BytesFromString:
-			self.bytesFromString(m.(&opt::BytesFromString))
-		| &opt::ArrayAsSlice:
-			self.arrayAsSlice(m.(&opt::ArrayAsSlice))
+		| &cst::UnsafeBinaryExpr:
+			self.unsafeBinary(m.(&cst::UnsafeBinaryExpr).Node)
+		| &cst::StringCompExpr:
+			self.stringComp(m.(&cst::StringCompExpr))
+		| &cst::EmptyCompareExpr:
+			self.emptyCompare(m.(&cst::EmptyCompareExpr))
+		| &cst::UnsafeDerefExpr:
+			self.unsafeDeref(m.(&cst::UnsafeDerefExpr))
+		| &cst::UnsafeTypeAssertionExpr:
+			self.unsafeTypeAssertion(m.(&cst::UnsafeTypeAssertionExpr))
+		| &cst::FuncCallIgnoreErrorExpr:
+			self.funcCall(m.(&cst::FuncCallIgnoreErrorExpr).Base, true)
+		| &cst::StringConcatExpr:
+			self.stringConcat(m.(&cst::StringConcatExpr))
+		| &cst::StringFromBytes:
+			self.stringFromBytes(m.(&cst::StringFromBytes))
+		| &cst::BytesFromString:
+			self.bytesFromString(m.(&cst::BytesFromString))
+		| &cst::ArrayAsSlice:
+			self.arrayAsSlice(m.(&cst::ArrayAsSlice))
 		}
 	}
 
@@ -2703,14 +2694,14 @@ const (
 struct useExprMemory {
 	Loc:      &token::Token
 	DestType: &sema::Type
-	Model:    compExpr
+	Model:    cst::Expr
 	Type:     int
 	OpID:     int
 	OpKind:   string
 }
 
 impl useExprMemory {
-	fn write(mut *self, mut e: &exprCoder, mut src: compExpr, mut srcType: &sema::Type) {
+	fn write(mut *self, mut e: &exprCoder, mut src: cst::Expr, mut srcType: &sema::Type) {
 		match self.Type {
 		| useExprPlain:
 			if src != nil && self.DestType != nil {
@@ -2732,7 +2723,7 @@ impl useExprMemory {
 	}
 }
 
-fn isFallibleResult(mut m: compExpr): (fc: &sema::FuncCallExpr) {
+fn isFallibleResult(mut m: cst::Expr): (fc: &sema::FuncCallExpr) {
 	mut c, mut ok := m.(&sema::CastingExpr)
 	if ok {
 		m = c.Expr.Model

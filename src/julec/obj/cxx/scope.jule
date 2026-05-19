@@ -4,6 +4,7 @@
 
 use "julec/env"
 use "julec/obj"
+use "julec/obj/cst"
 use "julec/obj/meta"
 use "julec/opt"
 use "std/conv"
@@ -25,16 +26,6 @@ const (
 )
 
 let assignArgName = "__jule_assign_arg"
-
-// Common group of semantic analysis stmt types and optimizer specific types.
-enum compStmt: type {
-	sema::Stmt,
-	&opt::PushToSliceExpr,
-	&opt::MutSlicingExpr,
-	&opt::SwapExpr,
-	&opt::ErrorForwardingExpr,
-	&opt::StrRuneIter,
-}
 
 // Channel and case hash for select.
 struct chanCase {
@@ -388,7 +379,7 @@ impl scopeCoder {
 		self.oc.write("}")
 	}
 
-	fn strRuneIter(mut &self, mut it: opt::StrRuneIter, utf8: bool) {
+	fn stringRuneIter(mut &self, mut it: cst::StringRuneIter, utf8: bool) {
 		mut sb := strings::Builder{}
 		addrmap := self.registerAddrmap(uintptr(it.Base))
 		self.oc.ic.iterBegin(&sb, uintptr(it.Base), addrmap)
@@ -624,7 +615,7 @@ impl scopeCoder {
 		self.oc.indent()
 
 		if it.Next != nil {
-			self.st(it.Next)
+			self.stmt(it.Next)
 			self.oc.write(";\n")
 			self.oc.indent()
 		}
@@ -660,8 +651,8 @@ impl scopeCoder {
 		| it.Expr.Type.Map() != nil:
 			self.rangeHashmapIter(it)
 		|:
-			mut sit := opt::StrRuneIter{Expr: it.Expr, Base: it}
-			self.strRuneIter(sit, true) // String
+			mut sit := cst::StringRuneIter{Expr: it.Expr, Base: it}
+			self.stringRuneIter(sit, true) // String
 		}
 	}
 
@@ -697,7 +688,7 @@ impl scopeCoder {
 		self.oc.ic.label(&self.oc.Buf, uintptr(gt.Label), self.getAddrmap(uintptr(gt.Label)))
 	}
 
-	fn tryMapSet(mut &self, mut m: compExpr): (ok: bool) {
+	fn tryMapSet(mut &self, mut m: cst::Expr): (ok: bool) {
 		mut iem, ok := m.(&sema::IndexingExpr)
 		if !ok {
 			return
@@ -733,32 +724,44 @@ impl scopeCoder {
 		self.oc.write(p.Op)
 	}
 
-	fn assignLeft(mut &self, mut model: compExpr) {
+	fn assignLeft(mut &self, mut model: cst::Expr) {
 		ok := self.tryMapSet(model)
 		if !ok {
 			self.oc.ec.possibleRefExpr(model)
 		}
 	}
 
-	fn shl(mut &self, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn shl(mut &self,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type) {
 		self.assignLeft(l)
 		self.oc.write(" = ")
 		self.oc.ec.shl(l, lt, r, rt)
 	}
 
-	fn shr(mut &self, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn shr(mut &self,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type) {
 		self.assignLeft(l)
 		self.oc.write(" = ")
 		self.oc.ec.shr(l, lt, r, rt)
 	}
 
-	fn divByZeroAssign(mut &self, loc: &token::Token, opID: int, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn divByZeroAssign(mut &self,
+		loc: &token::Token,
+		opID: int,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type) {
 		self.assignLeft(l)
 		self.oc.write(" = ")
 		self.oc.ec.divByZeroBinary(loc, opID, l, lt, r, rt)
 	}
 
-	fn cmplxAssign(mut &self, opID: int, opKind: string, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type, kind: string) {
+	fn cmplxAssign(mut &self,
+		opID: int, opKind: string,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type,
+		kind: string) {
 		mut fc := isFallibleResult(r)
 		if opID == token::ASSIGN && fc != nil {
 			self.oc.ec.handleFallibleCallWithData(fc, useExprMemory{
@@ -846,7 +849,11 @@ impl scopeCoder {
 	}
 
 	// The loc needed only if operation is division.
-	fn pureAssign(mut &self, mut loc: &token::Token, mut opID: int, mut opKind: string, mut l: compExpr, mut lt: &sema::Type, mut r: compExpr, mut rt: &sema::Type) {
+	fn pureAssign(mut &self,
+		mut loc: &token::Token,
+		mut opID: int, mut opKind: string,
+		mut l: cst::Expr, mut lt: &sema::Type,
+		mut r: cst::Expr, mut rt: &sema::Type) {
 		// optimize may optimize multi-assign statements
 		// it uses common tokens of normalized statement
 		// so it may be := assignment token, it is not a bug
@@ -1132,7 +1139,7 @@ impl scopeCoder {
 		self.oc.write(")")
 	}
 
-	fn typeAssertionAssignUnsafe(mut &self, mut a: &sema::MultiAssign, mut uc: &opt::UnsafeTypeAssertionExpr) {
+	fn typeAssertionAssignUnsafe(mut &self, mut a: &sema::MultiAssign, mut uc: &cst::UnsafeTypeAssertionExpr) {
 		if a.Left[0] != nil {
 			self.oc.ec.possibleRefExpr(a.Left[0].Model)
 			self.oc.write(" = ")
@@ -1155,7 +1162,7 @@ impl scopeCoder {
 			self.oc.indent()
 		}
 
-		let mut r: compExpr = a.Right
+		let mut r: cst::Expr = a.Right
 		match type r {
 		| &sema::IndexingExpr:
 			self.mapLookupAssign(a)
@@ -1163,10 +1170,10 @@ impl scopeCoder {
 		| &sema::TypeAssertionExpr:
 			self.typeAssertionAssign(a)
 			return
-		| &opt::UnsafeTypeAssertionExpr:
+		| &cst::UnsafeTypeAssertionExpr:
 			// We avoiding misanalysis for assertion casting expressions here.
 			// Since we know the casting result, assign directly with no analysis.
-			mut uc := r.(&opt::UnsafeTypeAssertionExpr)
+			mut uc := r.(&cst::UnsafeTypeAssertionExpr)
 			self.typeAssertionAssignUnsafe(a, uc)
 			return
 		| &sema::ChanRecv:
@@ -1261,7 +1268,7 @@ impl scopeCoder {
 			if m.Expr.IsConst() {
 				matchExprS := writeAndReadFromBuf(&self.oc.Buf,
 					fn|| self.oc.ec.possibleRefExpr(m.Expr.Model))
-				mut matchExpr := compExpr(matchExprS)
+				mut matchExpr := cst::Expr(matchExprS)
 				l.Model = unsafe { *(*sema::Expr)(&matchExpr) }
 			} else {
 				if opt::Copy && isCopyOptimizable(m.Expr, false) {
@@ -1269,7 +1276,7 @@ impl scopeCoder {
 				} else {
 					self.oc.write("auto _match_expr{ ")
 				}
-				mut matchExpr := compExpr(matchExpr)
+				mut matchExpr := cst::Expr(matchExpr)
 				l.Model = unsafe { *(*sema::Expr)(&matchExpr) }
 				self.oc.ec.possibleRefExpr(m.Expr.Model)
 				self.oc.write(" };\n")
@@ -1905,7 +1912,7 @@ impl scopeCoder {
 		}
 	}
 
-	fn mutSlicing(mut &self, mut m: &opt::MutSlicingExpr) {
+	fn mutableSlicing(mut &self, mut m: &cst::MutableSlicingExpr) {
 		self.oc.write("(")
 		self.oc.ec.possibleRefExpr(m.Expr)
 		self.oc.write(").safe_mut_slice(\"")
@@ -1923,7 +1930,7 @@ impl scopeCoder {
 		self.oc.write(");")
 	}
 
-	fn swap(mut &self, mut m: &opt::SwapExpr) {
+	fn swap(mut &self, mut m: &cst::SwapExpr) {
 		self.oc.write("std::swap(")
 		self.oc.ec.possibleRefExpr(m.Left.Model)
 		self.oc.write(", ")
@@ -1931,7 +1938,7 @@ impl scopeCoder {
 		self.oc.write(")")
 	}
 
-	fn errorForwarding(mut &self, mut m: &opt::ErrorForwardingExpr) {
+	fn errorForwarding(mut &self, mut m: &cst::ErrorForwardingExpr) {
 		hasDefer := m.Func.Decl != nil && m.Func.Decl.HasDefer
 		if !hasDefer {
 			self.oc.write(returnKw(m.Func))
@@ -2073,70 +2080,70 @@ impl scopeCoder {
 	}
 
 	// Generates C++ code of statement.
-	fn st(mut &self, mut st: compStmt) {
-		if st == nil {
+	fn stmt(mut &self, mut stmt: cst::Stmt) {
+		if stmt == nil {
 			return
 		}
-		match type st {
+		match type stmt {
 		| &sema::Scope:
-			self.scope(st.(&sema::Scope))
+			self.scope(stmt.(&sema::Scope))
 		| &sema::Var:
-			self.var(st.(&sema::Var))
+			self.var(stmt.(&sema::Var))
 		| &sema::Value:
-			mut v := st.(&sema::Value)
+			mut v := stmt.(&sema::Value)
 			self.oc.ec.model(v.Model)
 		| &sema::Conditional:
-			self.conditional(st.(&sema::Conditional))
+			self.conditional(stmt.(&sema::Conditional))
 		| &sema::InfIter:
-			self.infIter(st.(&sema::InfIter))
+			self.infIter(stmt.(&sema::InfIter))
 		| &sema::WhileIter:
-			self.whileIter(st.(&sema::WhileIter))
+			self.whileIter(stmt.(&sema::WhileIter))
 		| &sema::RangeIter:
-			self.rangeIter(st.(&sema::RangeIter))
+			self.rangeIter(stmt.(&sema::RangeIter))
 		| &sema::Continue:
-			self.continueStmt(st.(&sema::Continue))
+			self.continueStmt(stmt.(&sema::Continue))
 		| &sema::Label:
-			self.label(st.(&sema::Label))
+			self.label(stmt.(&sema::Label))
 		| &sema::Goto:
-			self.gotoStmt(st.(&sema::Goto))
+			self.gotoStmt(stmt.(&sema::Goto))
 		| &sema::Postfix:
-			self.postfix(st.(&sema::Postfix))
+			self.postfix(stmt.(&sema::Postfix))
 		| &sema::Assign:
-			self.assign(st.(&sema::Assign))
+			self.assign(stmt.(&sema::Assign))
 		| &sema::MultiAssign:
-			self.multiAssign(st.(&sema::MultiAssign))
+			self.multiAssign(stmt.(&sema::MultiAssign))
 		| &sema::Match:
-			self.matchStmt(st.(&sema::Match))
+			self.matchStmt(stmt.(&sema::Match))
 		| &sema::Select:
-			self.selectStmt(st.(&sema::Select))
+			self.selectStmt(stmt.(&sema::Select))
 		| &sema::Fall:
-			self.fallStmt(st.(&sema::Fall))
+			self.fallStmt(stmt.(&sema::Fall))
 		| &sema::Break:
-			self.breakStmt(st.(&sema::Break))
+			self.breakStmt(stmt.(&sema::Break))
 		| &sema::Return:
-			self.returnStmt(st.(&sema::Return))
+			self.returnStmt(stmt.(&sema::Return))
 		| &sema::Throw:
-			self.throwStmt(st.(&sema::Throw))
-		| &opt::PushToSliceExpr:
-			self.oc.ec.pushToSlice(st.(&opt::PushToSliceExpr))
-		| &opt::MutSlicingExpr:
-			self.mutSlicing(st.(&opt::MutSlicingExpr))
-		| &opt::SwapExpr:
-			self.swap(st.(&opt::SwapExpr))
-		| &opt::ErrorForwardingExpr:
-			self.errorForwarding(st.(&opt::ErrorForwardingExpr))
-		| &opt::StrRuneIter:
-			mut sit := st.(&opt::StrRuneIter)
-			self.strRuneIter(*sit, false)
+			self.throwStmt(stmt.(&sema::Throw))
+		| &cst::PushToSliceExpr:
+			self.oc.ec.pushToSlice(stmt.(&cst::PushToSliceExpr))
+		| &cst::MutableSlicingExpr:
+			self.mutableSlicing(stmt.(&cst::MutableSlicingExpr))
+		| &cst::SwapExpr:
+			self.swap(stmt.(&cst::SwapExpr))
+		| &cst::ErrorForwardingExpr:
+			self.errorForwarding(stmt.(&cst::ErrorForwardingExpr))
+		| &cst::StringRuneIter:
+			mut sit := stmt.(&cst::StringRuneIter)
+			self.stringRuneIter(*sit, false)
 		| &sema::Use:
 			// no-op
 		}
 	}
 
 	fn scopeStmts(mut &self, mut s: &sema::Scope) {
-		for (_, mut st) in s.Stmts {
+		for (_, mut stmt) in s.Stmts {
 			self.oc.indent()
-			self.st(st)
+			self.stmt(stmt)
 			self.oc.write(";\n")
 		}
 	}

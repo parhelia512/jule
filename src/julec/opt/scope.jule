@@ -4,6 +4,7 @@
 
 use "julec/env"
 use "julec/obj"
+use "julec/obj/cst"
 use "julec/obj/meta"
 use "std/jule/build"
 use "std/jule/constant"
@@ -379,13 +380,13 @@ impl scopeOptimizer {
 				| prim.IsU8():
 					// Expression is: []byte(string)
 					// Use string's bytes directly, byte casting is unnecessary.
-					mut model := any(&BytesFromString{Expr: cem.Expr.Model})
+					mut model := any(&cst::BytesFromString{Expr: cem.Expr.Model})
 					it.Expr.Model = unsafe { *(*sema::Expr)(&model) }
 				| prim.IsI32():
 					// Expression is: []rune(string)
 					// Avoid making allocation, iterate runes of string.
 					exprOptimizer.optimizeValue(&cem.Expr.Model, self.data, self) // Optimize string expression.
-					self.setCurrentStmt(&StrRuneIter{
+					self.setCurrentStmt(&cst::StringRuneIter{
 						Expr: cem.Expr,
 						Base: it,
 					})
@@ -416,13 +417,13 @@ impl scopeOptimizer {
 		self.optimizeChildHard(it.Scope)
 	}
 
-	fn substr(mut &self, mut a: &sema::Assign): bool {
+	fn substring(mut &self, mut a: &sema::Assign): bool {
 		if a.Op.ID != token::ASSIGN {
 			return false
 		}
 		mut sem, ok := a.Right.Model.(&sema::SlicingExpr)
 		if ok && obj::EqualModels(a.Left.Model, sem.Expr.Model) {
-			self.setCurrentStmt(&MutSlicingExpr{
+			self.setCurrentStmt(&cst::MutableSlicingExpr{
 				Token: sem.Token,
 				Expr:  sem.Expr.Model,
 				Left:  sem.Left,
@@ -434,7 +435,7 @@ impl scopeOptimizer {
 		return false
 	}
 
-	fn strAssign(mut &self, mut a: &sema::Assign): bool {
+	fn stringAssign(mut &self, mut a: &sema::Assign): bool {
 		if !String {
 			return false
 		}
@@ -442,15 +443,15 @@ impl scopeOptimizer {
 		if lp == nil || !lp.IsString() {
 			return false
 		}
-		return self.substr(a)
+		return self.substring(a)
 	}
 
 	fn sliceAssign(mut &self, mut a: &sema::Assign): bool {
 		if !Slice || a.Left.Type.Slice() == nil {
 			return false
 		}
-		// [self.substr] applies this optimization without type dependence.
-		return self.substr(a)
+		// [self.substring] applies this optimization without type dependence.
+		return self.substring(a)
 	}
 
 	fn optimizePostfix(mut &self, mut postfix: &sema::Postfix) {
@@ -499,7 +500,7 @@ impl scopeOptimizer {
 		}
 
 		match {
-		| self.strAssign(assign)
+		| self.stringAssign(assign)
 		| self.sliceAssign(assign):
 			return
 		}
@@ -578,7 +579,7 @@ impl scopeOptimizer {
 				_, slice := m.Elements.Model.(&sema::SliceExpr)
 				if slice {
 					// Push items one-by-one for self-appended memory.
-					self.setCurrentStmt(&PushToSliceExpr{
+					self.setCurrentStmt(&cst::PushToSliceExpr{
 						Base: m,
 					})
 				}
@@ -671,7 +672,7 @@ impl scopeOptimizer {
 			!obj::EqualModels(assign.Left[1].Model, tup.Values[0].Model) {
 			return false
 		}
-		mut model := &SwapExpr{
+		mut model := &cst::SwapExpr{
 			Left:  assign.Left[0],
 			Right: assign.Left[1],
 		}
@@ -941,7 +942,7 @@ impl scopeOptimizer {
 		if owner == nil {
 			panic("unreachable")
 		}
-		self.setCurrentStmt(&ErrorForwardingExpr{Func: owner, Expr: fc})
+		self.setCurrentStmt(&cst::ErrorForwardingExpr{Func: owner, Expr: fc})
 	}
 
 	// Like optimizeStmt, but handles independent statement from the scope.
