@@ -13,18 +13,17 @@ fn newStdioPoll(h: u64): &poll::FD {
 	// See issue https://github.com/julelang/jule/issues/107
 	//
 	// Code derived from Windows implementation of the `std/os` package's [newFile] function.
-	let mut flags: int
+	mut flags := poll::File
 	t, err := unsafe { sys::GetFileType(sys::Handle(h)) }
 	if err || t == sys::FILE_TYPE_CHAR {
 		mut m := u32(0)
 		if unsafe { sys::GetConsoleMode(sys::Handle(h), &m) } {
+			flags &= ^poll::File
 			flags |= poll::Console
 		}
 	} else if t == sys::FILE_TYPE_PIPE {
+		flags &= ^poll::File
 		flags |= poll::Pipe
-	}
-	if flags == 0 {
-		panic("unreachable")
 	}
 	mut fd := &poll::FD{
 		File:          h,
