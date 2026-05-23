@@ -12,6 +12,7 @@ use "std/jule/sema"
 use "std/jule/token"
 use "std/jule/types"
 use "std/math/bits"
+use "std/strings"
 
 // Expression optimizer that applies target-independent optimizations.
 struct exprOptimizer {
@@ -94,6 +95,50 @@ impl exprOptimizer {
 			}
 			exop.inspectStep(m)
 		})
+	}
+
+	fn castingPrim(*self, mut m: &sema::CastingExpr, prim: &sema::Prim) {
+		if prim.IsString() {
+			mut slice := m.Expr.Type.Slice()
+			if slice == nil {
+				return
+			}
+			prim2 := slice.Value.Prim()
+			if prim2 == nil {
+				return
+			}
+			if !prim2.IsU8() && prim2.IsI32() {
+				return
+			}
+			lit, ok := m.Expr.Model.(&sema::SliceExpr)
+			if !ok {
+				return
+			}
+			if !valuesAreConstant(lit.Elems) {
+				return
+			}
+			// Expression is: `string([]byte)` or `string([]rune)`,
+			//                 where all slice values are constant.
+			let mut sb: strings::Builder
+			for _, v in lit.Elems {
+				r := v.Constant.AsI64()
+				sb.WriteRune(rune(r))!
+			}
+			mut c := constant::NewString(sb.String())
+			*self.model = c
+			return
+		}
+	}
+
+	fn casting(*self, mut m: &sema::CastingExpr) {
+		if !String {
+			return
+		}
+		prim := m.Type.Prim()
+		if prim != nil {
+			self.castingPrim(m, prim)
+			return
+		}
 	}
 
 	fn selfCmpCond(*self, mut m: &sema::BinaryExpr): bool {
@@ -1001,6 +1046,8 @@ impl exprOptimizer {
 	fn inspectStep(*self, mut &m: *sema::Expr) {
 		self.model = unsafe { (&sema::Expr)(m) }
 		match type *m {
+		| &sema::CastingExpr:
+			self.casting((*m).(&sema::CastingExpr))
 		| &sema::BinaryExpr:
 			self.binary((*m).(&sema::BinaryExpr))
 		| &sema::UnaryExpr:
@@ -1101,4 +1148,13 @@ fn areSameLvalueExpr(l: sema::Expr, r: sema::Expr): bool {
 	|:
 		return false
 	}
+}
+
+fn valuesAreConstant(values: []&sema::Value): bool {
+	for _, v in values {
+		if !v.IsConst() {
+			return false
+		}
+	}
+	return true
 }
