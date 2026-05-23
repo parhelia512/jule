@@ -130,6 +130,54 @@ impl exprOptimizer {
 		}
 	}
 
+	fn castingSlice(*self, mut m: &sema::CastingExpr, mut slice: &sema::Slice) {
+		mut prim := slice.Value.Prim()
+		if prim == nil {
+			return
+		}
+		if !prim.IsU8() && !prim.IsI32() {
+			return
+		}
+		prim2 := m.Expr.Type.Prim()
+		if prim2 == nil {
+			return
+		}
+		if !prim2.IsString() {
+			return
+		}
+		if !m.Expr.IsConst() {
+			return
+		}
+		// Expression is: `[]byte(string)` or `[]rune(string)`,
+		//                 where string is constant.
+		mut v := new(sema::SliceExpr)
+		v.ElemType = slice.Value
+		s := m.Expr.Constant.ReadString()
+		match {
+		| prim.IsU8():
+			mut i := 0
+			for i < len(s); i++ {
+				mut c := constant::NewI64(i64(s[i]))
+				c.Kind = types::U8
+				v.Elems = append(v.Elems, &sema::Value{
+					Type:     slice.Value,
+					Constant: c,
+					Model:    c,
+				})
+			}
+		| prim.IsI32():
+			for _, r in s {
+				mut c := constant::NewI64(i64(r))
+				c.Kind = types::U8
+				v.Elems = append(v.Elems, &sema::Value{
+					Type:     slice.Value,
+					Constant: c,
+					Model:    c,
+				})
+			}
+		}
+	}
+
 	fn casting(*self, mut m: &sema::CastingExpr) {
 		if !String {
 			return
@@ -137,6 +185,11 @@ impl exprOptimizer {
 		prim := m.Type.Prim()
 		if prim != nil {
 			self.castingPrim(m, prim)
+			return
+		}
+		mut slice := m.Type.Slice()
+		if slice != nil {
+			self.castingSlice(m, slice)
 			return
 		}
 	}
