@@ -5,6 +5,7 @@
 use "std/comptime"
 use "std/conv"
 use "std/encoding/base64"
+use "std/errors"
 use "std/internal/ubuf"
 use "std/math"
 use "std/runtime"
@@ -76,6 +77,8 @@ type encodePlain = int
 // Encoder will add indentation when needed.
 type encodeIndent = uint
 
+let mut errorExceededMaxDepth = errors::New("json: exceeded max depth")
+
 // JSON encoder with/without indentation.
 // For indentation, use Flag type logic.
 // See documentation of the [encodeFlagType].
@@ -87,6 +90,7 @@ struct encoder {
 	buf:        buffer // Common internal buffer to encode JSON.
 	indent:     string // Indentation.
 	depth:      int    // Current depth.
+	maxDepth:   int    // Max depth.
 	escapeHTML: bool
 }
 
@@ -95,6 +99,15 @@ impl encoder {
 	#disable nilptr
 	fn init(mut *self) {
 		self.escapeHTML = true
+		self.maxDepth = maxNestingDepth
+	}
+
+	#disable nilptr
+	fn incdepth(mut *self)! {
+		self.depth++
+		if self.depth > self.maxDepth {
+			throw errorExceededMaxDepth
+		}
 	}
 
 	#disable nilptr
@@ -241,10 +254,7 @@ impl encoder {
 	#disable nilptr
 	fn encodeStruct[T, Flag](mut *self, t: T)! {
 		const useIndent = comptime::TypeOf(Flag) == comptime::TypeOf(encodeIndent)
-		const match {
-		| useIndent:
-			self.depth++
-		}
+		self.incdepth()?
 		mut next := byte('{')
 		p := uintptr(&t)
 		for _, fieldCache in cachedFields[T]() {
@@ -309,10 +319,7 @@ impl encoder {
 			return
 		}
 		const useIndent = comptime::TypeOf(Flag) == comptime::TypeOf(encodeIndent)
-		const match {
-		| useIndent:
-			self.depth++
-		}
+		self.incdepth()?
 		comptime::TypeAlias(valueTyp, tt.Value())
 		mut next := byte('{')
 		for k, v in t {
@@ -347,10 +354,7 @@ impl encoder {
 	#disable nilptr
 	fn encodeArray[T, Flag](mut *self, t: T)! {
 		const useIndent = comptime::TypeOf(Flag) == comptime::TypeOf(encodeIndent)
-		const match {
-		| useIndent:
-			self.depth++
-		}
+		self.incdepth()?
 		comptime::TypeAlias(valueTyp, comptime::TypeOf(t).Value())
 		mut next := byte('[')
 		for _, e in t {
@@ -544,11 +548,9 @@ impl encoder {
 //		If smart pointer is nil, encode as null JSON value.
 //		Otherwise, will encode dereferenced value.
 //
-// Encode cannot represent cyclic data structures and does not handle them.
-// Passing cyclic structures for encoding will result in an cycle at runtime.
-// Too many nested types are not specifically checked and may cause too many
-// recursive function calls, resulting in a crash at runtime. As a result of the tests,
-// it is recommended that a data type can carry a maximum of 256 nested data.
+// Encode cannot handle cyclic data structures and will enforce a strict nesting limit.
+// Passing cyclic structures or data exceeding 256 nested levels will throw an error
+// to prevent recursive call stack overflow and system crashes.
 //
 // Supported trait implementations by higher-to-lower precedence
 // (having methods without implementing the trait is valid):
