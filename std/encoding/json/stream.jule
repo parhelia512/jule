@@ -1,0 +1,148 @@
+// Copyright 2026 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+use "std/io"
+
+// A Decoder reads and decodes JSON values from an input stream.
+struct Decoder {
+	mut r:       io::Reader
+	mut buf:     []byte
+	mut d:       decoder
+	mut scanp:   int // Start of unread data in buf.
+	mut scanned: i64 // Amount of data already scanned.
+	mut err:     any
+}
+
+impl Decoder {
+	// Returns a new decoder that reads from r.
+	//
+	// The decoder introduces its own buffering and may
+	// read data from r beyond the JSON values requested.
+	fn New(mut r: io::Reader): &Decoder {
+		mut dec := new(Decoder)
+		dec.r = r
+		return dec
+	}
+
+	// Reads the next JSON-encoded value from its
+	// input and stores it in the value pointed to by t.
+	//
+	// See the documentation for [Decode] for details about
+	// the conversion of JSON into a Jule value.
+	#disable boundary
+	async fn Decode[T](*self, mut &t: *T)!: int {
+		if t == nil {
+			panic("std/encoding/json: destination type reference pointer is nil")
+		}
+
+		if self.err != nil {
+			unsafe throw self.err
+		}
+
+		// Read whole value into buffer.
+		n := self.readValue().await?
+		self.d.init(self.buf[self.scanp : self.scanp+n])
+		self.scanp += n
+
+		// Don't save error from decode into self.err:
+		// the connection is still usable since we read a complete JSON
+		// object from it before the error happened.
+		self.d.decode(t)?
+
+		return n
+	}
+
+	// Reads a JSON value into buffer.
+	// It returns the length of the encoding.
+	#disable nilptr boundary
+	async fn readValue(*self)!: int {
+		self.d.scan.reset()
+
+		mut scanp := self.scanp
+		let mut err: any
+	Input:
+		for {
+			// Look in the buffer for a new value.
+			for scanp < len(self.buf); scanp++ {
+				c := self.buf[scanp]
+				self.d.scan.bytes++
+				match self.d.scan.step(&self.d.scan, c) {
+				| scanEnd:
+					// scanEnd is delayed one byte so we decrement
+					// the scanner bytes count by 1 to ensure that
+					// this value is correct in the next call of Decode.
+					self.d.scan.bytes--
+					break Input
+				| scanEndObject | scanEndArray:
+					// scanEnd is delayed one byte.
+					// We might block trying to get that byte from src,
+					// so instead invent a space byte.
+					if stateEndValue(&self.d.scan, ' ') == scanEnd {
+						scanp++
+						break Input
+					}
+				| scanError:
+					self.err = self.d.scan.err
+					unsafe throw self.d.scan.err
+				}
+			}
+
+			// Did the last read have an error?
+			// Delayed until now to allow buffer scan.
+			if err != nil {
+				if err == io::EOF {
+					if self.d.scan.step(&self.d.scan, ' ') == scanEnd {
+						break Input
+					}
+					if nonSpace(self.buf) {
+						err = io::ErrUnexpectedEOF
+					}
+				}
+				self.err = err
+				unsafe throw self.err
+			}
+
+			n := scanp - self.scanp
+			err = self.refill().await
+			scanp = self.scanp + n
+		}
+		return scanp - self.scanp
+	}
+
+	#disable nilptr boundary
+	async fn refill(*self): any {
+		// Make room to read more into the buffer.
+		// First slide down data already consumed.
+		if self.scanp > 0 {
+			self.scanned += i64(self.scanp)
+			n := copy(self.buf, self.buf[self.scanp:])
+			self.buf = self.buf[:n]
+			self.scanp = 0
+		}
+
+		// Grow buffer if not large enough.
+		const minRead = 512
+		if cap(self.buf)-len(self.buf) < minRead {
+			mut newBuf := make([]byte, len(self.buf), 2*cap(self.buf)+minRead)
+			copy(newBuf, self.buf)
+			self.buf = newBuf
+		}
+
+		// Read. Delay error for next iteration (after scan).
+		n := self.r.Read(self.buf[len(self.buf):cap(self.buf)]).await else {
+			return error
+		}
+		self.buf = self.buf[0 : len(self.buf)+n]
+		return nil
+	}
+}
+
+fn nonSpace(b: []byte): bool {
+	for _, c in b {
+		if !isSpace(c) {
+			return true
+		}
+	}
+	return false
+}

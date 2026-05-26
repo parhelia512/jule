@@ -1,0 +1,128 @@
+// Copyright 2026 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+use "std/io"
+use "std/strings"
+use "std/testing"
+
+struct scanTest {
+	input: string
+	n:     int
+	err:   bool // Last read must be error.
+}
+
+let scanTests: []scanTest = [
+	{
+		input: ``,
+		n:     1,
+		err:   true, // EOF
+	},
+	{
+		input: `123`,
+		n:     1,
+		err:   false,
+	},
+	{
+		input: `"hello world"`,
+		n:     1,
+		err:   false,
+	},
+	{
+		input: `"hello world",`,
+		n:     2,
+		err:   true,
+	},
+	{
+		input: `"hello world","hello world"`,
+		n:     2,
+		err:   true,
+	},
+	{
+		input: `["hello world","hello world"]`,
+		n:     2,
+		err:   true, // EOF
+	},
+	{
+		input: `["hello world","hello world"`,
+		n:     1,
+		err:   true,
+	},
+	{
+		input: `{`,
+		n:     1,
+		err:   true,
+	},
+	{
+		input: `{}`,
+		n:     1,
+		err:   false,
+	},
+	{
+		input: `{`,
+		n:     1,
+		err:   true,
+	},
+	{
+		input: `[]`,
+		n:     1,
+		err:   false,
+	},
+	{
+		input: `{"foo": 123, "bar": false, "baz": null}`,
+		n:     1,
+		err:   false,
+	},
+	{
+		input: `{"foo": 123, "bar" false, "baz": null}`,
+		n:     1,
+		err:   true,
+	},
+	{
+		input: `{"foo": 123, "bar": false, "baz": null} {"foo": 456, "bar": true, "baz": null}`,
+		n:     2,
+		err:   false,
+	},
+	{
+		input: `{"foo": 123, "bar": false, "baz": null} {"foo" 123, "bar": false, "baz": null}`,
+		n:     2,
+		err:   true,
+	},
+	{
+		input: `null123true"foobarbaz"{}[]`,
+		n:     6,
+		err:   false,
+	},
+]
+
+#test
+async fn testDecoderDecode(t: &testing::T) {
+	let mut v: Value
+	for i, test in scanTests {
+		mut r := strings::Reader.New(test.input).Async()
+		dec := Decoder.New(r)
+		mut n := test.n
+		for n > 0; n-- {
+			let mut err: any
+			dec.Decode(&v).await else { err = error }
+			if n > 1 && err != nil {
+				t.Errorf("#{} unexpected error: {}", i, err)
+				break
+			}
+			if n == 1 && (err != nil) != test.err {
+				t.Errorf("#{} unexpected error: {}", i, err)
+				break
+			}
+		}
+		if !test.err {
+			dec.Decode(&v).await else {
+				if error == io::EOF {
+					continue
+				}
+				t.Errorf("#{} expected EOF, found: {}", i, error)
+				continue
+			}
+			t.Errorf("#{} expected EOF, but decoded", i)
+		}
+	}
+}
