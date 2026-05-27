@@ -127,6 +127,77 @@ async fn testDecoderDecode(t: &testing::T) {
 	}
 }
 
+struct enctestobj {
+	Foo: int `json:"foo"`
+	Bar: int `json:"bar"`
+}
+
+struct encoderTest {
+	encode: async fn(enc: &Encoder)!
+	out:    string
+}
+
+let encoderTests: []encoderTest = [
+	{
+		encode: async fn|enc| enc.Encode(123).await?,
+		out:    "123\n",
+	},
+	{
+		encode: async fn|enc| enc.Encode(123.456).await?,
+		out:    "123.456\n",
+	},
+	{
+		encode: async fn|enc| enc.Encode("hello world").await?,
+		out:    "\"hello world\"\n",
+	},
+	{
+		encode: async fn|enc| enc.Encode((&int)(nil)).await?,
+		out:    "null\n",
+	},
+	{
+		encode: async fn|enc| enc.Encode([1, 2, 3, 4, 5]).await?,
+		out:    "[1,2,3,4,5]\n",
+	},
+	{
+		encode: async fn|enc| enc.Encode(enctestobj{Foo: 123, Bar: 456}).await?,
+		out:    "{\"foo\":123,\"bar\":456}\n",
+	},
+	{
+		encode: async fn|enc| {
+			enc.Encode(enctestobj{Foo: 123, Bar: 456}).await?
+			enc.Encode(enctestobj{Foo: 123, Bar: 456}).await?
+		},
+		out: "{\"foo\":123,\"bar\":456}\n{\"foo\":123,\"bar\":456}\n",
+	},
+	{
+		encode: async fn|enc| {
+			enc.Encode(enctestobj{Foo: 123, Bar: 456}).await?
+			enc.Encode(enctestobj{Foo: 123, Bar: 456}).await?
+			enc.Encode((&int)(nil)).await?
+			enc.Encode([1, 2, 3, 4, 5]).await?
+		},
+		out: "{\"foo\":123,\"bar\":456}\n{\"foo\":123,\"bar\":456}\nnull\n[1,2,3,4,5]\n",
+	},
+]
+
+#test
+async fn testEncoderEncode(t: &testing::T) {
+	for i, test in encoderTests {
+		mut w := new(strings::Builder)
+		enc := Encoder.New(w.Async())
+		test.encode(enc).await else {
+			t.Errorf("#{} unexpected error: {}", i, error)
+			continue
+		}
+		s := w.String()
+		if s != test.out {
+			println(s)
+			t.Errorf("#{} unexpected output", i)
+			continue
+		}
+	}
+}
+
 struct testobj {
 	Foo: int
 }

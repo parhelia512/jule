@@ -4,6 +4,55 @@
 
 use "std/io"
 
+// An Encoder writes JSON values to an output stream.
+struct Encoder {
+	mut w:   io::Writer
+	mut enc: encoder
+	mut err: any
+}
+
+impl Encoder {
+	// Returns a new encoder that writes to w.
+	fn New(mut w: io::Writer): &Encoder {
+		mut enc := new(Encoder)
+		enc.w = w
+		enc.enc.init()
+		return enc
+	}
+
+	// Writes the JSON encoding of v to the stream,
+	// followed by a newline character.
+	//
+	// See the documentation for [Encode] for details about the
+	// conversion of Jule values to JSON.
+	async fn Encode[T](*self, v: T)! {
+		if self.err != nil {
+			unsafe throw self.err
+		}
+
+		// Reset encoder state.
+		self.enc.depth = 0
+		self.enc.buf.reset()
+
+		// Encode the data.
+		self.enc.encode[T, encodePlain](v)?
+
+		// Terminate each value with a newline.
+		// This makes the output look a little nicer
+		// when debugging, and some kind of space
+		// is required if the encoded value was a number,
+		// so that the reader knows there aren't more
+		// digits coming.
+		self.enc.buf.writeByte('\n')
+
+		data := self.enc.buf.bytes()
+		self.w.Write(data).await else {
+			self.err = error
+			throw error
+		}
+	}
+}
+
 // A Decoder reads and decodes JSON values from an input stream.
 struct Decoder {
 	mut r:       io::Reader
