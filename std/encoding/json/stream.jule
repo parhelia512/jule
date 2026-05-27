@@ -26,13 +26,13 @@ impl Decoder {
 	}
 
 	// Reads the next JSON-encoded value from its
-	// input and stores it in the value pointed to by t.
+	// input and stores it in the value pointed to by v.
 	//
 	// See the documentation for [Decode] for details about
 	// the conversion of JSON into a Jule value.
 	#disable boundary
-	async fn Decode[T](*self, mut &t: *T)!: int {
-		if t == nil {
+	async fn Decode[T](*self, mut &v: *T)!: int {
+		if v == nil {
 			panic("std/encoding/json: destination type reference pointer is nil")
 		}
 
@@ -48,7 +48,7 @@ impl Decoder {
 		// Don't save error from decode into self.err:
 		// the connection is still usable since we read a complete JSON
 		// object from it before the error happened.
-		self.d.decode(t)?
+		self.d.decode(v)?
 
 		return n
 	}
