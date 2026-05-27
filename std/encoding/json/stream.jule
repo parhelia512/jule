@@ -35,7 +35,11 @@ impl Encoder {
 		self.enc.buf.reset()
 
 		// Encode the data.
-		self.enc.encode[T, encodePlain](v)?
+		if self.enc.indent == "" {
+			self.enc.encode[T, encodePlain](v)?
+		} else {
+			self.enc.encode[T, encodeIndent](v)?
+		}
 
 		// Terminate each value with a newline.
 		// This makes the output look a little nicer
@@ -50,6 +54,12 @@ impl Encoder {
 			self.err = error
 			throw error
 		}
+	}
+
+	// Enables indentation for each subsequent encoded value.
+	// Calling SetIndent("") disables indentation.
+	fn SetIndent(mut *self, indent: string) {
+		self.enc.indent = indent
 	}
 
 	// Sets maximum nested depth limit.
