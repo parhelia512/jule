@@ -28,7 +28,13 @@ struct decoder {
 impl decoder {
 	// Initializes a new decoder state.
 	#disable nilptr
-	fn init(*self, data: []byte) {
+	fn init(*self) {
+		self.scan.init()
+	}
+
+	// Sets decoder state ready for the new buffer.
+	#disable nilptr
+	fn setbuf(*self, data: []byte) {
 		self.data = unsafe { *&data }
 		self.off = 0
 	}
@@ -511,7 +517,6 @@ impl decoder {
 
 	#disable nilptr boundary
 	fn decode[T](*self, mut &v: *T)! {
-		self.scan.reset()
 		self.scanWhile(scanSkipSpace)?
 		if self.opcode == scanEnd {
 			throw errors::New("json: unexpected JSON input")
@@ -699,7 +704,8 @@ fn Decode[T](data: []byte, mut &v: *T)! {
 		panic("std/encoding/json: destination type reference pointer is nil")
 	}
 	d := decoder{}
-	d.init(data)
+	d.init()
+	d.setbuf(data)
 	d.decode(v)?
 }
 

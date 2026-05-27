@@ -21,6 +21,7 @@ impl Decoder {
 	// read data from r beyond the JSON values requested.
 	fn New(mut r: io::Reader): &Decoder {
 		mut dec := new(Decoder)
+		dec.d.init()
 		dec.r = r
 		return dec
 	}
@@ -42,15 +43,25 @@ impl Decoder {
 
 		// Read whole value into buffer.
 		n := self.readValue().await?
-		self.d.init(self.buf[self.scanp : self.scanp+n])
+		self.d.setbuf(self.buf[self.scanp : self.scanp+n])
 		self.scanp += n
 
 		// Don't save error from decode into self.err:
 		// the connection is still usable since we read a complete JSON
 		// object from it before the error happened.
+		self.d.scan.reset()
 		self.d.decode(v)?
 
 		return n
+	}
+
+	// Sets maximum nested depth limit.
+	// Panics if depth is a negative value.
+	fn SetMaxNestedDepth(mut *self, depth: int) {
+		if depth < 0 {
+			panic("json: Decoder: negative depth count")
+		}
+		self.d.scan.maxDepth = depth
 	}
 
 	// Reads a JSON value into buffer.

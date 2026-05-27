@@ -47,7 +47,7 @@ use "std/io"
 
 // This limits the max nesting depth to prevent stack overflow.
 // This is permitted by https://tools.ietf.org/html/rfc7159#section-9
-const maxNestingDepth = 256
+const defaultMaxNestingDepth = 256
 
 // These values are returned by the state transition functions
 // assigned to scanner.state and the method scanner.eof.
@@ -112,12 +112,16 @@ struct scanner {
 	// total bytes consumed, updated by decoder.Decode (and deliberately
 	// not set to zero by scan.reset)
 	bytes: i64
+
+	// Max depth.
+	maxDepth: int
 }
 
 impl scanner {
 	// Initializes a new scanner.
 	#disable nilptr
 	fn init(mut *self) {
+		self.maxDepth = defaultMaxNestingDepth
 		// scanner.reset by design doesn't set bytes to zero.
 		self.bytes = 0
 		self.reset()
@@ -162,11 +166,11 @@ impl scanner {
 	}
 
 	// Pushes a new parse state newParseState onto the parse stack.
-	// an error state is returned if maxNestingDepth was exceeded, otherwise successState is returned.
+	// an error state is returned if [scanner.maxDepth] was exceeded, otherwise successState is returned.
 	#disable nilptr
 	fn pushParseState(mut *self, c: byte, newParseState: int, successState: int): int {
 		self.parseState = append(self.parseState, newParseState)
-		if len(self.parseState) <= maxNestingDepth {
+		if len(self.parseState) <= self.maxDepth {
 			return successState
 		}
 		return self.onerror(c, "exceeded max depth")

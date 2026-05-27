@@ -99,7 +99,7 @@ impl encoder {
 	#disable nilptr
 	fn init(mut *self) {
 		self.escapeHTML = true
-		self.maxDepth = maxNestingDepth
+		self.maxDepth = defaultMaxNestingDepth
 	}
 
 	#disable nilptr
