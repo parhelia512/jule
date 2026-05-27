@@ -60,6 +60,17 @@ impl Encoder {
 		}
 		self.enc.maxDepth = depth
 	}
+
+	// Specifies whether problematic HTML characters
+	// should be escaped inside JSON quoted strings.
+	// The default behavior is to escape &, <, and > to \u0026, \u003c, and \u003e
+	// to avoid certain safety problems that can arise when embedding JSON in HTML.
+	//
+	// In non-HTML settings where the escaping interferes with the readability
+	// of the output, SetEscapeHTML(false) disables this behavior.
+	fn SetEscapeHTML(mut *self, escape: bool) {
+		self.enc.escapeHTML = escape
+	}
 }
 
 // A Decoder reads and decodes JSON values from an input stream.
