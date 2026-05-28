@@ -92,12 +92,12 @@ trait Listener {
 	fn Network(*self): Network
 }
 
-let mut maxListenerBacklogCacheInit = sync::AsyncOnce{}
+let mut maxListenerBacklogCacheInit = sync::Once{}
 let mut maxListenerBacklogCache = 0
 
 // Caching wrapper around maxListenerBacklog.
 async fn listenerBacklog(): int {
-	maxListenerBacklogCacheInit.Do(async fn() {
+	maxListenerBacklogCacheInit.Do(async fn|| {
 		maxListenerBacklogCache = maxListenerBacklog().await
 	}).await
 	return maxListenerBacklogCache

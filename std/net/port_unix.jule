@@ -6,7 +6,7 @@ use "std/internal/byteslite"
 use "std/internal/conv"
 use "std/sync"
 
-let onceReadServices = sync::AsyncOnce{}
+let onceReadServices = sync::Once{}
 
 #disable boundary
 async fn readServices() {
