@@ -71,7 +71,7 @@ impl dnsConfig {
 // Otherwise, the mutex field might be compromised.
 let mut conf = dnsConfig{}
 
-let mut configInitializer = sync::Once{}
+let mut configInitializer = sync::BlockingOnce{}
 
 // Resolves config to conf.
 async fn resolveConfig() {

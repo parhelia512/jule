@@ -15,8 +15,8 @@ impl one {
 	}
 }
 
-async fn run(t: &testing::T, once: &sync::Once, mut o: &one, mut c: &int) {
-	once.Do(fn|| o.Increment())
+async fn run(t: &testing::T, once: &sync::AsyncOnce, mut o: &one, mut c: &int) {
+	once.Do(async fn|| o.Increment()).await
 	if *o != 1 {
 		t.Errorf("once failed inside run: {} is not 1", *o)
 	}
@@ -26,7 +26,7 @@ async fn run(t: &testing::T, once: &sync::Once, mut o: &one, mut c: &int) {
 #test
 async fn testOnce(t: &testing::T) {
 	mut o := new(one)
-	mut once := new(sync::Once)
+	mut once := new(sync::AsyncOnce)
 	mut c := new(int)
 	const N = 10
 	mut i := 0
