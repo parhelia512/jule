@@ -72,6 +72,10 @@ impl sema::Importer for importer {
 		return self.mods[id]
 	}
 
+	fn Mods(mut *self): []&mod::Mod {
+		return self.mods
+	}
+
 	fn GetImport(mut *self, path: string): &sema::ImportInfo {
 		for (_, mut p) in self.pkgs {
 			// avoid case sensitivity for fair comparison
