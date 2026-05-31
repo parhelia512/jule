@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
-use "std/bufio"
 use "std/jule"
 use "std/jule/log"
 use "std/os"
@@ -112,62 +111,6 @@ impl parser {
 	}
 
 	#disable nilptr
-	fn parseEntry(mut *self, mut line: string): (entry: Entry) {
-		name, line, found := strings::Cut(line, " ")
-		if !found {
-			self.pushErr("expected an entry or )")
-			return
-		}
-		entry.Name = name
-		line = strings::TrimFunc(line, isSpace)
-		if line[0] != '"' || line[len(line)-1] != '"' {
-			self.pushErr("expected a valid string literal")
-			return
-		}
-		entry.Text = line[1 : len(line)-1]
-		return
-	}
-
-	#disable nilptr
-	fn parseCPP(mut *self, mut line: string) {
-		if self.mod.CPP != nil {
-			self.pushErr("configuration name is already exist: cpp")
-			self.r = eof
-			return
-		}
-		line = strings::TrimFunc(line[len("cpp"):], isSpace)
-		if line == "" {
-			self.pushErr("expected (, found new line")
-			self.r = eof
-			return
-		}
-		if line != "(" {
-			self.pushErr("expected (, found " + line)
-			self.r = eof
-			return
-		}
-		mut cpp := new(CPP)
-		self.mod.CPP = cpp
-		for self.r != eof {
-			line = self.getLine()
-			if len(line) == 0 {
-				continue
-			}
-			line = strings::TrimFunc(line, isSpace)
-			if line == ")" {
-				break
-			}
-			entry := self.parseEntry(line)
-			match entry.Name {
-			| "include":
-				cpp.Include = append(cpp.Include, entry)
-			| "link":
-				cpp.Link = append(cpp.Link, entry)
-			}
-		}
-	}
-
-	#disable nilptr
 	fn parse(mut *self) {
 		for self.r != eof {
 			line := self.getLine()
@@ -177,8 +120,6 @@ impl parser {
 			match {
 			| strings::HasPrefix(line, "module"):
 				self.parseModule(line)
-			| strings::HasPrefix(line, "cpp"):
-				self.parseCPP(line)
 			|:
 				self.pushErr("invalid content")
 			}

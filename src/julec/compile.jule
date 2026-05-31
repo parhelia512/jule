@@ -303,74 +303,8 @@ fn pushCompCmdGcc(mut args: []string): []string {
 	return args
 }
 
-fn collectModCPP(mod: &mod::Mod, mut include: []string, mut link: []string): ([]string, []string) {
-	if mod.CPP == nil {
-		return include, link
-	}
-	for _, entry in mod.CPP.Include {
-		if slices::Contains(include, entry.Text) {
-			continue
-		}
-		path := filepath::Join(mod.Path, entry.Text)
-
-		// Exist?
-		info := os::Stat(path) else {
-			handle::AnsiEscape.Print(handle::AnsiRed,
-				"module: "+mod.Path+"\n"+
-					"\"cpp include\" path not found or cannot be accessed: "+entry.Text)
-			handle::Throw("")
-			panic("unreachable") // Avoid error.
-		}
-		if !info.IsDir() {
-			handle::AnsiEscape.Print(handle::AnsiRed,
-				"module: "+mod.Path+"\n"+
-					"\"cpp include\" path not found or cannot be accessed: "+entry.Text)
-			handle::Throw("")
-		}
-
-		include = append(include, path)
-	}
-	for _, entry in mod.CPP.Link {
-		if slices::Contains(link, entry.Text) {
-			continue
-		}
-		path := filepath::Join(mod.Path, entry.Text)
-
-		// Exist?
-		info := os::Stat(path) else {
-			handle::AnsiEscape.Print(handle::AnsiRed,
-				"module: "+mod.Path+"\n"+
-					"\"cpp link\" path not found or cannot be accessed: "+entry.Text)
-			handle::Throw("")
-			panic("unreachable") // Avoid error.
-		}
-		if !info.IsDir() {
-			handle::AnsiEscape.Print(handle::AnsiRed,
-				"module: "+mod.Path+"\n"+
-					"\"cpp link\" path not found or cannot be accessed: "+entry.Text)
-			handle::Throw("")
-		}
-
-		link = append(link, path)
-	}
-	return include, link
-}
-
-// Collects CPP configuration entries:
-//	- include
-//	- link
-fn collectCPP(mut ir: &obj::IR): (include: []string, link: []string) {
-	for _, mod in ir.Importer.Mods() {
-		include, link = collectModCPP(mod, include, link)
-	}
-	return
-}
-
 // Generate compile command for backend-compiler.
 fn genCompileCmd(sourcePath: string, mut ir: &obj::IR): (compiler: string, args: []string) {
-	// Collect include and link options of module's CPP configuration.
-	include, link := collectCPP(ir)
-
 	compiler = env::CompilerPath
 
 	match env::Compiler {
@@ -378,14 +312,6 @@ fn genCompileCmd(sourcePath: string, mut ir: &obj::IR): (compiler: string, args:
 		args = pushCompCmdGcc(args)
 	| "clang":
 		args = pushCompCmdClang(args)
-	}
-
-	// Push include and link options of module's CPP configuration.
-	for _, inc in include {
-		args = append(args, "-I"+inc)
-	}
-	for _, lnk in link {
-		args = append(args, "-L"+lnk)
 	}
 
 	// Push external source files.

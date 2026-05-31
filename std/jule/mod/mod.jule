@@ -10,20 +10,6 @@ struct Mod {
 	ID:   ID     // Unique identity of the module.
 	Name: string // Name of the module.
 	Path: string // Path of the module. File is not included.
-
-	CPP: &CPP
-}
-
-// A common configuration entry.
-struct Entry {
-	Name: string // Entry name.
-	Text: string // Main text.
-}
-
-// A CPP configuration.
-struct CPP {
-	Include: []Entry // List of all include entries.
-	Link:    []Entry // List of all link entries.
 }
 
 impl Mod {
