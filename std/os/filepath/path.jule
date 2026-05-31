@@ -116,3 +116,10 @@ fn IsAbs(path: string): bool {
 fn IsPathSeparator(c: byte): bool {
 	return filepathlite::IsPathSeparator(c)
 }
+
+// Splits a list of paths joined by the OS-specific [ListSeparator],
+// usually found in PATH environment variable.
+// Unlike strings::Split, it returns an empty slice when passed an empty string.
+fn SplitList(path: string): []string {
+	return filepathlite::SplitList(path)
+}
