@@ -212,7 +212,7 @@ struct ParseOptions {
 }
 
 // Parse module from the module file path and data.
-// Unline ParseFile, it will use data instead of read from file.
+// Unlike ParseFile, it will use data instead of read from file.
 //
 // Data should be private, because lexical analysis uses same allocation as much as possible.
 // And mutating this field may cause mutations of string copies.
