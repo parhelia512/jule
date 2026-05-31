@@ -87,7 +87,7 @@ impl parser {
 
 	#disable nilptr
 	fn getLine(mut *self): string {
-		for self.r == ' ' || self.r == '\t' || self.r == '\n' || self.r == '\r' {
+		for isSpace(self.r) {
 			self.next()
 		}
 		offset := self.offset
@@ -112,6 +112,62 @@ impl parser {
 	}
 
 	#disable nilptr
+	fn parseEntry(mut *self, mut line: string): (entry: Entry) {
+		name, line, found := strings::Cut(line, " ")
+		if !found {
+			self.pushErr("expected an entry or )")
+			return
+		}
+		entry.Name = name
+		line = strings::TrimFunc(line, isSpace)
+		if line[0] != '"' || line[len(line)-1] != '"' {
+			self.pushErr("expected a valid string literal")
+			return
+		}
+		entry.Text = line[1 : len(line)-1]
+		return
+	}
+
+	#disable nilptr
+	fn parseCPP(mut *self, mut line: string) {
+		if self.mod.CPP != nil {
+			self.pushErr("configuration name is already exist: cpp")
+			self.r = eof
+			return
+		}
+		line = strings::TrimFunc(line[len("cpp"):], isSpace)
+		if line == "" {
+			self.pushErr("expected (, found new line")
+			self.r = eof
+			return
+		}
+		if line != "(" {
+			self.pushErr("expected (, found " + line)
+			self.r = eof
+			return
+		}
+		mut cpp := new(CPP)
+		self.mod.CPP = cpp
+		for self.r != eof {
+			line = self.getLine()
+			if len(line) == 0 {
+				continue
+			}
+			line = strings::TrimFunc(line, isSpace)
+			if line == ")" {
+				break
+			}
+			entry := self.parseEntry(line)
+			match entry.Name {
+			| "include":
+				cpp.Include = append(cpp.Include, entry)
+			| "link":
+				cpp.Link = append(cpp.Link, entry)
+			}
+		}
+	}
+
+	#disable nilptr
 	fn parse(mut *self) {
 		for self.r != eof {
 			line := self.getLine()
@@ -121,6 +177,8 @@ impl parser {
 			match {
 			| strings::HasPrefix(line, "module"):
 				self.parseModule(line)
+			| strings::HasPrefix(line, "cpp"):
+				self.parseCPP(line)
 			|:
 				self.pushErr("invalid content")
 			}
@@ -179,28 +237,14 @@ fn Parse(path: string, data: []byte, options: ParseOptions): (&Mod, []log::Log) 
 // Parse module from the module file path.
 fn ParseFile(path: string, options: ParseOptions): (&Mod, []log::Log) {
 	modfile := filepath::Join(path, jule::ModuleFile)
-	mut bytes := os::ReadFileSync(modfile) else {
+	mut data := os::ReadFileSync(modfile) else {
 		return nil, [{
 				Kind: log::Error,
 				Text: "module file could not checked because of a problem",
 				Path: modfile,
 			}]
 	}
-	mut parser := parser{
-		mod: &Mod{
-			Path: path,
-		},
-		modfile: modfile,
-		buf:     bytes,
-		row:     1,
-		r:       ' ',
-	}
-	parser.parse()
-	if len(parser.logs) > 0 {
-		return parser.mod, parser.logs
-	}
-	checkMod(options, parser.modfile, parser.mod, &parser.logs)
-	return parser.mod, parser.logs
+	return Parse(modfile, data, options)
 }
 
 // Reports whether the name is valid to become module name.
@@ -231,4 +275,8 @@ fn isLetter(ch: rune): bool {
 
 fn isDigit(ch: rune): bool {
 	return isDecimal(ch) || ch >= utf8::RuneSelf && unicode::IsDigit(ch)
+}
+
+fn isSpace(ch: rune): bool {
+	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }

@@ -20,6 +20,9 @@ struct IR {
 	Ordered:          OrderedDefines    // Ordered defines, nil by default. Initialized by the Order method.
 	PackageNameCache: map[string]string // Package defines name cache, nil by default. Initialized by the Cache method
 
+	// The importer of the IR.
+	Importer: sema::Importer
+
 	// The main package. Not including in the Used.
 	// The Last dependency of the program, root package of the program.
 	Main: &sema::Package
@@ -46,10 +49,10 @@ impl IR {
 		}
 
 		// Setup importer.
-		mut importer := importer::New(buildCompileInfo())
+		ir.Importer = importer::New(buildCompileInfo())
 
 		const UpdateMod = true // Detect and use the root module for the main package if exist.
-		mut files, mut logs := importer.ImportPackage(path, UpdateMod)
+		mut files, mut logs := ir.Importer.ImportPackage(path, UpdateMod)
 		if len(logs) > 0 {
 			return nil, logs
 		}
@@ -64,13 +67,13 @@ impl IR {
 		pushInternalRuntimeBuiltinToAST(firstFile)
 		pushRuntimeToAST(firstFile) // Must be the last import.
 
-		mut pkg, logs := sema::AnalyzePackage(files, importer, flags)
+		mut pkg, logs := sema::AnalyzePackage(files, ir.Importer, flags)
 		if len(logs) > 0 {
 			return nil, logs
 		}
 
 		// Collect data.
-		ir.Used = importer.AllPackages()
+		ir.Used = ir.Importer.AllPackages()
 
 		// Set up special packages.
 		ir.Main = pkg
