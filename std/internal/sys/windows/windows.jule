@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
-#pass "-liphlpapi"
-#pass "-lsynchronization"
-
 use "std/integ"
 use "std/sys"
+
+extern use library "iphlpapi"
+extern use library "synchronization"
 
 extern use "<iphlpapi.h>"
 

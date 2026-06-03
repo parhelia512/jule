@@ -5,9 +5,9 @@
 // Useful links;
 // - https://github.com/wine-mirror/wine/blob/master/include/winsock2.h
 
-#pass "-lws2_32"
-
 use "std/integ/c"
+
+extern use library "ws2_32"
 
 extern use "<winsock2.h>"
 extern use "<ws2ipdef.h>"

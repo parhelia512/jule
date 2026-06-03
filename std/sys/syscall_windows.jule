@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
-#pass "-lshell32" // Link shell32.lib
-
 use "std/integ"
 use "std/integ/c"
 use "std/mem"
+
+extern use library "shell32"
 
 extern use "<fcntl.h>"
 extern use "<io.h>"
