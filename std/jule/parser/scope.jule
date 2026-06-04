@@ -269,7 +269,7 @@ impl scopeParser {
 	}
 
 	fn getRangeKindKeysTokens(mut *self, mut toks: []&token::Token): [][]&token::Token {
-		mut vars, errs := parts(toks, token::COMMA, true)
+		mut vars, errs := parts(toks, token::COMMA, true, "expected variable after ,")
 		self.p.errors = append(self.p.errors, errs...)
 		return vars
 	}
@@ -1152,7 +1152,7 @@ impl scopeParser {
 			return assign, true
 		}
 
-		mut parts, errs := parts(info.l, token::COMMA, true)
+		mut parts, errs := parts(info.l, token::COMMA, true, "expected expression after ,")
 		if len(errs) > 0 {
 			self.p.errors = append(self.p.errors, errs...)
 			return nil, false
@@ -1171,7 +1171,7 @@ impl scopeParser {
 
 	fn buildDeclAssign1(mut *self, mut lefts: []&token::Token, mut assign: &ast::Assign): bool {
 		// Lefts
-		mut parts, errs := parts(lefts, token::COMMA, true)
+		mut parts, errs := parts(lefts, token::COMMA, true, "expected expression after ,")
 		if len(errs) > 0 {
 			self.p.errors = append(self.p.errors, errs...)
 			return false

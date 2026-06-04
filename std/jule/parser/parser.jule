@@ -13,16 +13,6 @@ use "std/jule/token"
 use "std/os/filepath"
 use "std/strings"
 
-fn makeErr(row: int, col: int, f: &token::FileSet, fmt: string, args: ...any): log::Log {
-	return log::Log{
-		Kind:   log::Error,
-		Row:    row,
-		Column: col,
-		Path:   f.Path,
-		Text:   log::Logf(fmt, args...),
-	}
-}
-
 // Returns between of open and close ranges.
 // Starts selection at i.
 // Increases i for each selected token.
@@ -99,7 +89,7 @@ fn rangeLast(mut tokens: []&token::Token): (rest: []&token::Token, cut: []&token
 //
 // Special case is;
 //	parts(tokens) = nil if len(tokens) == 0
-fn parts(mut tokens: []&token::Token, id: int, exprMust: bool): (parts: [][]&token::Token, errors: []log::Log) {
+fn parts(mut tokens: []&token::Token, id: int, exprMust: bool, errmsg: string): (parts: [][]&token::Token, errors: []log::Log) {
 	if len(tokens) == 0 {
 		return nil, nil
 	}
@@ -115,8 +105,8 @@ fn parts(mut tokens: []&token::Token, id: int, exprMust: bool): (parts: [][]&tok
 			if rangeN > 0 {
 				continue
 			}
-			if exprMust && i-last <= 0 {
-				err := makeErr(token.Row, token.Column, token.File, "missing expression")
+			if exprMust && i-last <= 0 || i+1 >= len(tokens) {
+				err := compilerErr(token, errmsg)
 				errors = append(errors, err)
 			}
 			parts = append(parts, tokens[last:i])
@@ -483,7 +473,7 @@ impl parser {
 				return nil
 			}
 			mut constraintTokens := tokens[2:]
-			mut parts, errors := parts(constraintTokens, token::OR, true)
+			mut parts, errors := parts(constraintTokens, token::OR, true, "expected constraint after |")
 			if len(errors) > 0 {
 				self.errors = append(self.errors, errors...)
 				return nil
@@ -516,7 +506,7 @@ impl parser {
 			return nil
 		}
 
-		mut parts, errors := parts(tokens, token::COMMA, true)
+		mut parts, errors := parts(tokens, token::COMMA, true, "expected generic after ,")
 		if len(errors) > 0 {
 			self.errors = append(self.errors, errors...)
 			return nil
@@ -692,7 +682,7 @@ impl parser {
 	}
 
 	fn buildParams(mut &self, mut tokens: []&token::Token, method: bool): []&ast::Param {
-		mut parts, errs := parts(tokens, token::COMMA, true)
+		mut parts, errs := parts(tokens, token::COMMA, true, "expected parameter declaration after ,")
 		self.errors = append(self.errors, errs...)
 		if len(parts) == 0 {
 			return nil
@@ -730,7 +720,7 @@ impl parser {
 		lparen := tokens[*i]
 		mut rangeTokens := range(i, token::LPAREN, token::RPAREN, tokens)
 
-		mut parts, errs := parts(rangeTokens, token::COMMA, true)
+		mut parts, errs := parts(rangeTokens, token::COMMA, true, "expected type after ,")
 		self.errors = append(self.errors, errs...)
 		// Empty range.
 		if len(parts) == 0 {
