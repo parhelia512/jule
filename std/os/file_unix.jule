@@ -64,7 +64,7 @@ fn newFile(fd: int, mut flags: int, nonBlocking: bool)!: &File {
 		// Use comptime match here, because only matched systems have
 		// this syscalls, not all UNIX-like.
 		const match runtime::OS {
-		| "darwin":
+		| "darwin" | "ios":
 			let mut st: sys::SysStat
 			mut err := false
 			mut &_err := &err // For closure.
