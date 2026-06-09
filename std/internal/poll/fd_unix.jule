@@ -411,6 +411,17 @@ impl FD {
 				}
 				throw error
 			}
+			const match runtime::OS {
+			| "darwin" | "ios":
+				if *addrlen == 0 {
+					// Accepted socket has no address.
+					// This is likely due to a bug in xnu kernels,
+					// where instead of ECONNABORTED error socket
+					// is accepted, but has no address.
+					sys::Close(h) else {}
+					throw sys::ECONNABORTED
+				}
+			}
 			sys::CloseOnExec(h)
 			sys::SetNonblock(h, true) else {
 				sys::Close(h) else {}
