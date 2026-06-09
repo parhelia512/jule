@@ -61,10 +61,10 @@ fn testSprintf(t: &testing::T) {
 }
 
 #test
-fn testFprintf(t: &testing::T) {
+async fn testFprintf(t: &testing::T) {
 	for _, test in formatTests {
 		mut sb := new(strings::Builder)
-		fmt::Fprintf(sb, test.fmt, test.args...)!
+		fmt::Fprintf(sb.Async(), test.fmt, test.args...).await!
 		out := sb.String()
 		if out != test.out {
 			t.Errorf("Fprintf({}, {}) = {}, want {}", test.fmt, test.args, out, test.out)
