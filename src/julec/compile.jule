@@ -464,7 +464,7 @@ fn checkTargetArch(arch: string) {
 }
 
 fn checkTargetOs(os: string) {
-	if os != dist::Windows && os != dist::Linux && os != dist::Darwin {
+	if os != dist::Windows && os != dist::Linux && os != dist::MacOS {
 		handle::Throw("--target: unsupported/undefined operating system: " + os)
 	}
 }
