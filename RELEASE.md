@@ -20,9 +20,9 @@ This stage is about building the compiler and obtaining the executable binary.
 
 ### macOS
 
-On macOS, the automated build process `release-darwin.sh` is used.
+On macOS, the automated build process `release-macos.sh` is used.
 This process fetches and builds the latest IR versions compiled for Windows via the [julec-ir](https://github.com/julelang/julec-ir) repository.
-The release archive will be added to the workspace directory where you run the script, named according to the platform–architecture combination (for example, `jule-darwin-arm64.tar.xz`).
+The release archive will be added to the workspace directory where you run the script, named according to the platform–architecture combination (for example, `jule-macos-arm64.tar.xz`).
 
 Dependencies:
 - `curl`
