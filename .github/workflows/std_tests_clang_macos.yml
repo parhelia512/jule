@@ -62,6 +62,11 @@ jobs:
           julec test --compiler clang -o test std/encoding/json
           ./test
 
+      - name: Test - std/fmt
+        run: |
+          julec test --compiler clang -o test std/fmt/test
+          ./test
+
       - name: Test - std/hash/adler32
         run: |
           julec test --compiler clang -o test std/hash/adler32
