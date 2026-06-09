@@ -412,7 +412,7 @@ impl FD {
 				throw error
 			}
 			const match runtime::OS {
-			| "darwin" | "ios":
+			| "macos" | "ios":
 				if *addrlen == 0 {
 					// Accepted socket has no address.
 					// This is likely due to a bug in xnu kernels,

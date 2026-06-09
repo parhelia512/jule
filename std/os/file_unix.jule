@@ -64,7 +64,7 @@ fn newFile(fd: int, mut flags: int, nonBlocking: bool)!: &File {
 		// Use comptime match here, because only matched systems have
 		// this syscalls, not all UNIX-like.
 		const match runtime::OS {
-		| "darwin" | "ios":
+		| "macos" | "ios":
 			let mut st: sys::SysStat
 			mut err := false
 			mut &_err := &err // For closure.
@@ -92,7 +92,7 @@ fn newFile(fd: int, mut flags: int, nonBlocking: bool)!: &File {
 			// on Darwin, kqueue does not work properly with fifos:
 			// closing the last writer does not cause a kqueue event
 			// for any readers. See Go's issue #24164.
-			if (runtime::OS == "darwin" || runtime::OS == "ios") && typ == sys::S_IFIFO {
+			if (runtime::OS == "macos" || runtime::OS == "ios") && typ == sys::S_IFIFO {
 				pollable = false
 			}
 		}

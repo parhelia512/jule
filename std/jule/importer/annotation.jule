@@ -13,6 +13,8 @@ fn checkOS(arg: string): (ok: bool, exist: bool) {
 	match arg {
 	| dist::Windows:
 		ok = dist::IsWindows(build::OS)
+	| dist::MacOS:
+		ok = dist::IsMacOS(build::OS)
 	| dist::Darwin:
 		ok = dist::IsDarwin(build::OS)
 	| dist::Linux:

@@ -33,7 +33,7 @@ let mut RawTags = ""
 let targets = map[string][]string{
 	"windows": ["amd64", "arm64", "i386"],
 	"linux":   ["amd64", "arm64", "i386"],
-	"darwin":  ["amd64", "arm64"],
+	"macos":   ["amd64", "arm64"],
 }
 
 fn init() {

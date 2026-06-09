@@ -40,6 +40,9 @@ fn setOSTags(mut &tags: *[]string) {
 	if dist::IsUnix(build::OS) && findTag(*tags, "unix") == -1 {
 		*tags = append(*tags, "unix")
 	}
+	if dist::IsDarwin(build::OS) && findTag(*tags, "darwin") == -1 {
+		*tags = append(*tags, "darwin")
+	}
 }
 
 // Set architecture tags by native architecture.

@@ -6,6 +6,7 @@
 const (
 	Windows = "windows"
 	Linux   = "linux"
+	MacOS   = "macos"
 	Darwin  = "darwin"
 	Unix    = "unix"
 )
@@ -19,13 +20,16 @@ const (
 	X64   = "x64"
 )
 
-// Reports whether os is windows.
+// Reports whether os is Windows.
 fn IsWindows(os: string): bool { return os == Windows }
 
-// Reports whether os is darwin.
-fn IsDarwin(os: string): bool { return os == Darwin }
+// Reports whether os is macOS.
+fn IsMacOS(os: string): bool { return os == MacOS }
 
-// Reports whether os is linux.
+// Reports whether os is darwin.
+fn IsDarwin(os: string): bool { return IsMacOS(os) }
+
+// Reports whether os is Linux.
 fn IsLinux(os: string): bool { return os == Linux }
 
 // Reports whether architecture is intel 386.

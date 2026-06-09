@@ -3,6 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // The running program's operating system target:
-// one of darwin, linux and so on.
+// one of macos, linux and so on.
 // To view possible combinations of OS, run "julec tool distos"
 const OS = "windows"
