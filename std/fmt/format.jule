@@ -9,41 +9,6 @@ use "std/strings"
 use "std/unicode/utf8"
 use "std/unsafe"
 
-fn findFormatPrefix(&bytes: *[]byte, mut i: int): int {
-	for i < len(*bytes) {
-		r, size := utf8::DecodeRune((*bytes)[i:])
-		if r == '{' {
-			return i
-		}
-		i += size
-	}
-	return -1
-}
-
-// Returns range of {...}, included braces.
-// Parameter i is the start point to selected and should
-// points to start brace at beginning.
-// i is points to position of last brace and +1 offset in the end.
-// Returns nil slice if there is no match.
-fn getFormatRange(mut &i: *int, mut &bytes: *[]byte): []byte {
-	start := *i
-	mut braces := 0
-	for *i < len(*bytes) {
-		r, size := utf8::DecodeRune((*bytes)[*i:])
-		*i += size
-		match r {
-		| '{':
-			braces++
-		| '}':
-			braces--
-			if braces == 0 {
-				return (*bytes)[start:*i]
-			}
-		}
-	}
-	return nil
-}
-
 // Formats arg by default format and appends to buf.
 fn formatByDefault(mut &buf: *strings::Builder, arg: any) {
 	if arg == nil {
@@ -85,81 +50,97 @@ fn formatByDefault(mut &buf: *strings::Builder, arg: any) {
 	| string:
 		buf.WriteString(arg.(string))!
 	| bool:
-		if arg.(bool) {
-			buf.WriteString("true")!
-		} else {
-			buf.WriteString("false")!
-		}
+		buf.WriteString(conv::FormatBool(arg.(bool)))!
 	|:
 		buf.WriteString(runtime::toString(arg))!
 	}
 }
 
-fn applyFormatByDefault(mut &buf: *strings::Builder, mut &j: *int, args: ...any) {
-	arg := args[*j]
-	*j++
-	formatByDefault(buf, arg)
-}
-
-// Returns result of formatting.
-// Parameter j is the position of argument list.
-fn applyFormat(mut &fmt: *[]byte, mut &buf: *strings::Builder, mut &j: *int, args: ...any) {
-	// {}
-	if len(*fmt) == 2 {
-		applyFormatByDefault(buf, j, args...)
-		return
-	}
-	// {{}} = {}
-	if len(*fmt) == 4 &&
-		(*fmt)[0] == '{' &&
-		(*fmt)[1] == '{' &&
-		(*fmt)[2] == '}' &&
-		(*fmt)[3] == '}' {
-		buf.WriteString("{}")!
-		return
-	}
-	buf.Write(*fmt)!
-}
-
-// See the [Sprintf] function for main documentation. This is a low level internal API.
-// For this function, returned []byte is might be string literal actually.
-// Be careful about mutating it.
-fn bprintf(fmt: string, args: ...any): []byte {
-	mut fmtBytes := unsafe::StringBytes(fmt)
-	if len(args) == 0 {
-		return fmtBytes
-	}
-	mut i := findFormatPrefix(&fmtBytes, 0)
-	if i == -1 {
-		return fmtBytes
-	}
-	mut j := 0
-	mut last := 0
-	mut buf := strings::Builder{}
-	buf.Grow(len(fmt))
-	for i != -1; i = findFormatPrefix(&fmtBytes, i) {
-		buf.Write(fmtBytes[last:i])!
-		mut format := getFormatRange(&i, &fmtBytes)
-		if format == nil {
+fn argIndex(
+	fmt: string, mut i: int,
+	mut &buf: *strings::Builder,
+	mut &j: *int, args: ...any): int {
+	k := i
+Loop:
+	for i < len(fmt) {
+		mut r, mut size := utf8::DecodeRuneString(fmt[i:])
+		i += size
+		match r {
+		| '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9':
 			continue
+		| '}':
+			sIndex := fmt[k : i-1]
+			index := conv::ParseUint(sIndex, 10, 64) else { break Loop }
+			if index >= u64(len(args)) {
+				buf.WriteString("{!MISSING}")!
+			} else {
+				formatByDefault(buf, args[index])
+			}
+			return i
+		|:
+			break Loop
 		}
-		applyFormat(&format, &buf, &j, args...)
-		if j >= len(args) {
-			buf.Write(fmtBytes[i:])!
-			last = len(fmtBytes)
-			break
+	}
+	buf.WriteString("{!EXPECTED-INDEX}")!
+	return k
+}
+
+// See the [Sprintf] function for main documentation.
+// This is a low level internal API.
+fn bprintf(fmt: string, args: ...any): string {
+	mut i, mut j := 0, 0
+	let mut buf: strings::Builder
+	for i < len(fmt) {
+		mut r, mut size := utf8::DecodeRuneString(fmt[i:])
+		i += size
+		match r {
+		| '{':
+			if i >= len(fmt) {
+				buf.WriteString("{!MISSING-CLOSE}")!
+				break
+			}
+			k := i
+			r, size = utf8::DecodeRuneString(fmt[i:])
+			i += size
+			match r {
+			| '{': // {{
+				buf.WriteByte('{')!
+			| '}': // {}
+				if j >= len(args) {
+					buf.WriteString("{!MISSING}")!
+				} else {
+					arg := args[j]
+					j++
+					formatByDefault(&buf, arg)
+				}
+			| '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9':
+				i = argIndex(fmt, k, &buf, &j, args...)
+			|:
+				buf.WriteString("{!MISSING-CLOSE}")!
+				buf.WriteRune(r)!
+			}
+		| '}':
+			if i >= len(fmt) {
+				buf.WriteString("{!EXTRA-CLOSE}")!
+				break
+			}
+			r, size = utf8::DecodeRuneString(fmt[i:])
+			i += size
+			if r != '}' {
+				buf.WriteString("{!EXTRA-CLOSE}")!
+				buf.WriteRune(r)!
+			} else { // '}}'
+				buf.WriteByte('}')!
+			}
+		|:
+			buf.WriteRune(r)!
 		}
-		// Set last positioning to latest value of i.
-		last = i
 	}
-	if last < len(fmtBytes) {
-		buf.Write(fmtBytes[last:])!
-	}
-	return unsafe { buf.Buf() }
+	return buf.String()
 }
 
 // Tries to call reserved String method for type.
-fn tryToCallStr[T](mut &sb: *strings::Builder, t: T): (ok: bool) {
+fn tryToCallString[T](mut &sb: *strings::Builder, t: T): (ok: bool) {
 	const tt = comptime::TypeOf(T)
 	const for _, method in tt.Decl().Methods() {
 		const match method.Name() {
@@ -194,7 +175,7 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 				return
 			}
 		| tt.Strict():
-			ok := tryToCallStr(sb, t)
+			ok := tryToCallString(sb, t)
 			if ok {
 				return
 			}
@@ -208,18 +189,22 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 			sb.WriteString(conv::FormatCmplx(cmplx128(t), 'g', -1, 64))!
 		| comptime::Cmplx128:
 			sb.WriteString(conv::FormatCmplx(cmplx128(t), 'g', -1, 128))!
-		| comptime::Int | comptime::I8 | comptime::I16 | comptime::I32 | comptime::I64:
+		| comptime::Int
+		| comptime::I8
+		| comptime::I16
+		| comptime::I32
+		| comptime::I64:
 			sb.WriteString(conv::FormatInt(i64(t), 10))!
-		| comptime::Uint | comptime::U8 | comptime::U16 | comptime::U32 | comptime::U64:
+		| comptime::Uint
+		| comptime::U8
+		| comptime::U16
+		| comptime::U32
+		| comptime::U64:
 			sb.WriteString(conv::FormatUint(u64(t), 10))!
 		| comptime::String:
 			sb.WriteString(t)!
 		| comptime::Bool:
-			if t {
-				sb.WriteString("true")!
-			} else {
-				sb.WriteString("false")!
-			}
+			sb.WriteString(conv::FormatBool(t))!
 		| comptime::Slice | comptime::Array:
 			sb.WriteByte('[')!
 			for i, z in t {
@@ -244,7 +229,7 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 			}
 			sb.WriteByte('}')!
 		| comptime::Struct:
-			ok := tryToCallStr(sb, t)
+			ok := tryToCallString(sb, t)
 			if ok {
 				return
 			}
@@ -268,7 +253,7 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 			const elem = tt.Elem()
 			const match {
 			| elem.Strict() | elem.Kind() == comptime::Struct:
-				ok := tryToCallStr(sb, *t)
+				ok := tryToCallString(sb, *t)
 				if ok {
 					return
 				}
@@ -276,7 +261,8 @@ fn bprintgw[T](mut &sb: *strings::Builder, t: T) {
 			sb.WriteString(conv::FormatUint(u64(uintptr(t)), 16))!
 		| comptime::Uintptr | comptime::Ptr | comptime::Unsafeptr:
 			p := uintptr(t)
-			if p == 0 { // Check for nil, because uintptr will not be checked above.
+			// Check for nil, because uintptr will not be checked above.
+			if p == 0 {
 				sb.WriteString("<nil>")!
 			} else {
 				sb.WriteString("0x")!
