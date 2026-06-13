@@ -331,3 +331,32 @@ fn cmpwhen(w1: i64, w2: i64): int {
 	}
 	return 0
 }
+
+// Result flags of [fire].
+const (
+	fireInternalTimer = 1 << iota // Internal timer.
+	fireCTimer                    // Coroutine-associated timer.
+)
+
+// Fires the timer t.
+// If t is an internal timer, it invokes its routine immediately and
+// returns fireInternalTimer. In this case, cp is not used.
+//
+// Otherwise, t is either a user timer or a coroutine-wrapped internal timer.
+// Such timers are associated with a coroutine; the coroutine state is written
+// to cp and fireCTimer is returned. The timer will then be fired when the
+// scheduler executes the coroutine referenced by cp.
+fn fire(mut t: &timer, mut &cp: *c): int {
+	if t.ifunc != nil {
+		// This timer is an runtime internal timer associated with
+		// a raw function to be invoked when timer fired.
+		t.unlockAndFire()
+		return fireInternalTimer
+	} else {
+		// The timer associated with a coroutine,
+		// let the scheduler handle this.
+		*cp = unsafe { *(*c)(t.arg) }
+		t.mu.unlock()
+		return fireCTimer
+	}
+}

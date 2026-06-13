@@ -689,7 +689,7 @@ struct operation {
 	qty:   u32
 	flags: u32
 
-	// Fields mut be the same as [runtime/polloperation].
+	// Fields must be the same as [runtime/polloperation].
 	o:    sys::Overlapped
 	pd:   &runtime::polldesc
 	mode: i32

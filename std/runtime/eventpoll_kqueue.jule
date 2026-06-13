@@ -24,6 +24,8 @@ struct keventt {
 
 let mut kq: i32 = -1
 
+let mut eventpollWakeSig: u32 = 0 // used to avoid duplicate calls of eventpollBreak
+
 fn eventpollinit() {
 	kq = sys::Addrcall[i32](uintptr(extern.kqueue))
 	if kq < 0 {
@@ -31,6 +33,7 @@ fn eventpollinit() {
 	}
 	// close-on-exec
 	sys::Fcntl(int(kq), sys::F_SETFD, sys::FD_CLOEXEC) else {}
+	addWakeupEvent(kq)
 }
 
 #disable nilptr boundary
@@ -63,6 +66,62 @@ fn eventpollclose(fd: u64): sys::Errno {
 	// Don't need to unregister because calling close()
 	// on fd will remove any kevents that reference the descriptor.
 	return 0
+}
+
+// Interrupts a kevent.
+fn eventpollBreak() {
+	// Failing to cas indicates there is an in-flight wakeup, so we're done here.
+	if !atomic::CompareAndSwap(&eventpollWakeSig, 0, 1, atomic::AcqRel, atomic::AcqRel) {
+		return
+	}
+
+	wakeEventpoll(kq)
+}
+
+// Magic number of identifier used for EVFILT_USER.
+// Derived from Go runtime.
+const kqIdent = 0xee1eb9f4
+
+fn addWakeupEvent(kq: i32) {
+	ev := keventt{
+		ident:  kqIdent,
+		filter: sys::EVFILT_USER,
+		flags:  sys::EV_ADD | sys::EV_CLEAR,
+	}
+	for {
+		n, e := kevent(kq, &ev, 1, nil, 0, nil)
+		if n == 0 {
+			break
+		}
+		if e == sys::EINTR {
+			// All changes contained in the changelist should have been applied
+			// before returning EINTR. But let's be skeptical and retry it anyway,
+			// to make a 100% commitment.
+			continue
+		}
+		println("runtime: kevent for EVFILT_USER failed with" + e.String())
+		panic("runtime: kevent failed")
+	}
+}
+
+fn wakeEventpoll(kq: i32) {
+	ev := keventt{
+		ident:  kqIdent,
+		filter: sys::EVFILT_USER,
+		fflags: sys::NOTE_TRIGGER,
+	}
+	for {
+		n, e := kevent(kq, &ev, 1, nil, 0, nil)
+		if n == 0 {
+			break
+		}
+		if e == sys::EINTR {
+			// Check out the comment in addWakeupEvent.
+			continue
+		}
+		println("runtime: eventpollBreak write failed with" + e.String())
+		panic("runtime: eventpollBreak write failed")
+	}
 }
 
 // delay < 0: blocks indefinitely
@@ -109,6 +168,17 @@ retry:
 	mut b := u32(0)
 	for i < n; i++ {
 		&ev := &events[i]
+
+		if isWakeup(ev) {
+			isBlocking := delay != 0
+			processWakeupEvent(kq, isBlocking)
+			if isBlocking {
+				// eventpollBreak could be picked up by a nonblocking poll.
+				// Only reset the eventpollWakeSig if blocking.
+				atomic::Store(&eventpollWakeSig, 0, atomic::Release)
+			}
+			continue
+		}
 
 		let mut mode: i32
 		match ev.filter {
@@ -165,4 +235,22 @@ fn kevent(kq: i32, &ev: *keventt, evn: i32, &ev2: *keventt, ev2n: i32, tm: *sys:
 		e = sys::GetLastErrno()
 	}
 	return n, e
+}
+
+fn isWakeup(&ev: *keventt): bool {
+	if ev.filter == sys::EVFILT_USER {
+		if ev.ident == kqIdent {
+			return true
+		}
+		println("runtime: eventpoll: break fd ready")
+		panic("runtime: eventpoll: break fd ready for something unexpected")
+	}
+	return false
+}
+
+fn processWakeupEvent(kq: i32, isBlocking: bool) {
+	if !isBlocking {
+		// Got a wrong thread, relay
+		wakeEventpoll(kq)
+	}
 }

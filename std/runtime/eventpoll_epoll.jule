@@ -8,17 +8,36 @@
 #build linux
 
 use "std/internal/runtime/atomic"
+use "std/internal/runtime/syscall"
+use "std/mem"
 use "std/sys"
 
 extern use "<sys/epoll.h>"
 
 let mut epfd: i32 = -1
 
+let mut eventpollEventFd: uintptr = 0 // eventfd for eventpollBreak
+let mut eventpollWakeSig: u32 = 0     // used to avoid duplicate calls of eventpollBreak
+
 fn eventpollinit() {
 	(epfd), mut errno := syscall_EpollCreate1(sys::EPOLL_CLOEXEC)
 	if errno != _NO_ERROR {
 		panic("runtime: epoll init failed")
 	}
+	efd, errno := syscall_Eventfd(0, sys::EFD_CLOEXEC|sys::EFD_NONBLOCK)
+	if errno != _NO_ERROR {
+		println("runtime: eventfd failed with " + errno.String())
+		panic("runtime: eventfd failed")
+	}
+	let mut ev: epollEvent
+	ev.events = sys::EPOLLIN
+	ev.data._u64 = u64(uintptr(&eventpollEventFd))
+	errno = syscall_EpollCtl(epfd, sys::EPOLL_CTL_ADD, efd, &ev)
+	if errno != _NO_ERROR {
+		println("runtime: epollctl failed with " + errno.String())
+		panic("runtime: epollctl failed")
+	}
+	eventpollEventFd = uintptr(efd)
 }
 
 #disable nilptr boundary
@@ -37,6 +56,31 @@ fn eventpollopen(fd: u64, mut &pd: *polldesc)! {
 fn eventpollclose(fd: u64): sys::Errno {
 	let mut ev: epollEvent
 	return syscall_EpollCtl(epfd, sys::EPOLL_CTL_DEL, i32(fd), &ev)
+}
+
+// Interrupts an epollwait.
+fn eventpollBreak() {
+	// Failing to cas indicates there is an in-flight wakeup, so we're done here.
+	if !atomic::CompareAndSwap(&eventpollWakeSig, 0, 1, atomic::AcqRel, atomic::AcqRel) {
+		return
+	}
+
+	let mut one: u64 = 1
+	oneSize := i32(mem::SizeOf(one))
+	for {
+		n, e := syscall_Write(eventpollEventFd, &one, oneSize)
+		if n == oneSize {
+			break
+		}
+		if e == sys::EINTR {
+			continue
+		}
+		if e == sys::EAGAIN {
+			return
+		}
+		println("runtime: eventpollBreak write failed with " + e.String())
+		panic("runtime: eventpollBreak write failed")
+	}
 }
 
 // delay < 0: blocks indefinitely
@@ -96,6 +140,24 @@ retry:
 	for i < n; i++ {
 		&ev := &events[i]
 		if ev.events == 0 {
+			continue
+		}
+
+		if ev.data._u64 == u64(uintptr(&eventpollEventFd)) {
+			if ev.events != sys::EPOLLIN {
+				println("runtime: eventpoll: eventfd ready for non EPOLLIN")
+				panic("runtime: eventpoll: eventfd ready for something unexpected")
+			}
+			if delay != 0 {
+				// eventpollBreak could be picked up by a
+				// nonblocking poll. Only read the 8-byte
+				// integer if blocking.
+				// Since EFD_SEMAPHORE was not specified,
+				// the eventfd counter will be reset to 0.
+				let mut one: u64
+				syscall_Read(eventpollEventFd, &one, i32(mem::SizeOf(one)))
+				atomic::Store(&eventpollEventFd, 0, atomic::Release)
+			}
 			continue
 		}
 

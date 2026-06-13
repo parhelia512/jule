@@ -46,3 +46,18 @@ fn syscall_EpollCtl(epfd: i32, op: i32, fd: i32, mut &event: *epollEvent): (errn
 	_, e := syscall(sys::SYS_EPOLL_CTL, uintptr(epfd), uintptr(op), uintptr(fd), uintptr(event), 0, 0)
 	return e
 }
+
+fn syscall_Eventfd(initval: i32, flags: i32): (fd: i32, errno: sys::Errno) {
+	r1, e := syscall(sys::SYS_EVENTFD2, uintptr(initval), uintptr(flags), 0, 0, 0, 0)
+	return i32(r1), e
+}
+
+fn syscall_Write(fd: uintptr, p: *unsafe, n: i32): (i32, sys::Errno) {
+	r, e := syscall(sys::SYS_WRITE, fd, uintptr(p), uintptr(n), 0, 0, 0)
+	return i32(r), e
+}
+
+fn syscall_Read(fd: uintptr, p: *unsafe, n: i32): (i32, sys::Errno) {
+	r, e := syscall(sys::SYS_READ, fd, uintptr(p), uintptr(n), 0, 0, 0)
+	return i32(r), e
+}

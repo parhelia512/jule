@@ -4,10 +4,13 @@
 
 #build windows
 
+use "std/internal/runtime"
+use "std/internal/runtime/atomic"
 use "std/sys"
 
 extern let CreateIoCompletionPort: *unsafe
 extern let GetQueuedCompletionStatusEx: *unsafe
+extern let PostQueuedCompletionStatus: *unsafe
 
 const (
 	_DWORD_MAX = 0xffffffff
@@ -44,10 +47,67 @@ fn polloperationFromOverlappedEntry(mut &e: *overlappedEntry): &polloperation {
 	}
 	mut opptr := unsafe { (*polloperation)(e.ov) }
 	mut op := unsafe { (&polloperation)(opptr) }
+	// Check that the key matches the polldesc pointer.
+	let mut keyMatch: bool
+	if runtime::PtrSize == 4 {
+		keyMatch = e.key&^sourceMasks == uintptr(op.pd)<<sourceBits
+	} else {
+		keyMatch = uintptr(taggedPointer(e.key).pointer()) == uintptr(op.pd)
+	}
+	if !keyMatch {
+		return nil
+	}
 	return op
 }
 
 let mut iocphandle = sys::InvalidHandle
+
+let mut eventpollWakeSig: u32 = 0 // used to avoid duplicate calls of eventpollBreak
+
+// Sources are used to identify the event that created an overlapped entry.
+// The source values are arbitrary. There is no risk of collision with user
+// defined values because the only way to set the key of an overlapped entry
+// is using the iocphandle, which is not accessible to user code.
+const (
+	eventpollSourceReady = iota + 1
+	eventpollSourceBreak
+	eventpollSourceTimer
+)
+
+const (
+	// sourceBits is the number of bits needed to represent a source.
+	// 4 bits can hold 16 different sources, which is more than enough.
+	// It is set to a low value so the overlapped entry key can
+	// contain as much bits as possible for the polldesc pointer.
+	sourceBits  = 4 // 4 bits can hold 16 different sources, which is more than enough.
+	sourceMasks = 1<<sourceBits - 1
+)
+
+// Creates a key from a source and a tag.
+// Bits that don't fit in the result are discarded.
+fn packEventpollKey(source: u8, &pd: *polldesc): uintptr {
+	// TODO: Consider combining the source with pd.fdseq to detect stale polldescs.
+	if source > (1<<sourceBits)-1 {
+		// Also fail on 64-bit systems, even though it can hold more bits.
+		panic("runtime: source value is too large")
+	}
+	const match {
+	| runtime::PtrSize == 4:
+		return uintptr(pd)<<sourceBits | uintptr(source)
+	|:
+		return uintptr(taggedPointerPack(pd, uintptr(source)))
+	}
+}
+
+// Returns the source packed key.
+fn unpackEventpollSource(key: uintptr): u8 {
+	const match {
+	| runtime::PtrSize == 4:
+		return u8(key & sourceMasks)
+	|:
+		return u8(taggedPointer(key).tag())
+	}
+}
 
 fn eventpollinit() {
 	h := unsafe {
@@ -62,9 +122,10 @@ fn eventpollinit() {
 
 #disable nilptr boundary
 fn eventpollopen(fd: u64, mut &pd: *polldesc)! {
+	key := packEventpollKey(eventpollSourceReady, pd)
 	r := unsafe {
 		sys::Addrcall[*unsafe](uintptr(extern.CreateIoCompletionPort),
-			(*unsafe)(fd), (*unsafe)(iocphandle), (*unsafe)(pd), u32(0))
+			(*unsafe)(fd), (*unsafe)(iocphandle), (*unsafe)(key), u32(0))
 	}
 	if r == nil {
 		throw sys::GetLastErrno()
@@ -74,6 +135,22 @@ fn eventpollopen(fd: u64, mut &pd: *polldesc)! {
 fn eventpollclose(fd: u64): sys::Errno {
 	// nothing to do
 	return 0
+}
+
+fn eventpollBreak() {
+	// Failing to cas indicates there is an in-flight wakeup, so we're done here.
+	if atomic::CompareAndSwap(&eventpollWakeSig, 0, 1, atomic::AcqRel, atomic::AcqRel) {
+		return
+	}
+
+	key := packEventpollKey(eventpollSourceBreak, nil)
+	if unsafe {
+		sys::Addrcall[i32](uintptr(extern.PostQueuedCompletionStatus),
+			(*unsafe)(iocphandle), i32(0), (*unsafe)(key), (*unsafe)(nil))
+	} == 0 {
+		println("runtime: eventpoll: PostQueuedCompletionStatus failed (errno=" + sys::GetLastErrno().String() + ")")
+		panic("runtime: eventpoll: PostQueuedCompletionStatus failed")
+	}
 }
 
 // delay < 0: blocks indefinitely
@@ -131,21 +208,36 @@ fn eventpoll(mut delay: i64, mut &toRun: *[prunqsize]c): u32 {
 		if err == _WAIT_TIMEOUT {
 			return 0
 		}
+		println("runtime: GetQueuedCompletionStatusEx failed (errno=" + err.String() + ")")
 		panic("runtime: eventpoll: IOCP failed")
 	}
 	mut i := u32(0)
 	mut b := u32(0)
 	for i < n; i++ {
 		mut &e := &entries[i]
-		mut op := polloperationFromOverlappedEntry(e)
-		if op == nil {
-			continue
+		match unpackEventpollSource(e.key) {
+		| eventpollSourceReady:
+			mut op := polloperationFromOverlappedEntry(e)
+			if op == nil {
+				// Entry from outside the Jule runtime and internal/poll, ignore.
+				continue
+			}
+			// Entry from internal/poll.
+			mode := op.mode
+			if mode != 'r' && mode != 'w' {
+				panic("runtime: invalid mode on eventpoll")
+			}
+			eventpollready(&(*op.pd), mode, toRun, &b)
+		| eventpollSourceBreak:
+			atomic::Store(&eventpollWakeSig, 0, atomic::Release)
+			if delay == 0 {
+				// Forward the notification to the blocked poller.
+				eventpollBreak()
+			}
+		|:
+			println("runtime: GetQueuedCompletionStatusEx returned net_op with invalid key")
+			panic("runtime: eventpoll failed")
 		}
-		mode := op.mode
-		if mode != 'r' && mode != 'w' {
-			panic("runtime: invalid mode on eventpoll")
-		}
-		eventpollready(&(*op.pd), mode, toRun, &b)
 	}
 	return b
 }
