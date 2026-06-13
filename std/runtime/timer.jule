@@ -90,7 +90,7 @@ impl timerheap {
 		if delta >= len(self.data) {
 			return nil
 		}
-		return self.data[0]
+		return self.data[delta]
 	}
 
 	// Inserts a timer into the heap.
