@@ -36,7 +36,7 @@ struct InsGeneric {
 
 // Type alias.
 struct TypeAlias {
-	Scope:    &ast::ScopeTree
+	Scope:    &ast::Scope
 	Strict:   bool
 	Public:   bool
 	Extern:   bool

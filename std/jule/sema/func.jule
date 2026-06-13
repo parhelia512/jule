@@ -75,7 +75,7 @@ struct Func {
 	// If this function is created by a deferred scope, the Scope.Deferred will be true.
 	// So it means this function is represents a deferred scope function.
 	// It may be a closure.
-	Scope: &ast::ScopeTree
+	Scope: &ast::Scope
 
 	Generics: []&ast::Generic
 	Result:   &ReturnType

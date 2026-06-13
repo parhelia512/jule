@@ -238,7 +238,7 @@ impl parser {
 		self.directives = append(self.directives, d)
 	}
 
-	fn buildScope(mut &self, mut tokens: []&token::Token, mut end: &token::Token): &ast::ScopeTree {
+	fn buildScope(mut &self, mut tokens: []&token::Token, mut end: &token::Token): &ast::Scope {
 		mut s := newScope()
 		s.End = end
 		mut sp := scopeParser{

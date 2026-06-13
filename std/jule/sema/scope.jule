@@ -311,7 +311,7 @@ struct scopeChecker {
 	childIndex: int // Index of child scope.
 	table:      &SymTab
 	scope:      &Scope
-	tree:       &ast::ScopeTree
+	tree:       &ast::Scope
 	result:     &result // Result type for the use statement.
 	it:         uintptr
 	cse:        uintptr
@@ -698,25 +698,25 @@ impl scopeChecker {
 		}
 	}
 
-	fn checkChildSsc(mut &self, mut tree: &ast::ScopeTree, mut s: &Scope, mut ssc: &scopeChecker) {
+	fn checkChildSsc(mut &self, mut tree: &ast::Scope, mut s: &Scope, mut ssc: &scopeChecker) {
 		s.StmtIndex = self.i
 		s.ChildIndex = ssc.childIndex
 		ssc.parent = self
 		ssc.check(tree, s)
 	}
 
-	fn checkChildSc(mut &self, mut tree: &ast::ScopeTree, mut ssc: &scopeChecker): &Scope {
+	fn checkChildSc(mut &self, mut tree: &ast::Scope, mut ssc: &scopeChecker): &Scope {
 		mut s := self.getChild()
 		self.checkChildSsc(tree, s, ssc)
 		return s
 	}
 
-	fn checkChild(mut &self, mut tree: &ast::ScopeTree): &Scope {
+	fn checkChild(mut &self, mut tree: &ast::Scope): &Scope {
 		mut ssc := self.newChildChecker()
 		return self.checkChildSc(tree, ssc)
 	}
 
-	fn checkAnonScope(mut &self, mut tree: &ast::ScopeTree) {
+	fn checkAnonScope(mut &self, mut tree: &ast::Scope) {
 		if tree.Deferred {
 			self.getRoot().owner.Decl.HasDefer = true
 		}
@@ -798,19 +798,19 @@ impl scopeChecker {
 		}
 	}
 
-	fn checkIterScopeSsc(mut &self, it: uintptr, mut tree: &ast::ScopeTree, mut s: &Scope, mut ssc: &scopeChecker) {
+	fn checkIterScopeSsc(mut &self, it: uintptr, mut tree: &ast::Scope, mut s: &Scope, mut ssc: &scopeChecker) {
 		ssc.it = it
 		self.checkChildSsc(tree, s, ssc)
 	}
 
-	fn checkIterScopeSc(mut &self, it: uintptr, mut tree: &ast::ScopeTree, mut ssc: &scopeChecker): &Scope {
+	fn checkIterScopeSc(mut &self, it: uintptr, mut tree: &ast::Scope, mut ssc: &scopeChecker): &Scope {
 		mut scope := self.getChild()
 		self.checkIterScopeSsc(it, tree, scope, ssc)
 		scope.Owner = it
 		return scope
 	}
 
-	fn checkIterScope(mut &self, it: uintptr, mut tree: &ast::ScopeTree): &Scope {
+	fn checkIterScope(mut &self, it: uintptr, mut tree: &ast::Scope): &Scope {
 		mut ssc := self.newChildChecker()
 		return self.checkIterScopeSc(it, tree, ssc)
 	}
@@ -1614,7 +1614,7 @@ impl scopeChecker {
 		}
 	}
 
-	fn checkCaseScope(mut &self, c: &Case, mut tree: &ast::ScopeTree): &Scope {
+	fn checkCaseScope(mut &self, c: &Case, mut tree: &ast::Scope): &Scope {
 		mut ssc := self.newChildChecker()
 		ssc.cse = uintptr(c)
 		return self.checkChildSc(tree, ssc)
@@ -2336,8 +2336,8 @@ impl scopeChecker {
 
 	fn checkNode(mut &self, mut node: ast::StmtData, flags: int) {
 		match type node {
-		| &ast::ScopeTree:
-			self.checkAnonScope(node.(&ast::ScopeTree))
+		| &ast::Scope:
+			self.checkAnonScope(node.(&ast::Scope))
 		| &ast::Var:
 			self.checkVarDecl(node.(&ast::Var), nil)
 		| &ast::TypeAlias:
@@ -2609,7 +2609,7 @@ impl scopeChecker {
 	}
 
 	// Checks scope tree.
-	fn check(mut &self, mut tree: &ast::ScopeTree, mut s: &Scope) {
+	fn check(mut &self, mut tree: &ast::Scope, mut s: &Scope) {
 		s.Deferred = tree.Deferred
 		s.Unsafe = tree.Unsafe
 

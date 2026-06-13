@@ -197,17 +197,17 @@ struct BinaryExpr {
 }
 
 // Special error handler scopes.
-let mut Ignored = new(ScopeTree)   // Error is ignored, like foo()!
-let mut Forwarded = new(ScopeTree) // Error is forwarded, like foo()?
+let mut Ignored = new(Scope)   // Error is ignored, like foo()!
+let mut Forwarded = new(Scope) // Error is forwarded, like foo()?
 
 // Function call expression kind.
 struct CallExpr {
 	Token:   &token::Token
-	Func:    &Expr      // Function expression.
-	Args:    []&Expr    // Function arguments, or nil.
-	Handler: &ScopeTree // Error handling scope, or nil.
-	IsCo:    bool       // Whether this is the concurrent call.
-	Await:   bool       // Awaited.
+	Func:    &Expr   // Function expression.
+	Args:    []&Expr // Function arguments, or nil.
+	Handler: &Scope  // Error handling scope, or nil.
+	IsCo:    bool    // Whether this is the concurrent call.
+	Await:   bool    // Awaited.
 }
 
 impl CallExpr {
@@ -345,7 +345,7 @@ enum StmtData: type {
 	&Assign,
 	&Fall,
 	&Label,
-	&ScopeTree,
+	&Scope,
 	&TypeAlias,
 	&UseExpr,
 	&Select,
@@ -360,8 +360,8 @@ struct Stmt {
 }
 
 // Scope tree.
-struct ScopeTree {
-	Parent:   &ScopeTree // Nil if scope is root.
+struct Scope {
+	Parent:   &Scope // Nil if scope is root.
 	Unsafe:   bool
 	Deferred: bool
 	Stmts:    []Stmt
@@ -416,7 +416,7 @@ struct Func {
 	Fallible:   bool
 	Name:       string
 	Directives: []&Directive
-	Scope:      &ScopeTree
+	Scope:      &Scope
 	Generics:   []&Generic
 	Result:     &ReturnType
 	Params:     []&Param
@@ -441,7 +441,7 @@ impl Func {
 
 // Variable declaration.
 struct Var {
-	Scope:      &ScopeTree // nil for global scopes
+	Scope:      &Scope // nil for global scopes
 	Token:      &token::Token
 	Op:         &token::Token // Expression assign operator token.
 	Name:       string
@@ -484,7 +484,7 @@ struct Iter {
 	Comptime: bool
 	Token:    &token::Token
 	Kind:     IterKind
-	Scope:    &ScopeTree
+	Scope:    &Scope
 }
 
 impl Iter {
@@ -529,14 +529,14 @@ struct Continue {
 // If condition.
 struct If {
 	Token: &token::Token
-	Scope: &ScopeTree
+	Scope: &Scope
 	X:     &Expr
 }
 
 // Else condition.
 struct Else {
 	Token: &token::Token
-	Scope: &ScopeTree
+	Scope: &Scope
 }
 
 // Condition chain.
@@ -547,7 +547,7 @@ struct Conditional {
 
 // Type alias declaration.
 struct TypeAlias {
-	Scope:    &ScopeTree
+	Scope:    &Scope
 	Public:   bool
 	Extern:   bool
 	Token:    &token::Token
@@ -560,7 +560,7 @@ struct TypeAlias {
 // Case of match-case.
 struct Case {
 	Token: &token::Token
-	Scope: &ScopeTree
+	Scope: &Scope
 
 	// Holds expression.
 	// Expressions holds *Type if case is for type matching.

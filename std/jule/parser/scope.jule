@@ -8,8 +8,8 @@ use "std/jule/log"
 use "std/jule/token"
 use "std/slices"
 
-fn newScope(): &ast::ScopeTree {
-	return new(ast::ScopeTree)
+fn newScope(): &ast::Scope {
+	return new(ast::Scope)
 }
 
 // Reports whether token is statement finish point.
@@ -131,7 +131,7 @@ fn splitStmts(mut tokens: []&token::Token): []&stmt {
 
 struct scopeParser {
 	p:     &parser
-	s:     &ast::ScopeTree
+	s:     &ast::Scope
 	stmts: []&stmt
 	pos:   int
 }
@@ -171,7 +171,7 @@ impl scopeParser {
 		return self.stmts[self.pos]
 	}
 
-	fn buildScope(mut *self, mut tokens: []&token::Token, mut end: &token::Token): &ast::ScopeTree {
+	fn buildScope(mut *self, mut tokens: []&token::Token, mut end: &token::Token): &ast::Scope {
 		mut s := newScope()
 		s.Parent = self.s
 		s.End = end
@@ -656,7 +656,7 @@ impl scopeParser {
 		return nil, false
 	}
 
-	fn buildCaseScope(mut *self, mut &tokens: *[]&token::Token): &ast::ScopeTree {
+	fn buildCaseScope(mut *self, mut &tokens: *[]&token::Token): &ast::Scope {
 		mut n := 0
 		for {
 			mut i := 0
@@ -940,7 +940,7 @@ impl scopeParser {
 		}
 	}
 
-	fn buildScopeStmt(mut *self, mut tokens: []&token::Token): &ast::ScopeTree {
+	fn buildScopeStmt(mut *self, mut tokens: []&token::Token): &ast::Scope {
 		mut isUnsafe := false
 		mut isDeferred := false
 		mut token := tokens[0]
@@ -1396,7 +1396,7 @@ impl scopeParser {
 		return nil
 	}
 
-	fn build(mut *self, mut tokens: []&token::Token, mut s: &ast::ScopeTree) {
+	fn build(mut *self, mut tokens: []&token::Token, mut s: &ast::Scope) {
 		if s == nil {
 			return
 		}
