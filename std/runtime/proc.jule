@@ -299,6 +299,9 @@ struct scheduler {
 	// A value of -2 indicates that a coroutine is checking eventpoll.
 	lastpoll: i64
 
+	// Time to which current poll is sleeping.
+	pollUntil: i64
+
 	// Number of worker threads currently spinning (actively searching
 	// for runnable coroutines instead of sleeping).
 	nmspinning:   i32
@@ -1051,11 +1054,14 @@ top:
 	}
 
 	// Final step: eventpoll.
-	if pollUntil != -1 || sched.ncpolling() > 0 && atomic::Swap(&sched.lastpoll, pollCheckIn, atomic::AcqRel) != pollCheckIn {
+	if (pollUntil != -1 || sched.ncpolling() > 0) &&
+		atomic::Swap(&sched.lastpoll, pollCheckIn, atomic::AcqRel) != pollCheckIn {
+		atomic::Store(&sched.pollUntil, pollUntil, atomic::Release)
 		// eventpoll guarantees len(toRun) <= local run queue capacity.
 		let mut toRun: [prunqsize]c
 		bn := eventpoll(pollUntil, &toRun)
 		now := nanotime()
+		atomic::Store(&sched.pollUntil, -1, atomic::Release)
 		atomic::Store(&sched.lastpoll, now, atomic::Release)
 		sched.mu.lock()
 		mut pp2 := pidleget()
@@ -1077,6 +1083,11 @@ top:
 				becomeSpinning(m)
 			}
 			goto top
+		}
+	} else if pollUntil != -1 {
+		pollerPollUntil := atomic::Load(&sched.pollUntil, atomic::Acquire)
+		if pollerPollUntil == -1 || pollerPollUntil > pollUntil {
+			eventpollBreak()
 		}
 	}
 
