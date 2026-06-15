@@ -156,7 +156,7 @@ retry:
 				// the eventfd counter will be reset to 0.
 				let mut one: u64
 				syscall_Read(eventpollEventFd, &one, i32(mem::SizeOf(one)))
-				atomic::Store(&eventpollEventFd, 0, atomic::Release)
+				atomic::Store(&eventpollWakeSig, 0, atomic::Release)
 			}
 			continue
 		}
