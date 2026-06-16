@@ -1583,6 +1583,7 @@ impl ObjectCoder {
 				v == meta::Program.Runtime.Sched ||
 				v == meta::Program.Runtime.Kq ||
 				v == meta::Program.Runtime.Epfd ||
+				v == meta::Program.Runtime.EventpollEventFd ||
 				v == meta::Program.Runtime.Iocphandle ||
 				v == meta::Program.Runtime.Qpcfreq ||
 				v == meta::Program.Runtime.Asynctime ||
