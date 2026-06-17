@@ -14,7 +14,8 @@ async fn maxListenerBacklog(): int {
 	| "macos" | "ios":
 		const KERN_IPC_SOMAXCONN = 128
 		mib := []i32([sys::CTL_KERN, KERN_IPC_SOMAXCONN]) // kern.ipc.somaxconn
-		sys::Sysctl(mib, uintptr(&n), 4, 0, 0) else { return sys::SOMAXCONN }
+		nn := uintptr(4)
+		sys::Sysctl(mib, uintptr(&n), uintptr(&nn), 0, 0) else { return sys::SOMAXCONN }
 	}
 	if n == 0 {
 		return sys::SOMAXCONN
