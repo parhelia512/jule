@@ -5,6 +5,10 @@
 // A module identity.
 type ID: int
 
+// The standard invalid module ID.
+// All module implementations must consider this special value as invalid.
+const InvalidID = ID(-1)
+
 // A module.
 struct Mod {
 	ID:   ID     // Unique identity of the module.
