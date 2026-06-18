@@ -229,7 +229,7 @@ struct p {
 	budget: u32
 
 	// Local timers of the P.
-	timers: timerheap
+	timers: timers
 
 	link: &p // Link to the next P.
 }
@@ -754,7 +754,8 @@ fn runqsteal(mut pp: &p, mut pp2: &p, mut &cp: *c): bool {
 // Writes one of the stolen coroutines to cp.
 // Reports false if failed, otherwise true.
 #disable nilptr boundary
-fn stealWork(mut pp: &p, mut &cp: *c): (stealC: bool, stealTimer: bool) {
+fn stealWork(mut pp: &p, mut &cp: *c, now: i64): (stealC: bool, timer: &timer, pollUntil: i64) {
+	pollUntil = -1
 	const StealTries = 4
 	mut n := 0
 	pcount := len(sched.allp)
@@ -769,19 +770,21 @@ fn stealWork(mut pp: &p, mut &cp: *c): (stealC: bool, stealTimer: bool) {
 				continue
 			}
 			if stealTimers {
-				mut timer, _ := pp2.timers.check()
+				(timer), pollUntil2 := pp2.timers.check(now)
 				if timer != nil {
-					pp.timers.cache = timer
-					return false, true
+					return false, timer, pollUntil
+				}
+				if pollUntil2 != -1 && (pollUntil == -1 || pollUntil2 < pollUntil) {
+					pollUntil = pollUntil2
 				}
 			}
 			ok := runqsteal(pp, pp2, cp)
 			if ok {
-				return true, false
+				return true, nil, pollUntil
 			}
 		}
 	}
-	return false, false
+	return false, nil, pollUntil
 }
 
 // Check all Ps for a runnable C to steal.
@@ -817,7 +820,7 @@ fn checkTimersNoP(mut pollUntil: i64): i64 {
 	}
 	for (_, mut pp2) in sched.allp {
 		w := pp2.timers.wakeTime()
-		if w >= 0 && (pollUntil == -1 || w < pollUntil) {
+		if w != -1 && (pollUntil == -1 || w < pollUntil) {
 			pollUntil = w
 			// Zero is the the shortest possible delay.
 			// Break iteration, no extra lookup needed.
@@ -863,6 +866,13 @@ fn findRunnable(): (coro: c) {
 	// To ensure we observe the most recent P paired with M, we must reload it.
 top:
 	mut pp := m.pp
+
+	// now and pollUntil are saved for work stealing later,
+	// which may steal timers. It's important that between now
+	// and then, nothing blocks, so these numbers remain mostly
+	// relevant.
+	mut now := nanotime()
+	mut pollUntil := pp.timers.wakeTime()
 
 	// Check the global runnable queue once in a while to ensure fairness.
 	// Otherwise two coroutines can completely occupy the local runqueue
@@ -921,13 +931,11 @@ top:
 		if !m.spinning {
 			becomeSpinning(m)
 		}
-		stealC, stealTimer := stealWork(pp, &coro)
+		stealC, mut timer, pollUntil2 := stealWork(pp, &coro, now)
 		if stealC {
 			return
 		}
-		if stealTimer {
-			mut timer := pp.timers.cache
-			pp.timers.cache = nil
+		if timer != nil {
 			match fire(timer, &coro) {
 			| fireInternalTimer:
 				// This was an internal timer,
@@ -941,12 +949,16 @@ top:
 				panic("unreachable")
 			}
 		}
+		if pollUntil2 != -1 && (pollUntil == -1 || pollUntil2 < pollUntil) {
+			// Earlier timer to wait for.
+			pollUntil = pollUntil2
+		}
 	}
 
 	// No runnable coroutine found yet.
 	// Determine how long we can block based on timers and deadlines.
-	// If pollUntil is -1, eventpoll will block indefinitely.
-	mut timer, mut pollUntil := pp.timers.check()
+	// If pollUntil2 is -1, eventpoll will block indefinitely.
+	mut timer, pollUntil2 := pp.timers.check(now)
 	if timer != nil {
 		match fire(timer, &coro) {
 		| fireInternalTimer:
@@ -960,6 +972,10 @@ top:
 		|:
 			panic("unreachable")
 		}
+	}
+	if pollUntil2 != -1 && (pollUntil == -1 || pollUntil2 < pollUntil) {
+		// Earlier timer to wait for.
+		pollUntil = pollUntil2
 	}
 
 	// Return P.
@@ -1057,10 +1073,21 @@ top:
 	if (pollUntil != -1 || sched.ncpolling() > 0) &&
 		atomic::Swap(&sched.lastpoll, pollCheckIn, atomic::AcqRel) != pollCheckIn {
 		atomic::Store(&sched.pollUntil, pollUntil, atomic::Release)
+		mut delay := i64(-1)
+		if pollUntil != -1 {
+			if now == 0 {
+				now = nanotime()
+			}
+			delay = pollUntil - now
+			if delay < 0 {
+				delay = 0
+			}
+		}
 		// eventpoll guarantees len(toRun) <= local run queue capacity.
 		let mut toRun: [prunqsize]c
-		bn := eventpoll(pollUntil, &toRun)
-		now := nanotime()
+		bn := eventpoll(delay, &toRun) // block until new work is available
+		// Refresh now again, after potentially blocking.
+		now = nanotime()
 		atomic::Store(&sched.pollUntil, -1, atomic::Release)
 		atomic::Store(&sched.lastpoll, now, atomic::Release)
 		sched.mu.lock()
@@ -1204,9 +1231,8 @@ async fn sleep(dur: sleepDuration) {
 	mut c := m.c
 	when := nanotime() + dur
 	mut t := timer.new(when, nil, uintptr(&c), 0)
-	m.pp.timers.mu.lock()
-	m.pp.timers.push(t)
-	park(&c, uintptr(&m.pp.timers.mu), reasonSleep).await
+	t.addHeap()
+	park(&c, 0, reasonSleep).await
 }
 
 // Destroys all retired coroutine frames for the current worker thread.

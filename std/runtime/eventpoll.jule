@@ -151,15 +151,14 @@ struct polldesc {
 
 	mu:      mutex // Protects the following fields.
 	closing: bool
-	theap:   &timerheap // A fake smart-pointer to the timerheap process our timers.
-	rrun:    bool       // Whether rt is running.
-	wrun:    bool       // Whether wt is running.
-	rseq:    uintptr    // Protects from stale read timers.
-	rt:      &timer     // Read deadline timer.
-	rd:      i64        // Read deadline (a nanotime in the future, -1 when expired).
-	wseq:    uintptr    // Protects from stale write timers.
-	wt:      &timer     // Write deadline timer.
-	wd:      i64        // Write deadline (a nanotime in the future, -1 when expired).
+	rrun:    bool    // Whether rt is running.
+	wrun:    bool    // Whether wt is running.
+	rseq:    uintptr // Protects from stale read timers.
+	rt:      &timer  // Read deadline timer.
+	rd:      i64     // Read deadline (a nanotime in the future, -1 when expired).
+	wseq:    uintptr // Protects from stale write timers.
+	wt:      &timer  // Write deadline timer.
+	wd:      i64     // Write deadline (a nanotime in the future, -1 when expired).
 }
 
 impl polldesc {
@@ -170,22 +169,6 @@ impl polldesc {
 			self.mu.unlock()
 			return
 		}
-		// Assign to a timer heap, if needed.
-		if self.theap == nil {
-			// This function may be invoked by a non-M thread,
-			// such as blocking thread pool worker thread.
-			// We need a timer-heap, so panic.
-			mut m := gett()
-			if m == nil || m.pp == nil {
-				panic("runtime: deadline initialized by a non-coroutine")
-			}
-			self.theap = unsafe { (&timerheap)(&m.pp.timers) } // Will never be deallocated.
-			self.theap.mu.lock()
-			self.theap.push(self.rt) // No lock needed for timer.
-			self.theap.push(self.wt) // No lock needed for timer.
-			self.theap.mu.unlock()
-		}
-
 		rd0, wd0 := self.rd, self.wd
 		combo0 := rd0 > 0 && rd0 == wd0
 		if d > 0 {
@@ -565,10 +548,10 @@ fn eventpollWriteDeadline(arg: uintptr, seq: uintptr) {
 #disable nilptr
 fn eventpollnew(fd: u64)!: &polldesc {
 	// Timers are ready for use and are preallocated.
-	// However, we avoid immediately inserting them into a timerheap.
+	// However, we avoid immediately inserting them into a timers.
 	// If a situation arises where a timer is required for a polldesc
 	// (currently only deadlines), the relevant function (such as
-	// `polldesc.setDeadline`) will insert it into a timerheap if needed.
+	// `polldesc.setDeadline`) will insert it into a timers if needed.
 	// This is a form of lazy initialization, but it is performance-critical.
 	// It provides a significant performance gain in high-traffic scenarios
 	// where polldescs must be created very frequently. It also eliminates
@@ -669,18 +652,6 @@ impl pollcachepool {
 		atomic::Store(&pd.fdseq, fdseq, atomic::Release)
 
 		pd.publishInfo()
-
-		if pd.theap != nil {
-			pd.theap.mu.lock()
-			pd.rt.mu.lock()
-			pd.theap.remove(pd.rt)
-			pd.rt.mu.unlock()
-			pd.wt.mu.lock()
-			pd.theap.remove(pd.wt)
-			pd.wt.mu.unlock()
-			pd.theap.mu.unlock()
-		}
-		pd.theap = nil
 
 		pd.mu.unlock()
 

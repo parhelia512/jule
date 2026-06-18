@@ -2,53 +2,84 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/internal/runtime/atomic"
+
 // Represents a scheduled event.
 // when is an absolute timestamp in nanoseconds.
 struct timer {
 	mu:    mutex
-	theap: &timerheap                     // A fake smart-pointer to the owner timerheap.
-	ifunc: fn(arg: uintptr, seq: uintptr) // A runtime-provided function will be invoked when timer fired.
-	arg:   uintptr                        // Any argument provided by the runtime for f.
-	seq:   uintptr                        // Any sequence value provided by the runtime for f.
-	when:  i64                            // Timer wakes up at when. If <=0, should not fire.
-	state: i32                            // State of the timer.
-	index: int                            // Heap index, -1 if not in heap.
+	heap:  &timers                        // Owner timers.
+	ifunc: fn(arg: uintptr, seq: uintptr) // Callback function to invoke when the timer fires.
+	arg:   uintptr                        // Argument to pass to the callback function.
+	seq:   uintptr                        // Sequence value to pass to the callback function.
+	when:  i64                            // Absolute timestamp in nanoseconds indicating when the timer should fire.
+	index: int                            // Heap index. Remains -1 if not currently in a heap.
+
+	// Lock-free flag for lazy deletion.
+	// Enables O(1) stop().
+	deleted: i32
 }
 
 impl timer {
-	// Returns new timer.
+	// Creates and returns a new timer.
 	#disable nilptr
 	fn new(when: i64, ifunc: fn(arg: uintptr, seq: uintptr), arg: uintptr, seq: uintptr): &timer {
 		mut t := new(timer)
-		t.modify(when, ifunc, arg, seq)
+		t.when = when
+		t.ifunc = ifunc
+		t.arg = arg
+		t.seq = seq
 		return t
 	}
 
 	// Modifies an existing timer.
-	// Reports whether the timer was modified before it was run.
+	// Safe for concurrent use.
 	#disable nilptr
-	fn modify(mut *self, when: i64, ifunc: fn(arg: uintptr, seq: uintptr), arg: uintptr, seq: uintptr) {
+	fn modify(mut &self, when: i64, ifunc: fn(arg: uintptr, seq: uintptr), arg: uintptr, seq: uintptr) {
+		// The lock hierarchy (Lock Order) must be strictly enforced:
+		//	Heap first, then timer.
+		// This prevents deadlocks during concurrent modifications.
+		if self.heap != nil {
+			self.heap.mu.lock()
+		}
+
 		self.mu.lock()
+		defer { self.mu.unlock() }
+
 		self.when = when
 		self.arg = arg
 		self.seq = seq
 		self.ifunc = ifunc
-		if self.theap != nil && self.index != -1 {
-			self.theap.mu.lock()
-			self.theap.siftdown(self.index)
-			self.theap.siftup(self.index)
-			self.theap.mu.unlock()
+
+		// Reactivate the timer in case it was previously deleted via stop()
+		// but not yet popped from the heap.
+		atomic::Store(&self.deleted, 0, atomic::Release)
+
+		if self.heap != nil && self.index != -1 {
+			self.heap.siftdown(self.index)
+			self.heap.siftup(self.index)
+			// Update the atomic indicator since the heap root might have changed.
+			self.heap.updateEarliest()
 		}
-		self.mu.unlock()
+
+		if self.heap != nil {
+			self.heap.mu.unlock()
+		} else {
+			// We need to add this timer to a heap.
+			self.addHeap()
+		}
+	}
+
+	#disable nilptr
+	fn addHeap(mut &self) {
+		mut m := gett()
+		m.pp.timers.push(self)
 	}
 
 	// Stops the timer.
 	#disable nilptr
 	fn stop(mut *self) {
-		self.mu.lock()
-		self.ifunc = nil
-		self.when = 0
-		self.mu.unlock()
+		atomic::Store(&self.deleted, 1, atomic::Release)
 	}
 
 	// Fires the timer, which is runtime timer associated with a raw function.
@@ -56,105 +87,105 @@ impl timer {
 	fn unlockAndFire(mut *self) {
 		arg := self.arg
 		seq := self.seq
-		func := self.ifunc
+		ifunc := self.ifunc
 		self.ifunc = nil
 		self.mu.unlock()
-		func(arg, seq)
+		ifunc(arg, seq)
 	}
 }
 
 // A min-heap ordered by [timer.when].
-struct timerheap {
-	// A cached timer, it is used for stealing.
-	// Lock-free, because it is used by the owner P only.
-	cache: &timer
+struct timers {
+	mu:   mutex
+	heap: []&timer
 
-	// Protects the following fields.
-	mu: mutex
-
-	// All timers of the heap.
-	// Timers are min-heap ordered.
-	data: []&timer
+	// Atomically stores the execution time of the timer at the root of the heap.
+	// This allows wakeTime to operate completely lock-free.
+	earliest: i64
 }
 
-impl timerheap {
-	// Returns number of timers.
-	#disable nilptr
-	fn len(*self): int {
-		return len(self.data)
-	}
-
-	// Returns the earliest timer without removing it.
+impl timers {
+	// Updates the 'when' value of the heap root for lock-free operations.
+	// Must be called while self.mu is locked, typically after heap manipulations.
 	#disable nilptr boundary
-	fn peek(mut *self, delta: int): &timer {
-		if delta >= len(self.data) {
-			return nil
+	fn updateEarliest(mut *self) {
+		if len(self.heap) > 0 {
+			atomic::Store(&self.earliest, self.heap[0].when, atomic::Release)
+		} else {
+			// Indicates the heap is empty.
+			atomic::Store(&self.earliest, -1, atomic::Release)
 		}
-		return self.data[delta]
 	}
 
 	// Inserts a timer into the heap.
-	// Timer lock must be held.
 	#disable nilptr
 	fn push(mut *self, mut t: &timer) {
-		t.theap = unsafe { (&timerheap)(self) }
-		t.index = len(self.data)
-		self.data = append(self.data, t)
+		self.mu.lock()
+		defer { self.mu.unlock() }
+
+		t.heap = unsafe { (&timers)(self) } // Never deallocated, so it is safe.
+		t.index = len(self.heap)
+		self.heap = append(self.heap, t)
 		self.siftup(t.index)
+		self.updateEarliest()
 	}
 
 	// Removes and returns the earliest timer.
-	// Timer lock must be held.
+	// self.mu must be locked before calling.
 	#disable nilptr boundary
 	fn pop(mut *self): &timer {
-		n := len(self.data)
+		n := len(self.heap)
 		if n == 0 {
 			return nil
 		}
 
-		mut min := self.data[0]
-		mut last := self.data[n-1]
+		mut min := self.heap[0]
+		mut last := self.heap[n-1]
 
-		self.data = self.data[:n-1]
+		self.heap = self.heap[:n-1]
 		if n > 1 {
-			self.data[0] = last
+			self.heap[0] = last
 			last.index = 0
 			self.siftdown(0)
 		}
 
+		min.heap = nil
 		min.index = -1
-		min.theap = nil
+		self.updateEarliest()
 		return min
 	}
 
-	// Deletes a specific timer from the heap.
-	// Timer lock must be held.
+	// Deletes a specific timer from the heap regardless of its position.
 	#disable nilptr boundary
 	fn remove(mut *self, mut t: &timer) {
+		self.mu.lock()
+		defer { self.mu.unlock() }
+
 		i := t.index
-		if i < 0 || i >= len(self.data) {
+		if i < 0 || i >= len(self.heap) {
 			return
 		}
 
-		mut last := self.data[len(self.data)-1]
-		self.data = self.data[:len(self.data)-1]
+		mut last := self.heap[len(self.heap)-1]
+		self.heap = self.heap[:len(self.heap)-1]
 
-		if i != len(self.data) {
-			self.data[i] = last
+		if i != len(self.heap) {
+			self.heap[i] = last
 			last.index = i
 			self.siftdown(i)
 			self.siftup(i)
 		}
 
 		t.index = -1
-		t.theap = nil
+		self.updateEarliest()
 	}
 
+	// Moves the timer at index i up the heap to restore the min-heap property.
 	#disable nilptr boundary
 	fn siftup(mut *self, mut i: int) {
 		for {
 			parent := (i - 1) / 2
-			if i == 0 || cmpwhen(self.data[parent].when, self.data[i].when) < 1 {
+			if i == 0 || cmpwhen(self.heap[parent].when, self.heap[i].when) <= 0 {
 				break
 			}
 			self.swap(i, parent)
@@ -162,9 +193,10 @@ impl timerheap {
 		}
 	}
 
+	// Moves the timer at index i down the heap to restore the min-heap property.
 	#disable nilptr boundary
 	fn siftdown(mut *self, mut i: int) {
-		n := len(self.data)
+		n := len(self.heap)
 		for {
 			left := 2*i + 1
 			if left >= n {
@@ -173,11 +205,11 @@ impl timerheap {
 
 			mut smallest := left
 			right := left + 1
-			if right < n && cmpwhen(self.data[right].when, self.data[left].when) == -1 {
+			if right < n && cmpwhen(self.heap[right].when, self.heap[left].when) == -1 {
 				smallest = right
 			}
 
-			if cmpwhen(self.data[i].when, self.data[smallest].when) < 1 {
+			if cmpwhen(self.heap[i].when, self.heap[smallest].when) <= 0 {
 				break
 			}
 
@@ -188,141 +220,54 @@ impl timerheap {
 
 	#disable nilptr boundary
 	fn swap(mut *self, i: int, j: int) {
-		self.data[i], self.data[j] = self.data[j], self.data[i]
-		self.data[i].index = i
-		self.data[j].index = j
+		self.heap[i], self.heap[j] = self.heap[j], self.heap[i]
+		self.heap[i].index = i
+		self.heap[j].index = j
 	}
 
-	// Checks the timer, pops and returns it if it should fire.
-	// If there is no timer ready to fire, pollUntil indicates the delay
-	// until the next possible firing time.
-	// Safe for concurrent use by multiple coroutines.
+	// Checks the heap, pops, and returns the timer if it is ready to fire.
+	// Safely cleans up lazy-deleted timers along the way.
 	// The returned timer's lock will be acquired.
-	#disable nilptr
-	fn check(mut *self): (t: &timer, pollUntil: i64) {
-		mut timerPeekOffs := 0
+	fn check(mut *self, now: i64): (t: &timer, pollUntil: i64) {
 		self.mu.lock()
+		defer { self.mu.unlock() }
+
 		for {
-			t = self.peek(timerPeekOffs)
-			if t == nil {
-				break
+			if len(self.heap) == 0 {
+				return nil, -1
 			}
-			t.mu.lock()
-			// This timer cannot be fired.
-			if t.when <= 0 {
-				t.mu.unlock()
-				timerPeekOffs++
+
+			min := self.heap[0]
+
+			// 1. Lazy Deletion Cleanup
+			if atomic::Load(&min.deleted, atomic::Acquire) == -1 {
+				self.pop() // Remove the dead timer from the heap and evaluate the next one.
 				continue
 			}
-			break
-		}
-		if t == nil { // No suitable timer.
-			self.mu.unlock()
-			return nil, -1
-		}
-		now := nanotime()
-		// It's not the right time yet.
-		if t.when > now {
-			// Compute delay until the next timer fires.
-			pollUntil = t.when - now
-			t.mu.unlock()
-			self.mu.unlock()
-			t = nil
-			if pollUntil <= 0 {
-				panic("runtime: inconsistent timer state")
+
+			// 2. Not time yet
+			if min.when > now {
+				return nil, min.when - now
 			}
-			return
+
+			// 3. Time to run, detach from the heap
+			t = self.pop()
+
+			// Staying true to the original API design, we hold the lock of the returned
+			// timer until the firing process is completed (i.e., until unlockAndFire is called).
+			t.mu.lock()
+			return t, 0
 		}
-		// Timer should be fired.
-		// Remove this timer from the heap.
-		// But do not remove if the timer is an runtime internal timer
-		// associated with a raw function to be invoked when timer fired.
-		// Internal timers can only be removed by the timer owner.
-		// Just clear "when" value and adjust timerheap for them.
-		if t.ifunc != nil {
-			self.remove(t)
-		} else {
-			t.when = 0
-			if t.index != -1 {
-				self.siftup(t.index)
-			}
-		}
-		self.mu.unlock()
-		pollUntil = 0
-		return
 	}
 
-	// Similar to check(), but does not remove the timer even if it is ready to fire.
-	// Use this to peek at the earliest timer in the heap without consuming it.
-	#disable nilptr
-	fn wakeTime(mut *self): (pollUntil: i64) {
-		// TODO: if it makes sense, make this lock-free.
-		mut timerPeekOffs := 0
-		self.mu.lock()
-		let mut t: &timer
-		for {
-			t = self.peek(timerPeekOffs)
-			if t == nil {
-				break
-			}
-			t.mu.lock()
-			// This timer cannot be fired.
-			if t.when <= 0 {
-				t.mu.unlock()
-				timerPeekOffs++
-				continue
-			}
-			break
-		}
-		if t == nil { // No suitable timer.
-			self.mu.unlock()
-			return -1
-		}
-		now := nanotime()
-		// It's not the right time yet.
-		if t.when > now {
-			// Compute delay until the next timer fires.
-			pollUntil = t.when - now
-			if pollUntil <= 0 {
-				panic("runtime: inconsistent timer state")
-			}
-		} else {
-			pollUntil = 0
-		}
-		t.mu.unlock()
-		self.mu.unlock()
-		return
+	// Uses an atomic value to instantly peek at the delay until the next timer.
+	fn wakeTime(*self): (pollUntil: i64) {
+		return atomic::Load(&self.earliest, atomic::Acquire)
 	}
 }
 
 // Compares two "when" timestamps w1 and w2 and returns their ordering.
-//
-// The comparison treats non-positive values (<= 0) as special cases,
-// typically representing "unset", "inactive", or "no scheduled time".
-//
-// Ordering rules:
-//	- If both w1 and w2 are <= 0, they are considered equal.
-//	- If w1 <= 0 and w2 > 0, w1 is considered greater (returns +1).
-//	- If w1 > 0 and w2 <= 0, w1 is considered smaller (returns -1).
-//	- If both are > 0, they are compared numerically:
-//		- returns -1 if w1 < w2
-//		- returns +1 if w1 > w2
-//		- returns  0 if w1 == w2
-//
-// Return values follow the conventional comparison contract:
-//	-1 if w1 < w2
-//	0 if w1 == w2
-//	+1 if w1 > w2
 fn cmpwhen(w1: i64, w2: i64): int {
-	if w1 <= 0 {
-		if w2 > 0 {
-			return +1
-		}
-		return 0
-	}
-	if w2 <= 0 {
-		return -1
-	}
 	if w1 < w2 {
 		return -1
 	}
