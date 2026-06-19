@@ -6,18 +6,22 @@ use "std/jule/token"
 
 // Enum.
 struct Enum {
-	Token:   &token::Token
-	Public:  bool
-	Name:    string
-	TypeSym: &TypeSym
-	Items:   []&Var // See developer reference (14).
+	// Associated sema.
+	sema: &sema
+
+	Token:    &token::Token
+	Public:   bool
+	FullName: string // See developer reference (16).
+	Name:     string // See developer reference (16).
+	TypeSym:  &TypeSym
+	Items:    []&Var // See developer reference (14).
 }
 
 impl Kind for Enum {
 	// Implement: Kind
 	// Returns Enum's identifier.
 	fn String(*self): string {
-		return self.Name
+		return self.FullName
 	}
 
 	// Reports whether types are same.
@@ -48,17 +52,18 @@ struct TypeEnumItem {
 
 // TypeEnum.
 struct TypeEnum {
-	Token:  &token::Token
-	Public: bool
-	Name:   string
-	Items:  []&TypeEnumItem
+	Token:    &token::Token
+	Public:   bool
+	FullName: string // See developer reference (16).
+	Name:     string // See developer reference (16).
+	Items:    []&TypeEnumItem
 }
 
 impl Kind for TypeEnum {
 	// Implement: Kind
 	// Returns TypeEnum's identifier.
 	fn String(*self): string {
-		return self.Name
+		return self.FullName
 	}
 
 	// Reports whether types are same.

@@ -723,7 +723,7 @@ impl eval {
 			v.Model = v.Type
 		}
 		v.Type.Generic = ta.Generic
-		v.Type.Provider = ta.Name
+		v.Type.Provider = ta.FullName
 		return v
 	}
 

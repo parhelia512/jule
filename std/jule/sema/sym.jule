@@ -294,6 +294,7 @@ fn buildImpl(mut decl: &ast::Impl): &Impl {
 // like struct's implemented traits.
 struct symBuilder {
 	owner:      &symBuilder
+	modID:      mod::ID
 	importPath: string // Import path, this symBuilder created for.
 	importer:   Importer
 	errors:     []log::Log
@@ -614,7 +615,12 @@ impl symBuilder {
 
 			for (_, mut ast) in asts {
 				mut table := (&SymTab)(nil)
-				table, errors = buildSymbols(imp.LinkPath, ast, self.importer, self)
+				mut modID := mod::InvalidID
+				mod := self.importer.GetMod()
+				if mod != nil {
+					modID = mod.ID
+				}
+				table, errors = buildSymbols(modID, imp.LinkPath, ast, self.importer, self)
 				// Break import if file has error(s).
 				if len(errors) > 0 {
 					self.errors = append(self.errors, errors...)
@@ -655,21 +661,85 @@ impl symBuilder {
 		}
 	}
 
+	// Returns [FullName] and [Name] values according to module and package.
+	// See developer reference (16) to learn about these values.
+	fn getFullName(mut *self, astName: string, token: &token::Token): (fullName: string, name: string) {
+		// Find our module.
+		mod := self.importer.ModByID(self.modID)
+		// If we do not have a module, then return AST name.
+		// It should be the main package.
+		// Because imported packages (including stdlib) should have a module.
+		if mod == nil {
+			return astName, astName
+		}
+		// Get the main package path.
+		mainPackagePath := self.importer.GetMainPackagePath()
+		// Get the package path of the AST name's owner declaration.
+		packageDir := token.File.Dir()
+		// If declaration is declared in the main package,
+		// do not use a package name.
+		// Return AST name instead.
+		if mainPackagePath == packageDir {
+			return astName, astName
+		}
+		// Use a string builder to build a string efficiently and
+		// use single memory allocation for both values.
+		let mut buf: strings::Builder
+		// If our module's path is equal to the declaration's package path,
+		// do no use name of the package. Beause this package is the root
+		// package of the module. Like the import paths, use module name.
+		// Otherwise write the package name.
+		// Thus we can use package name for sub-packages of the module.
+		if mod.Path == packageDir {
+			// Allocate the string memory once with the exact required size.
+			buf.Grow(len(mod.Name) + len(astName) + 2)
+			// Write module name.
+			buf.WriteString(mod.Name)!
+		} else {
+			// Get package name.
+			_, packageName := filepath::Split(packageDir)
+			// Allocate the string memory once with the exact required size.
+			buf.Grow(len(packageName) + len(astName) + 2)
+			// Write package name.
+			buf.WriteString(packageName)!
+		}
+		buf.WriteString("::")!
+		// Save the module/package name prefix length to slice
+		// pure AST name from the same string allocation.
+		prefixLen := buf.Len()
+		// Write AST name.
+		buf.WriteString(astName)!
+		fullName = buf.String()
+		// Get slice AST name from the same allocation.
+		// Thus we can avoid to making a separate allocation.
+		name = fullName[prefixLen:]
+		return
+	}
+
 	fn appendNode(mut *self, mut node: ast::Node) {
 		match type node.Data {
 		| &ast::Impl:
 			self.table.Impls = append(self.table.Impls, buildImpl(node.Data.(&ast::Impl)))
 		| &ast::TypeAlias:
 			mut ta := buildTypeAlias(node.Data.(&ast::TypeAlias))
+			if ta.Scope == nil {
+				ta.FullName, ta.Name = self.getFullName(ta.Name, ta.Token)
+			} else {
+				// For local type alias, use name as full name.
+				// Because it may be confusing due to it is an internal detail.
+				ta.FullName = ta.Name
+			}
 			self.table.TypeAliases = append(self.table.TypeAliases, ta)
 		| &ast::Struct:
 			mut srct := buildStruct(node.Data.(&ast::Struct))
+			srct.FullName, srct.Name = self.getFullName(srct.Name, srct.Token)
 			self.table.Structs = append(self.table.Structs, srct)
 		| &ast::Func:
 			mut f := buildFunc(node.Data.(&ast::Func))
 			self.table.Funcs = append(self.table.Funcs, f)
 		| &ast::Trait:
 			mut t := buildTrait(node.Data.(&ast::Trait))
+			t.FullName, t.Name = self.getFullName(t.Name, t.Token)
 			self.table.Traits = append(self.table.Traits, t)
 		| &ast::Var:
 			mut astv := node.Data.(&ast::Var)
@@ -693,9 +763,11 @@ impl symBuilder {
 			}
 		| &ast::Enum:
 			mut e := buildEnum(node.Data.(&ast::Enum))
+			e.FullName, e.Name = self.getFullName(e.Name, e.Token)
 			self.table.Enums = append(self.table.Enums, e)
 		| &ast::TypeEnum:
 			mut e := buildTypeEnum(node.Data.(&ast::TypeEnum))
+			e.FullName, e.Name = self.getFullName(e.Name, e.Token)
 			self.table.TypeEnums = append(self.table.TypeEnums, e)
 		|:
 			self.pushErr(node.Token, "invalid syntax")

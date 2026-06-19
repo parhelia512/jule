@@ -5,6 +5,7 @@
 use "std/jule/ast"
 use "std/jule/build"
 use "std/jule/log"
+use "std/jule/mod"
 use "std/unsafe"
 
 // Flags for semantic analysis.
@@ -14,8 +15,9 @@ const (
 )
 
 // Builds symbol table of AST.
-fn buildSymbols(importPath: string, mut ast: &ast::AST, mut importer: Importer, mut owner: &symBuilder): (&SymTab, []log::Log) {
+fn buildSymbols(modID: mod::ID, importPath: string, mut ast: &ast::AST, mut importer: Importer, mut owner: &symBuilder): (&SymTab, []log::Log) {
 	mut sb := &symBuilder{
+		modID:      modID,
 		importPath: importPath,
 		ast:        ast,
 		importer:   importer,
@@ -47,21 +49,31 @@ fn collectImplicitImports(mut s: &sema, mut file: &SymTab) {
 }
 
 fn analyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (&Package, []log::Log) {
+	// Get module, if exist.
+	let mut mod: &mod::Mod
+	if importer != nil {
+		mod = importer.GetMod()
+	}
+
 	// Select import path for the root package.
 	// If there is no module, use "." as import path.
 	// If we have module, use the module root name as import path.
 	mut importPath := "."
-	if importer != nil {
-		mut mod := importer.GetMod()
-		if mod != nil {
-			importPath = mod.Path
-		}
+
+	// Select module ID for the root package.
+	// If there is no module, use invalid ID as module ID.
+	// If we have module, use the module ID.
+	mut modID := mod::InvalidID
+
+	if mod != nil {
+		modID = mod.ID
+		importPath = mod.Path
 	}
 
 	// Build symbol tables of files.
 	mut tables := make([]&SymTab, 0, len(files))
 	for (_, mut f) in files {
-		mut table, mut errors := buildSymbols(importPath, f, importer, nil)
+		mut table, mut errors := buildSymbols(modID, importPath, f, importer, nil)
 		if len(errors) > 0 {
 			return nil, errors
 		}
@@ -113,6 +125,9 @@ fn analyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (
 //	working-directory: uses working directory path provided by build
 //	std-path:          uses standard library path provided by build
 //
+// Constraints:
+//	- importer's module must be point to the package's module, if exist.
+//
 // Risks:
 //	You can pass nil to importer, but panics if importer is nil and
 //	semantic analyzer used nil importer.
@@ -136,6 +151,9 @@ fn AnalyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (
 // Dependent Parameters:
 //	working-directory: uses working directory path provided by build
 //	std-path:          uses standard library path provided by build
+//
+// Constraints:
+//	- importer's module must be point to the package's module, if exist.
 //
 // Risks:
 //	You can pass nil to importer, but panics if importer is nil and

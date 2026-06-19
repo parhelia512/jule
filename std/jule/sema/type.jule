@@ -43,7 +43,8 @@ struct TypeAlias {
 	Used:     bool
 	Generic:  bool
 	Token:    &token::Token
-	Name:     string
+	FullName: string // See developer reference (16).
+	Name:     string // See developer reference (16).
 	TypeSym:  &TypeSym
 	Generics: []&ast::Generic // See the developer reference (3).
 }
@@ -77,8 +78,6 @@ impl Kind for Type {
 		}
 
 		mut kind := strings::Builder{}
-		kind.Grow(1 << 4)
-
 		if self.Variadic {
 			kind.WriteString("...")!
 		}
@@ -1094,7 +1093,7 @@ impl typeChecker {
 		}
 
 		mut tk := &Type{
-			Provider: ta.Name,
+			Provider: ta.FullName,
 			Generic:  ta.Generic,
 			Kind:     ta.TypeSym.Type.Kind,
 		}
@@ -2236,8 +2235,9 @@ let mut pseudoSource = new(Type)
 
 // Initializes new structure for strict types.
 // See developer reference (9) for details.
-fn initNewStructType(name: string, mut source: &Type): &StructIns {
+fn initNewStructType(fullName: string, name: string, mut source: &Type): &StructIns {
 	mut s := new(Struct)
+	s.FullName = fullName
 	s.Name = name
 	mut ins := s.instance()
 	s.appendInstance(ins)

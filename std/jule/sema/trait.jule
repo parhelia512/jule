@@ -7,7 +7,8 @@ use "std/jule/token"
 // Trait.
 struct Trait {
 	Token:       &token::Token
-	Name:        string
+	FullName:    string // See developer reference (16).
+	Name:        string // See developer reference (16).
 	Public:      bool
 	Inherits:    []&TypeSym
 	Methods:     []&Func
@@ -18,7 +19,7 @@ impl Kind for Trait {
 	// Implement: Kind
 	// Returns Trait's identifier.
 	fn String(*self): string {
-		return self.Name
+		return self.FullName
 	}
 
 	// Reports whether types are same.

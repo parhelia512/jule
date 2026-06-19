@@ -135,6 +135,10 @@ An example of a faulty analysis scenario:
   
   With the recheck strategy, when a function instance is created using pseudo generic types, any types that depend on these pseudo types—such as structures that require re-validation—are temporarily stored in memory. After dynamic type annotation resolves the actual types, the recheck algorithm is triggered to revalidate those stored types. This ensures that all types relying on the initially unresolved generic parameters are now correctly and fully type-checked using the concrete types. As a result, the issues arising from incomplete or mismatched type assumptions are resolved, making the generic system more robust and accurate without sacrificing performance.
 
+- **(16)** Some definitions have `FullName` and `Name` fields. While the `Name` field holds the name of the definition itself, the `FullName` field also includes the package name. For example, for the `Int` type located in the `std/math/big` package, the `Name` field holds `Int` while the `FullName` field holds `big::Int`.
+
+  - **(16.1)** The `FullName` field holds the same value as the `Name` field for the main package of the program. If the definition is within the root package where the module is defined, it uses the module name instead of the package name. Otherwise, it uses the package name.
+
 ### Implicit Imports
 
 Implicit imports are as described in developer reference (9). This section addresses which package is supported and what special behaviors it has.

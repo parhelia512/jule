@@ -28,8 +28,7 @@ impl Field {
 
 // Structure.
 struct Struct {
-	// Used for type parsing.
-	// Used declaration'sema sema for instance type checking.
+	// Associated sema.
 	sema: &sema
 
 	// This structure depended to these structures, except external ones.
@@ -41,7 +40,8 @@ struct Struct {
 	Depends: []&Struct
 
 	Token:      &token::Token
-	Name:       string
+	FullName:   string // See developer reference (16).
+	Name:       string // See developer reference (16).
 	Fields:     []&Field
 	Methods:    []&Func
 	Public:     bool
@@ -217,11 +217,10 @@ impl Kind for StructIns {
 	// Returns Struct's type kind as string.
 	fn String(*self): string {
 		mut kind := strings::Builder{}
-		kind.Grow(1 << 5)
 		if self.Decl.Extern {
 			kind.WriteString("extern.")!
 		}
-		kind.WriteString(self.Decl.Name)!
+		kind.WriteString(self.Decl.FullName)!
 		if len(self.Generics) > 0 {
 			kind.WriteByte('[')!
 			for i, g in self.Generics {

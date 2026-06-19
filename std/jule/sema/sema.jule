@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 use "std/conv"
-use "std/internal/jule/mod"
 use "std/jule"
 use "std/jule/ast"
 use "std/jule/build"
@@ -616,14 +615,14 @@ impl sema {
 		mut semas := make([]&sema, len(imports))
 		for (i, mut imp) in imports {
 			if !imp.Extern {
-				mut s := &sema{
+				mut sema := &sema{
 					files:    imp.Package.Files,
 					flags:    self.flags,
 					meta:     self.meta,
 					importer: self.importer,
 				}
-				s.setSemaFields()
-				semas[i] = s
+				sema.setSemaFields()
+				semas[i] = sema
 			}
 		}
 		for (i, mut imp) in imports {
@@ -1272,7 +1271,7 @@ impl sema {
 		// Type alias is strict, make strict type alias analysis.
 		// See developer reference (9).
 		if ta.Strict {
-			mut s := initNewStructType(ta.Name, pseudoSource)
+			mut s := initNewStructType(ta.FullName, ta.Name, pseudoSource)
 			s.Decl.sema = self
 			s.Decl.Extern = ta.Extern
 			s.Decl.Token = ta.Token

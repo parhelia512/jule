@@ -52,11 +52,12 @@ impl resource::File for file {
 
 // Default importer for the reference Jule compiler.
 struct importer {
-	mod:   &mod::Mod
-	mods:  []&mod::Mod
-	pkgs:  []&sema::ImportInfo
-	tags:  []string
-	files: map[string]resource::File
+	mainPackagePath: string                    // Path of the main package.
+	mod:             &mod::Mod                 // Current module.
+	mods:            []&mod::Mod               // Registered modules.
+	pkgs:            []&sema::ImportInfo       // Registered packages.
+	tags:            []string                  // Build tags.
+	files:           map[string]resource::File // Included files.
 }
 
 impl sema::Importer for importer {
@@ -77,6 +78,18 @@ impl sema::Importer for importer {
 
 	fn Mods(mut *self): []&mod::Mod {
 		return self.mods
+	}
+
+	fn RegisterMod(mut *self) {
+		self.registerMod(nil)
+	}
+
+	fn SetMainPackagePath(mut *self, path: string) {
+		self.mainPackagePath = path
+	}
+
+	fn GetMainPackagePath(mut *self): string {
+		return self.mainPackagePath
 	}
 
 	fn GetImport(mut *self, path: string): &sema::ImportInfo {
@@ -105,6 +118,13 @@ impl sema::Importer for importer {
 				})
 				if len(errs) != 0 {
 					return nil, errs
+				}
+				newMod.ID = mod::InvalidID
+				for (_, mut mod) in self.mods {
+					if newMod.Equal(mod) {
+						newMod = mod
+						break
+					}
 				}
 				self.mod = newMod
 			}
@@ -160,19 +180,7 @@ impl sema::Importer for importer {
 				return
 			}
 		}
-
-		if self.mod != nil {
-			for i, mod in self.mods {
-				if self.mod.Equal(mod) {
-					imp.ModID = mod::ID(i)
-					goto Append
-				}
-			}
-			imp.ModID = mod::ID(len(self.mods))
-			self.mods = append(self.mods, self.mod)
-		}
-
-	Append:
+		self.registerMod(imp)
 		self.pkgs = append(self.pkgs, imp)
 	}
 
@@ -199,6 +207,27 @@ impl sema::Importer for importer {
 }
 
 impl importer {
+	// Internal implementation of [Importer.RegisterMod].
+	fn registerMod(mut *self, mut imp: &sema::ImportInfo) {
+		if self.mod == nil {
+			return
+		}
+		for (i, mut mod) in self.mods {
+			if self.mod == mod || self.mod.Equal(mod) {
+				self.mod.ID = mod.ID
+				if imp != nil {
+					imp.ModID = mod::ID(i)
+				}
+				return
+			}
+		}
+		self.mod.ID = mod::ID(len(self.mods))
+		if imp != nil {
+			imp.ModID = self.mod.ID
+		}
+		self.mods = append(self.mods, self.mod)
+	}
+
 	// Reports whether file passes build directives.
 	fn isPassBuildDirectives(mut *self, mut file: &ast::AST): (bool, []log::Log) {
 		for (_, mut td) in file.TopDirectives {

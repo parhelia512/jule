@@ -31,6 +31,21 @@ trait Importer {
 	// The return value may be mutable reference to the internal buffer.
 	fn Mods(mut *self): []&mod::Mod
 
+	// Registers the current module.
+	// Sets the module identity to a valid ID and
+	// then registers it as a used module.
+	//
+	// If the current module is nil, then it does nothing.
+	// If the current module is already registered, then it does nothing.
+	fn RegisterMod(mut *self)
+
+	// Sets path as the main package path.
+	fn SetMainPackagePath(mut *self, path: string)
+
+	// Returns the main package path, specified with [SetMainPackagePath].
+	// The default value is empty string.
+	fn GetMainPackagePath(mut *self): string
+
 	// Returns &ImportInfo by path.
 	// This function accepted as returns already imported and checked package.
 	// If returns not-nil value, will be used instead of ImportPackage
@@ -41,12 +56,18 @@ trait Importer {
 	// Should return abstract syntax tree of package files.
 	// Logs accepts as error.
 	// Updates module to package's module if exist when updateMod is true.
+	// But the module and package will not be registered.
+	// Package and module can be registered with [Imported].
+	// For only module, it can be registered with [RegisterMod].
+	//
+	// The module identity will be invalid ID.
+	// The [Imported] or [RegisterMod] will assign a valid ID when registered.
 	fn ImportPackage(mut *self, path: string, updateMod: bool): ([]&ast::AST, []log::Log)
 
-	// Invoked after the package is imported.
-	// Sets module identitity of the imported package to current module.
-	// If the current module is not registered, for example,
-	// updated by the ImportPackage it will be registered.
+	// Invoke after the package is imported.
+	// Registers package as an imported and used package.
+	// If the current module is not registered, sets module identitity and
+	// register it as used modules.
 	fn Imported(mut *self, mut &ImportInfo)
 
 	// Returns all imported packages.

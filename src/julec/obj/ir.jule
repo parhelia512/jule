@@ -61,6 +61,10 @@ impl IR {
 			return nil, nil
 		}
 
+		// Register the main module, if exist.
+		ir.Importer.RegisterMod()
+		ir.Importer.SetMainPackagePath(path)
+
 		// Push runtime package to first file.
 		// Each Jule program should import this standard package.
 		mut firstFile := files[0]
