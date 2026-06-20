@@ -686,7 +686,7 @@ impl symBuilder {
 		// use single memory allocation for both values.
 		let mut buf: strings::Builder
 		// If our module's path is equal to the declaration's package path,
-		// do no use name of the package. Beause this package is the root
+		// do no use name of the package. Because this package is the root
 		// package of the module. Like the import paths, use module name.
 		// Otherwise write the package name.
 		// Thus we can use package name for sub-packages of the module.
