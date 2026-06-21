@@ -1802,6 +1802,14 @@ impl eval {
 			return nil
 		}
 
+		// For more helpful error messages, check for the type generics.
+		// Type may be a generic but not instantiated yet.
+		s := t.SoftStruct()
+		if s != nil && !self.s.checkGenericQuantity(len(s.Decl.Generics), len(s.Generics), errorToken) {
+			self.pushSuggestion("try to instantiate the generic type @ before casting", t.String())
+			return nil
+		}
+
 		// if actual types are equal, allow casting
 		// otherwise check casting in more detail
 		if !v.Type.deepActualEqual(t) {
