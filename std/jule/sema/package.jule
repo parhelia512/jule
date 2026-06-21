@@ -16,6 +16,9 @@ use "std/strings"
 // The default importer implementation is highly recommended.
 // 3rd-party importer implementations may cause unpredictable issues.
 trait Importer {
+	// Reports whether the build tag is defined.
+	fn HasTag(mut *self, tag: string): bool
+
 	// Set current module.
 	// Set to nil if module is not exist.
 	fn SetMod(mut *self, mut mod: &mod::Mod)

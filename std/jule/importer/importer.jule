@@ -61,6 +61,10 @@ struct importer {
 }
 
 impl sema::Importer for importer {
+	fn HasTag(mut *self, tag: string): bool {
+		return findTag(self.tags, tag) != -1
+	}
+
 	fn SetMod(mut *self, mut mod: &mod::Mod) {
 		self.mod = mod
 	}
