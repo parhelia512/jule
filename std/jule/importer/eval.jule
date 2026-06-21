@@ -1,0 +1,164 @@
+// Copyright 2023 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+use "std/jule/ast"
+use "std/jule/build"
+use "std/jule/log"
+use "std/jule/token"
+
+// Eval directive expression.
+// Directive expressions are logical expressions and uses tags.
+//
+// Read manual for more information about syntax or etc:
+// https://manual.jule.dev/compiler/directives#directive-expressions
+struct directiveEval {
+	logs: []log::Log
+	d:    &ast::Directive
+	off:  int
+	tok:  &token::Token
+	tags: []string
+}
+
+impl directiveEval {
+	fn pushErr(mut *self, t: &token::Token, fmt: string, args: ...any) {
+		self.logs = append(self.logs, log::Log{
+			Kind:   log::Error,
+			Row:    t.Row,
+			Column: t.Column,
+			Path:   t.File.Path,
+			Text:   log::Logf(fmt, args...),
+		})
+	}
+
+	// Advance to the next token.
+	fn next(mut *self) {
+		if self.off >= len(self.d.Args) {
+			self.tok = nil
+		} else {
+			self.tok = self.d.Args[self.off]
+			self.off++
+		}
+	}
+
+	fn errorExpected(mut *self, tok: &token::Token, mut msg: string) {
+		self.pushErr(tok, msg)
+	}
+
+	fn expect(mut *self, op: int, expected: string): (err: bool) {
+		if self.tok.ID != op {
+			self.errorExpected(self.tok, expected)
+			return false
+		}
+		self.next() // make progress
+		return true
+	}
+
+	fn tokPrec(*self): (int, int) {
+		return self.tok.ID, self.tok.Precedence()
+	}
+
+	// Eval directive tag.
+	fn evalDirectiveName(*self, name: string): bool {
+		return findTag(self.tags, name) >= 0
+	}
+
+	fn evalOperand(mut *self): bool {
+		if self.tok == nil {
+			self.errorExpected(self.tok, "expected operand")
+			return false
+		}
+		match self.tok.ID {
+		| token::NAME:
+			x := self.evalDirectiveName(self.tok.Kind)
+			self.next()
+			return x
+		| token::LPAREN:
+			self.next()
+			x := self.evalExpr()
+			if len(self.logs) > 0 {
+				return false
+			}
+			if self.expect(token::RPAREN, "expected )") {
+				return false
+			}
+			return x
+		|:
+			self.errorExpected(self.tok, "expected operand")
+			return false
+		}
+	}
+
+	fn evalUnaryExpr(mut *self): bool {
+		if self.tok == nil {
+			self.errorExpected(self.tok, "expected operand")
+			return false
+		}
+		match self.tok.ID {
+		| token::NOT:
+			self.next()
+			return !self.evalUnaryExpr()
+		|:
+			return self.evalOperand()
+		}
+	}
+
+	fn evalBinaryExpr(mut *self, prec1: int): bool {
+		mut x := self.evalUnaryExpr()
+		if len(self.logs) > 0 {
+			return false
+		}
+		for {
+			if self.tok == nil { // EOF
+				return x
+			}
+			op, oprec := self.tokPrec()
+			if op != token::LOR && op != token::LAND {
+				return x
+			}
+			if oprec < prec1 {
+				return x
+			}
+			self.next()
+			y := self.evalBinaryExpr(oprec + 1)
+			if len(self.logs) > 0 {
+				return false
+			}
+			x = evalOperands(x, y, op)
+		}
+	}
+
+	fn evalExpr(mut *self): bool {
+		return self.evalBinaryExpr(token::LowestPrec + 1)
+	}
+
+	fn eval(mut *self): bool {
+		self.next() // Advance to the first token.
+		if self.tok == nil { // EOF
+			self.pushErr(self.d.Tag, "missing expression")
+			return false
+		}
+
+		result := self.evalExpr()
+
+		// Check for EOF.
+		// All expression must be consumed.
+		if self.tok != nil {
+			self.pushErr(self.tok, "invalid syntax")
+			return false
+		}
+
+		return result
+	}
+}
+
+fn evalOperands(x: bool, y: bool, op: int): bool {
+	match op {
+	| token::LOR:
+		return x || y
+	| token::LAND:
+		return x && y
+	|:
+		panic("unreachable")
+	}
+}
