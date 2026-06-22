@@ -397,7 +397,8 @@ impl assignTypeChecker {
 		match {
 		| types::IsCmplx(kind):
 			if !cmplxAssignable(kind, self.v) {
-				self.s.pushErr(self.errorToken, "untyped value @ overflows @", self.v.Constant.String(), self.dest.String())
+				self.s.pushErr(self.errorToken, "untyped value @ overflows @",
+					self.v.Constant.String(), self.dest.String())
 				return true // Return true to avoid more errors.
 			}
 			// We have to do implicit casting if needed.
@@ -406,26 +407,29 @@ impl assignTypeChecker {
 			castConstByType(self.s, self.errorToken, self.dest, self.v)
 			self.v.Type = self.dest
 			self.v.untyped = false
+			return true
 		| types::IsFloat(kind):
 			if !floatAssignable(kind, self.v) {
-				self.s.pushErr(self.errorToken, "untyped value @ overflows @", self.v.Constant.String(), self.dest.String())
+				self.s.pushErr(self.errorToken, "untyped value @ overflows @",
+					self.v.Constant.String(), self.dest.String())
 				return true // Return true to avoid more errors.
 			}
 			self.v.Constant.Kind = kind
 			self.v.Type = self.dest
 			self.v.untyped = false
+			return true
 		| types::IsInt(kind):
 			if !intAssignable(kind, self.v) {
-				self.s.pushErr(self.errorToken, "untyped value @ overflows @", self.v.Constant.String(), self.dest.String())
+				self.s.pushErr(self.errorToken, "untyped value @ overflows @",
+					self.v.Constant.String(), self.dest.String())
 				return true // Return true to avoid more errors.
 			}
 			self.v.Constant.Kind = kind
 			self.v.Type = self.dest
 			self.v.untyped = false
-		|:
-			return false
+			return true
 		}
-		return true
+		return false
 	}
 
 	fn checkFunc(mut *self): bool {

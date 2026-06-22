@@ -819,11 +819,14 @@ impl sema {
 		if destIsRef {
 			if firstAssignToDest {
 				if !v.IsNil() && !dest.Equal(v.Type) {
-					self.pushErr(errorToken, "mismatched types: @ and @", dest.String(), v.Type.String())
+					self.pushErr(errorToken, "mismatched types: @ and @",
+						dest.String(), v.Type.String())
 					return false
 				}
 			} else if !v.IsNil() {
-				self.pushErr(errorToken, "reference pointer type @ can only assign to nil", dest.String())
+				self.pushErr(errorToken,
+					"reference pointer type @ can only assign to nil",
+					dest.String())
 				return false
 			}
 		} else {
@@ -2299,7 +2302,7 @@ impl sema {
 		}
 	}
 
-	// Evaluates value of variable if initialized.
+	// Evaluates value of variable if it is initialized.
 	// Reports if value-check needed.
 	fn evalVarValue(mut &self, mut v: &Var, mut l: Lookup): (valCheck: bool) {
 		// Determine with v.Scope=nil condition because scope analysis may

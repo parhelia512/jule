@@ -4431,16 +4431,8 @@ impl binaryEval {
 			rs := getUntypedCmpScore(rp.Kind)
 			if ls > rs {
 				self.r.Type = self.l.Type
-				if self.r.IsConst() {
-					self.r.Constant.Kind = lp.Kind
-				}
-				self.l.untyped = false
 			} else if ls < rs {
 				self.l.Type = self.r.Type
-				if self.l.IsConst() {
-					self.l.Constant.Kind = rp.Kind
-				}
-				self.l.untyped = false
 			}
 		}
 	}
