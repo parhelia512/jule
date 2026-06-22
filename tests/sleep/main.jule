@@ -2,16 +2,31 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
-use "std/math/rand"
+use "std/sync/atomic"
 use "std/time"
 
-async fn main() {
-	mut i := 0
-	for i < 10; i++ {
-		dur := time::Duration(i64(time::Millisecond) * rand::I64N(1000))
-		print("Sleeping for ")
-		println(dur.String())
-		time::Sleep(dur).await
+async fn checkTiming() {
+	mut x := new(int)
+	co async fn() {
+		time::Sleep(1 * time::Millisecond).await
+		atomic::Store(&*x, 1, atomic::Release)
+	}()
+	time::Sleep(2 * time::Millisecond).await
+	if atomic::Load(&*x, atomic::Acquire) != 1 {
+		panic("coroutine runs before earlier timer")
 	}
-	println("Done!")
+}
+
+async fn checkDuration() {
+	now := time::Now()
+	time::Sleep(10 * time::Nanosecond).await
+	diff := time::Now().Sub(now)
+	if diff < 10*time::Nanosecond {
+		panic("sleep timer fired earlier than expected")
+	}
+}
+
+async fn main() {
+	checkTiming().await
+	checkDuration().await
 }
