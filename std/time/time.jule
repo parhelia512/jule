@@ -346,10 +346,10 @@ impl Time {
 		return t
 	}
 
-	// Returns the duration t(self)-u. If the result exceeds the maximum (or minimum)
+	// Returns the duration time-u. If the result exceeds the maximum (or minimum)
 	// value that can be stored in a [Duration], the maximum (or minimum) duration
 	// will be returned.
-	// To compute t-d for a duration d, use t.Add(-d).
+	// To compute time-d for a duration d, use sef.Add(-d).
 	fn Sub(*self, u: Time): Duration {
 		d := Duration(self.sec-u.sec)*Second + Duration(self.nsec-u.nsec)
 		// Check for overflow or underflow.
@@ -357,9 +357,9 @@ impl Time {
 		| u.Add(d).Equal(*self):
 			return d // d is correct
 		| self.Before(u):
-			return durationMin // t - u is negative out of range
+			return durationMin // time - u is negative out of range
 		|:
-			return durationMax // t - u is positive out of range
+			return durationMax // time - u is positive out of range
 		}
 	}
 
@@ -373,8 +373,8 @@ impl Time {
 		return self.sec < u.sec || self.sec == u.sec && self.nsec < u.nsec
 	}
 
-	// Compares the time instant t(self) with u. If t is before u, it returns -1;
-	// if t is after u, it returns +1; if they're the same, it returns 0.
+	// Compares the time instant with u. If time is before u, it returns -1;
+	// if time is after u, it returns +1; if they're the same, it returns 0.
 	fn Compare(*self, u: Time): int {
 		mut tc, mut uc := self.sec, u.sec
 		if tc == uc {
