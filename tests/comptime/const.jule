@@ -1,0 +1,11 @@
+// Copyright 2026 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+const z: i64 = -(292277022400 * 365.2425)
+
+fn init() {
+	if z != -106751990353932 {
+		panic("unexpected z value")
+	}
+}
