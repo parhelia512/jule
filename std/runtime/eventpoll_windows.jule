@@ -171,29 +171,10 @@ fn eventpoll(mut delay: i64, mut &toRun: *[prunqsize]c): u32 {
 		wait = _INFINITE
 	} else if delay == 0 {
 		wait = 0
+	} else if delay < 1e6 {
+		wait = 1
 	} else {
-		// Anything < 1ms still sleeps ~1ms on Windows.
-		if delay < _Millisecond {
-			wait = 1
-		} else {
-			// Convert delay to milliseconds, rounding *up* instead of truncating.
-			//
-			// This computation implements a ceiling division without using floating-point:
-			//	wait = ceil(delay / 1ms)
-			// which is equivalent to:
-			//	(delay + 1ms - 1) / 1ms
-			//
-			// Rounding up is critical:
-			//	- It guarantees that the timer never fires *earlier* than requested.
-			//	- Early wakeups break scheduler semantics and can cause subtle race bugs.
-			//
-			// Any delay smaller than 1ms is clamped to 1ms intentionally.
-			// This is NOT a loss of precision but a correctness requirement.
-			//
-			// Therefore, enforcing a minimum wait of 1ms preserves correctness,
-			// avoids spin loops, and aligns with real OS timer granularity.
-			wait = u32((delay + _Millisecond - 1) / _Millisecond)
-		}
+		wait = u32(delay / 1e6)
 	}
 	let mut entries: [64]overlappedEntry
 	mut n := u32(len(entries) / COMAXPROCS())

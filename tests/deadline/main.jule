@@ -68,7 +68,7 @@ async fn switchToLaterDeadline() {
 	// Initial deadline is really small but no problem.
 	// Read call will block anyway, then out main coroutine should continue to run.
 	// Because condition variable will be signaled.
-	// So we know read deadline will not be triggerred before main coroutine run.
+	// So we know read deadline will not be triggered before main coroutine run.
 	// Scheduler will look for coroutines first.
 	conn.SetReadDeadline(1 * time::Millisecond)!
 	mut wg := sync::WaitGroup.New()
