@@ -30,14 +30,14 @@ async fn switchToEarlierDeadline() {
 		cond.Wait().await
 	}
 	cond.Unlock()
-	mut now := time::Now()
+	mut timestamp := time::Instant.Now()
 	conn.SetReadDeadline(1 * time::Second)!
 	wg.Wait().await
-	mut diff := time::Now().Sub(now)
-	if diff < 1*time::Second {
+	mut elapsed := timestamp.Since()
+	if elapsed < 1*time::Second {
 		panic("deadline timer fired earlier than expected")
 	}
-	if diff > 2*time::Second {
+	if elapsed > 2*time::Second {
 		panic("deadline timer fired too late than expected")
 	}
 	// We expect timeout error.
@@ -48,13 +48,13 @@ async fn switchToEarlierDeadline() {
 Good:
 	// Test with a clear deadline after timeout.
 	conn.SetReadDeadline(1 * time::Second)!
-	now = time::Now()
+	timestamp = time::Instant.Now()
 	conn.Read(make([]byte, 128)).await else {
-		diff = time::Now().Sub(now)
-		if diff < 1*time::Second {
+		elapsed = timestamp.Since()
+		if elapsed < 1*time::Second {
 			panic("deadline timer fired earlier than expected")
 		}
-		if diff > 2*time::Second {
+		if elapsed > 2*time::Second {
 			panic("deadline timer fired too late than expected")
 		}
 		return
@@ -90,14 +90,14 @@ async fn switchToLaterDeadline() {
 		cond.Wait().await
 	}
 	cond.Unlock()
-	mut now := time::Now()
+	mut timestamp := time::Instant.Now()
 	conn.SetReadDeadline(1 * time::Second)!
 	wg.Wait().await
-	mut diff := time::Now().Sub(now)
-	if diff < 1*time::Second {
+	mut elapsed := timestamp.Since()
+	if elapsed < 1*time::Second {
 		panic("deadline timer fired earlier than expected")
 	}
-	if diff > 2*time::Second {
+	if elapsed > 2*time::Second {
 		panic("deadline timer fired too late than expected")
 	}
 	// We expect timeout error.
