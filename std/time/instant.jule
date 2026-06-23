@@ -1,0 +1,27 @@
+// Copyright 2026 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+use "std/runtime"
+
+// Represents a specific point in monotonic time.
+struct Instant {
+	mono: i64
+}
+
+impl Instant {
+	// Returns the current monotonic time point.
+	fn Now(): Instant {
+		return Instant{mono: runtime::nanotime()}
+	}
+
+	// Returns the monotonic time as raw integer.
+	fn Raw(*self): i64 {
+		return self.mono
+	}
+
+	// Returns the time elapsed since the monotonic time point.
+	fn Since(*self): Duration {
+		return Duration(runtime::nanotime() - self.mono)
+	}
+}
