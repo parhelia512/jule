@@ -18,10 +18,10 @@ async fn checkTiming() {
 }
 
 async fn checkDuration() {
-	now := time::Now()
+	timestamp := time::Instant.Now()
 	time::Sleep(10 * time::Nanosecond).await
-	diff := time::Now().Sub(now)
-	if diff < 10*time::Nanosecond {
+	elapsed := timestamp.Since()
+	if elapsed < 10*time::Nanosecond {
 		panic("sleep timer fired earlier than expected")
 	}
 }
