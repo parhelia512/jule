@@ -75,20 +75,19 @@ fn EqualModels(mut l: sema::Expr, mut r: sema::Expr): bool {
 		mut lv := l.(&sema::Var)
 		mut rv := r.(&sema::Var)
 		if !lv.AST.Reference && !rv.AST.Reference ||
-			lv.ValueSym == nil || lv.ValueSym.Value == nil ||
-			rv.ValueSym == nil || rv.ValueSym.Value == nil {
+			lv.Value == nil || rv.Value == nil {
 			// Variables are not reference (or points to unknown such as parameters), compare directly.
 			return lv == rv
 		}
 		// Dereference variables and compare the referenced values.
 		if lv.AST.Reference {
 			if rv.AST.Reference {
-				return EqualModels(lv.ValueSym.Value.Model, rv.ValueSym.Value.Model)
+				return EqualModels(lv.Value.Model, rv.Value.Model)
 			}
-			return EqualModels(lv.ValueSym.Value.Model, rv)
+			return EqualModels(lv.Value.Model, rv)
 		}
 		// lv is not reference, and rv is reference.
-		return EqualModels(lv, rv.ValueSym.Value.Model)
+		return EqualModels(lv, rv.Value.Model)
 	| &sema::StructSubIdentExpr:
 		mut li := l.(&sema::StructSubIdentExpr)
 		mut ri := r.(&sema::StructSubIdentExpr)

@@ -30,7 +30,7 @@ impl Optimizer {
 
 	fn optimizeGlobal(mut *self, mut v: &sema::Var) {
 		if !v.AST.Extern {
-			self.optimizeExpr(&v.ValueSym.Value.Model)
+			self.optimizeExpr(&v.Value.Model)
 		}
 	}
 

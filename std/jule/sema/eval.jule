@@ -78,12 +78,6 @@ impl Value {
 	}
 }
 
-// Value.
-struct ValueSym {
-	Expr:  &ast::Expr
-	Value: &Value
-}
-
 // Information about expressions that evaluating for assignments.
 struct target {
 	ignored: bool // whether the destination ignores the evaluated expression.
@@ -611,7 +605,7 @@ impl eval {
 		// Do not check if v.Used is true. It means it already analyzed.
 		// If variable is global, it should be have initialize expression.
 		// So, nil value means something may be wrong.
-		if !v.Checked && !v.AST.Extern && v.Scope == nil && (v.ValueSym == nil || v.ValueSym.Value == nil) {
+		if !v.Checked && !v.AST.Extern && v.Scope == nil && v.Value == nil {
 			// Save source file of global variable.
 			// Use it for evaluation and checking for correct analysis.
 			// Otherwise, evaluation problems may occur.
@@ -632,7 +626,7 @@ impl eval {
 		// kind should not be nil because each variable must have a valid type
 		// we also have to check the value for enum variables
 		v.Used = true
-		if v.Type == nil || v.IsEnumField() && (v.ValueSym == nil || v.ValueSym.Value == nil) {
+		if v.Type == nil || v.IsEnumField() && v.Value == nil {
 			return nil
 		}
 
@@ -644,12 +638,12 @@ impl eval {
 			Type:      v.Type,
 			Model:     v,
 		}
-		if v.ValueSym != nil && v.ValueSym.Value != nil {
+		if v.Value != nil {
 			if !v.AST.Extern && v.IsInitialized() {
-				val.IsRune = v.ValueSym.Value.IsRune
+				val.IsRune = v.Value.IsRune
 			}
-			if v.AST.Const && v.ValueSym.Value.Constant != nil {
-				val.Constant = new(constant::Const, *v.ValueSym.Value.Constant)
+			if v.AST.Const && v.Value.Constant != nil {
+				val.Constant = new(constant::Const, *v.Value.Constant)
 				val.Model = val.Constant
 				if v.untypedConstant() {
 					val.untyped = true
@@ -5141,9 +5135,7 @@ fn buildErrorVar(mut s: &Scope, mut fc: &ast::CallExpr): &Var {
 		Used:  true,
 		Type:  primAny,
 		Scope: s,
-		ValueSym: &ValueSym{
-			Value: new(Value),
-		},
+		Value: new(Value),
 	}
 }
 

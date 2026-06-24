@@ -65,10 +65,8 @@ let mut builtinVars = map[string]&Var{
 			Const:   true,
 		},
 		Type: primNil,
-		ValueSym: &ValueSym{
-			Value: &Value{
-				Constant: constant::NewNil(),
-			},
+		Value: &Value{
+			Constant: constant::NewNil(),
 		},
 	},
 	"true": &Var{
@@ -78,11 +76,9 @@ let mut builtinVars = map[string]&Var{
 			Const:   true,
 		},
 		Type: primBool,
-		ValueSym: &ValueSym{
-			Value: &Value{
-				Constant: constant::NewBool(true),
-				untyped:  true,
-			},
+		Value: &Value{
+			Constant: constant::NewBool(true),
+			untyped:  true,
 		},
 	},
 	"false": &Var{
@@ -92,11 +88,9 @@ let mut builtinVars = map[string]&Var{
 			Const:   true,
 		},
 		Type: primBool,
-		ValueSym: &ValueSym{
-			Value: &Value{
-				Constant: constant::NewBool(false),
-				untyped:  true,
-			},
+		Value: &Value{
+			Constant: constant::NewBool(false),
+			untyped:  true,
 		},
 	},
 }
@@ -1564,11 +1558,9 @@ fn buildIota(i: i64): &Var {
 		},
 		Checked: true,
 		Type:    primInt,
-		ValueSym: &ValueSym{
-			Value: &Value{
-				Constant: constant::NewI64(i),
-				untyped:  true,
-			},
+		Value: &Value{
+			Constant: constant::NewI64(i),
+			untyped:  true,
 		},
 	}
 }

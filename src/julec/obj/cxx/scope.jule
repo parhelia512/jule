@@ -1341,7 +1341,7 @@ impl scopeCoder {
 				self.oc.write(";")
 			| &sema::Var:
 				mut v := case.Stmt.(&sema::Var)
-				self.oc.varInitExpr(v, fn|| self.oc.ec.possibleRefExpr(v.ValueSym.Value.Model))
+				self.oc.varInitExpr(v, fn|| self.oc.ec.possibleRefExpr(v.Value.Model))
 			| &sema::Assign:
 				mut assign := case.Stmt.(&sema::Assign)
 				self.assign(assign)
@@ -1502,7 +1502,7 @@ impl scopeCoder {
 				let mut varBuf: strings::Builder
 				self.oc.ic.var(&varBuf, v)
 				data = varBuf.String()
-				value = v.ValueSym.Value.Model
+				value = v.Value.Model
 			| &sema::Assign:
 				mut assign := case.Stmt.(&sema::Assign)
 

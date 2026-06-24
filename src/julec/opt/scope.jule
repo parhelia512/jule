@@ -71,27 +71,28 @@ impl scopeOptimizer {
 	}
 
 	fn optimizeVar(mut &self, mut v: &sema::Var) {
-		if v.ValueSym != nil {
-			if self.data.nils != nil &&
-				isNilValidType(v.Type) &&
-				isGuaranteedNonNilExpr(self.data.nils, v.ValueSym.Value.Model) {
-				const safe = true
-				self.data.nils.pushVar(getNilVar(v), safe)
-			}
-			if self.data.dynamic != nil {
-				mut kind := isTypeGuaranteedDynamicValue(
-					self.data.dynamic, v.Type, v.ValueSym.Value.Model)
-				if kind != nil {
-					if isDynamicValidType(v.Type) {
-						self.data.dynamic.pushVar(getDynamicVar(v), kind)
-					}
+		if v.Value == nil {
+			return
+		}
+		if self.data.nils != nil &&
+			isNilValidType(v.Type) &&
+			isGuaranteedNonNilExpr(self.data.nils, v.Value.Model) {
+			const safe = true
+			self.data.nils.pushVar(getNilVar(v), safe)
+		}
+		if self.data.dynamic != nil {
+			mut kind := isTypeGuaranteedDynamicValue(
+				self.data.dynamic, v.Type, v.Value.Model)
+			if kind != nil {
+				if isDynamicValidType(v.Type) {
+					self.data.dynamic.pushVar(getDynamicVar(v), kind)
 				}
 			}
-			if self.data.boundary != nil && isBoundaryValidType(v.Type) {
-				self.data.boundary.handleVarByExpr(uintptr(v), v.ValueSym.Value.Model)
-			}
-			exprOptimizer.optimizeValue(&v.ValueSym.Value.Model, self.data, self)
 		}
+		if self.data.boundary != nil && isBoundaryValidType(v.Type) {
+			self.data.boundary.handleVarByExpr(uintptr(v), v.Value.Model)
+		}
+		exprOptimizer.optimizeValue(&v.Value.Model, self.data, self)
 	}
 
 	fn optimizeConditional(mut &self, mut c: &sema::Conditional) {
@@ -329,7 +330,7 @@ impl scopeOptimizer {
 				exprOptimizer.optimizeValue(&v.Model, self.data, self)
 			| &sema::Var:
 				mut v := case.Stmt.(&sema::Var)
-				exprOptimizer.optimizeValue(&v.ValueSym.Value.Model, self.data, self)
+				exprOptimizer.optimizeValue(&v.Value.Model, self.data, self)
 			| &sema::Assign:
 				mut assign := case.Stmt.(&sema::Assign)
 				exprOptimizer.optimizeValue(&assign.Right.Model, self.data, self)
@@ -766,10 +767,7 @@ impl scopeOptimizer {
 				j = slices::Index(assign.Decls, lv)
 			}
 			if j != -1 {
-				if lv.ValueSym == nil {
-					lv.ValueSym = new(sema::ValueSym)
-				}
-				lv.ValueSym.Value = r
+				lv.Value = r
 				self.scope.Stmts = slices::Insert(self.scope.Stmts, offset, lv)
 				assign.Decls = append(assign.Decls[:j], assign.Decls[j:]...)
 			} else {

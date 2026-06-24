@@ -74,15 +74,6 @@ struct Pass {
 	Args:  []string
 }
 
-fn buildExpr(mut expr: &ast::Expr): &ValueSym {
-	if expr == nil {
-		return nil
-	}
-	return &ValueSym{
-		Expr: expr,
-	}
-}
-
 fn buildTypeAlias(mut decl: &ast::TypeAlias): &TypeAlias {
 	return &TypeAlias{
 		AST:      decl,
@@ -167,8 +158,8 @@ fn buildEnumItems(mut decls: []&ast::EnumItem): []&Var {
 				Public: true,
 				Const:  true,
 				Token:  decl.Token,
+				X:      decl.X,
 			},
-			ValueSym:   buildExpr(decl.X),
 			Group:      items,
 			GroupIndex: i,
 			Refers:     ReferenceStack.new(),
@@ -210,9 +201,8 @@ fn buildTypeEnum(mut decl: &ast::TypeEnum): &TypeEnum {
 
 fn buildVar(mut decl: &ast::Var): &Var {
 	return &Var{
-		AST:      decl,
-		Refers:   ReferenceStack.new(),
-		ValueSym: buildExpr(decl.X),
+		AST:    decl,
+		Refers: ReferenceStack.new(),
 	}
 }
 

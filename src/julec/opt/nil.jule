@@ -105,13 +105,13 @@ Head:
 		match type m {
 		| &sema::Var:
 			v = m.(&sema::Var)
-			if !v.AST.Reference || v.ValueSym == nil || v.ValueSym.Value == nil {
+			if !v.AST.Reference || v.Value == nil {
 				// Variable is not reference (or points to unknown such as parameters), return address of it.
 				return uintptr(m.(&sema::Var))
 			}
 			// Variable is reference, it should be initialized at source code.
 			// Investigate the initial expression for variable address.
-			mut uem := v.ValueSym.Value.Model.(&sema::UnaryExpr)
+			mut uem := v.Value.Model.(&sema::UnaryExpr)
 			m = uem.Expr.Model
 			goto Head
 		| &sema::StructSubIdentExpr:

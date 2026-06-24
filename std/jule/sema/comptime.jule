@@ -95,16 +95,12 @@ impl comptimeRangeKind for comptimeStructFields {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeStructField),
 			}
@@ -125,8 +121,8 @@ impl comptimeRangeKind for comptimeStructFields {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
@@ -204,16 +200,12 @@ impl comptimeRangeKind for comptimeStatics {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeStatic),
 			}
@@ -234,8 +226,8 @@ impl comptimeRangeKind for comptimeStatics {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
@@ -299,16 +291,12 @@ impl comptimeRangeKind for comptimeEnumFields {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeEnumField),
 			}
@@ -329,8 +317,8 @@ impl comptimeRangeKind for comptimeEnumFields {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
@@ -428,16 +416,12 @@ impl comptimeRangeKind for comptimeParams {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeParam),
 			}
@@ -458,8 +442,8 @@ impl comptimeRangeKind for comptimeParams {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
@@ -486,16 +470,12 @@ impl comptimeRangeKind for comptimeTypeInfos {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeTypeInfo),
 			}
@@ -514,8 +494,8 @@ impl comptimeRangeKind for comptimeTypeInfos {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
@@ -1394,16 +1374,12 @@ impl comptimeRangeKind for comptimeFiles {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeFile),
 			}
@@ -1424,8 +1400,8 @@ impl comptimeRangeKind for comptimeFiles {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
@@ -1531,16 +1507,12 @@ impl comptimeRangeKind for comptimeDecls {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeDecl),
 			}
@@ -1559,8 +1531,8 @@ impl comptimeRangeKind for comptimeDecls {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
@@ -2173,16 +2145,12 @@ impl comptimeRangeKind for comptimeSliceRange {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			keyA.AST.Const = true
-			keyA.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
 			keyB.AST.Const = true
-			keyB.ValueSym = &ValueSym{
-				Value: new(Value),
-			}
+			keyB.Value = new(Value)
 			keyB.Type = self.s.ElemType
 		}
 	}
@@ -2194,12 +2162,12 @@ impl comptimeRangeKind for comptimeSliceRange {
 	fn step(mut *self, i: int, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
 			// Kind should be assigned by caller.
-			keyA.ValueSym.Value.Constant = constant::NewI64(i64(i))
-			keyA.ValueSym.Value.Model = keyA.ValueSym.Value.Constant
+			keyA.Value.Constant = constant::NewI64(i64(i))
+			keyA.Value.Model = keyA.Value.Constant
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.ValueSym.Value = self.s.Elems[i]
+			keyB.Value = self.s.Elems[i]
 		}
 	}
 

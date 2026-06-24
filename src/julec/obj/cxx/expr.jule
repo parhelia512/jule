@@ -2476,7 +2476,7 @@ impl exprCoder {
 		}
 		mut enm := t.Enum()
 		if enm != nil {
-			self.model(enm.Items[0].ValueSym.Value.Model)
+			self.model(enm.Items[0].Value.Model)
 			return
 		}
 		prim := t.Prim()

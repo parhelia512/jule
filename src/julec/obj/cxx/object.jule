@@ -1133,10 +1133,10 @@ impl ObjectCoder {
 	}
 
 	fn commonVarInit(mut &self, mut v: &sema::Var) {
-		mut fc := isFallibleResult(v.ValueSym.Value.Model)
+		mut fc := isFallibleResult(v.Value.Model)
 		if fc != nil {
 			self.ec.handleFallibleCallWithData(fc, useExprMemory{
-				Loc:      v.ValueSym.Expr.Token,
+				Loc:      v.AST.X.Token,
 				DestType: v.Type,
 				Model:    v,
 				Type:     useExprPlain,
@@ -1146,7 +1146,7 @@ impl ObjectCoder {
 		} else {
 			self.ic.var(&self.Buf, v)
 			self.write(" = ")
-			self.ec.possibleRefExpr(v.ValueSym.Value.Model)
+			self.ec.possibleRefExpr(v.Value.Model)
 			self.write(";")
 		}
 	}
@@ -1155,10 +1155,10 @@ impl ObjectCoder {
 		if jule::IsBlank(v.AST.Name) {
 			return
 		}
-		if v.ValueSym != nil && v.ValueSym.Expr != nil {
-			if v.ValueSym.Value.Model != nil {
+		if v.Value != nil && v.AST.X != nil {
+			if v.Value.Model != nil {
 				if v.AST.Static {
-					self.varInitExpr(v, fn|| self.ec.possibleRefExpr(v.ValueSym.Value.Model))
+					self.varInitExpr(v, fn|| self.ec.possibleRefExpr(v.Value.Model))
 				} else {
 					self.varInitExpr(v, nil)
 					self.write(" ")
@@ -1597,7 +1597,7 @@ impl ObjectCoder {
 			self.Buf.WriteByte(indentKind)!
 			// If variable have blank identifier, just execute the initialization expression.
 			if jule::IsBlank(v.AST.Name) {
-				self.ec.model(v.ValueSym.Value.Model)
+				self.ec.model(v.Value.Model)
 				self.write(";\n")
 				continue
 			}

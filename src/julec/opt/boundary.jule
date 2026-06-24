@@ -246,13 +246,13 @@ fn getBoundaryVar(mut m: sema::Expr): uintptr {
 		match type m {
 		| &sema::Var:
 			v = m.(&sema::Var)
-			if !v.AST.Reference || v.ValueSym == nil || v.ValueSym.Value == nil {
+			if !v.AST.Reference || v.Value == nil {
 				// Variable is not reference (or points to unknown such as parameters), return address of it.
 				return uintptr(m.(&sema::Var))
 			}
 			// Variable is reference, it should be initialized at source code.
 			// Investigate the initial expression for variable address.
-			m = v.ValueSym.Value.Model
+			m = v.Value.Model
 			continue
 		| &sema::StructSubIdentExpr:
 			return uintptr(m.(&sema::StructSubIdentExpr).Field)

@@ -105,11 +105,9 @@ fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 					Mutable: true,
 					Token:   name,
 				},
-				Used:  true,
-				Scope: f.Scope,
-				ValueSym: &ValueSym{
-					Value: new(Value),
-				},
+				Used:     true,
+				Scope:    f.Scope,
+				Value:    new(Value),
 				RetState: rst,
 				RetOrder: j,
 			}
@@ -148,10 +146,9 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 					Name:      pAST.Name,
 					Token:     pAST.Token,
 				},
-				Checked:  true,
-				Used:     true,
-				Scope:    f.Scope,
-				ValueSym: new(ValueSym),
+				Checked: true,
+				Used:    true,
+				Scope:   f.Scope,
 			}
 			*dest = append(*dest, v)
 		}
@@ -2242,34 +2239,34 @@ impl sema {
 		// Catch the fallible function calls for initialization value if variable static.
 		// If variable is constant, no need for extra attention.
 		// A fallible function cannot return a constant value.
-		if v.AST.Static && v.ValueSym != nil && v.ValueSym.Value != nil {
-			fc, isFuncCall := v.ValueSym.Value.Model.(&FuncCallExpr)
+		if v.AST.Static && v.Value != nil {
+			fc, isFuncCall := v.Value.Model.(&FuncCallExpr)
 			if isFuncCall && fc.Func.Decl != nil && fc.Func.Decl.AST.Fallible {
-				self.pushErr(v.ValueSym.Expr.Token, "using of fallible function disallowed in this scope")
+				self.pushErr(v.AST.X.Token, "using of fallible function disallowed in this scope")
 				self.pushSuggestion("wrap the fallible function with a non-fallible function")
 			}
 		}
 
 		if v.IsTypeInferred() {
 			// Build new Type because auto-type symbols are nil.
-			v.Type = v.ValueSym.Value.Type
+			v.Type = v.Value.Type
 
 			if v.AST.Reference {
 				checkTypeForRef(self, v.Type, v.AST.Token)
 			}
 
 			// Check value for unwrap and physical memory constraint.
-			if !v.AST.Const && v.ValueSym.Value.untyped {
-				_ = checkValue(v.ValueSym.Value, self, v.ValueSym.Expr.Token, evalDefault|evalPhysicalMem|evalUnwrapUntyped)
+			if !v.AST.Const && v.Value.untyped {
+				_ = checkValue(v.Value, self, v.AST.X.Token, evalDefault|evalPhysicalMem|evalUnwrapUntyped)
 			}
 
-			self.checkDataForTypeInference(v.ValueSym.Value, v.ValueSym.Expr.Token)
+			self.checkDataForTypeInference(v.Value, v.AST.X.Token)
 			self.checkValidityForInitExpr(
 				v.AST.Mutable,
 				v.AST.Reference,
 				v.Type,
-				v.ValueSym.Value,
-				v.ValueSym.Expr.Token)
+				v.Value,
+				v.AST.X.Token)
 		} else {
 			if v.AST.Reference {
 				checkTypeForRef(self, v.Type, v.AST.Token)
@@ -2279,7 +2276,7 @@ impl sema {
 			mut arr := v.Type.Array()
 			if arr != nil {
 				if arr.Auto {
-					dataArr := v.ValueSym.Value.Type.Array()
+					dataArr := v.Value.Type.Array()
 					if dataArr != nil {
 						arr.N = dataArr.N
 					}
@@ -2287,23 +2284,23 @@ impl sema {
 			}
 
 			const FirstAssignToDest = true // The variable takes first assignment with the initializer value.
-			if self.checkAssignType(v.AST.Reference, FirstAssignToDest, v.Type, v.ValueSym.Value, v.ValueSym.Expr.Token, v.Refers) {
+			if self.checkAssignType(v.AST.Reference, FirstAssignToDest, v.Type, v.Value, v.AST.X.Token, v.Refers) {
 				self.checkValidityForInitExpr(
 					v.AST.Mutable,
 					v.AST.Reference,
 					v.Type,
-					v.ValueSym.Value,
-					v.ValueSym.Expr.Token)
+					v.Value,
+					v.AST.X.Token)
 			}
 		}
 
 		if v.AST.Const {
-			if !v.ValueSym.Value.IsConst() && !v.ValueSym.Value.Type.comptime() {
-				self.pushErr(v.ValueSym.Expr.Token, "expression must be constant")
+			if !v.Value.IsConst() && !v.Value.Type.comptime() {
+				self.pushErr(v.AST.X.Token, "expression must be constant")
 			}
 		} else {
-			v.ValueSym.Value.Constant = nil
-			v.ValueSym.Value.untyped = false
+			v.Value.Constant = nil
+			v.Value.untyped = false
 		}
 
 		// Remove kind for avoid more tuple-type errors.
@@ -2326,18 +2323,17 @@ impl sema {
 				isEnumField := v.Scope == nil && v.IsEnumField()
 				if v.GroupIndex == 0 {
 					if isEnumField {
-						v.ValueSym = new(ValueSym)
-						v.ValueSym.Expr = new(ast::Expr)
-						v.ValueSym.Expr.Token = v.AST.Token
+						v.AST.X = new(ast::Expr)
+						v.AST.X.Token = v.AST.Token
 						prim := v.Type.Prim() // Enum fields must be primitive.
 						match {
 						| prim.IsString():
-							v.ValueSym.Expr.Data = &ast::LitExpr{
+							v.AST.X.Data = &ast::LitExpr{
 								Token: v.AST.Token,
 								Value: "\"" + v.AST.Name + "\"",
 							}
 						| types::IsNum(prim.String()):
-							v.ValueSym.Expr.Data = &ast::NameExpr{
+							v.AST.X.Data = &ast::NameExpr{
 								Token: v.AST.Token,
 								Name:  "iota",
 							}
@@ -2354,7 +2350,7 @@ impl sema {
 				if !dv.Checked {
 					self.checkVar(dv, l)
 				}
-				if dv.ValueSym == nil || dv.ValueSym.Value == nil {
+				if dv.Value == nil {
 					return false
 				}
 				v.Type = dv.Type
@@ -2371,13 +2367,12 @@ impl sema {
 				} else {
 					v.Type = nil
 				}
-				v.ValueSym = new(ValueSym)
 				if dv.Iota {
-					v.ValueSym.Expr = new(ast::Expr, *dv.ValueSym.Expr)
-					v.ValueSym.Expr.Token = v.AST.Token
+					v.AST.X = new(ast::Expr, *dv.AST.X)
+					v.AST.X.Token = v.AST.Token
 					goto Eval
 				} else {
-					v.ValueSym.Value = dv.ValueSym.Value
+					v.Value = dv.Value
 				}
 			}
 			return false
@@ -2407,7 +2402,7 @@ impl sema {
 		if v.AST.Reference {
 			evalFlags |= evalRefptr
 		}
-		v.ValueSym.Value = eval.evalExpr(v.ValueSym.Expr, evalFlags)
+		v.Value = eval.evalExpr(v.AST.X, evalFlags)
 		return true
 	}
 
@@ -2419,7 +2414,7 @@ impl sema {
 		}
 		v.Checked = true
 		valCheck := self.evalVarValue(v, l)
-		if !valCheck || v.IsInitialized() && v.ValueSym.Value == nil {
+		if !valCheck || v.IsInitialized() && v.Value == nil {
 			return // Skip checks if error occurs.
 		}
 		self.checkVarValue(v)
