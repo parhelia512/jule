@@ -952,7 +952,7 @@ impl scopeParser {
 			}
 			token = tokens[0]
 			if token.ID == token::DEFER {
-				isDeferred = true
+				flags |= ast::F_DEFER
 				tokens = tokens[1:]
 				if len(tokens) == 0 {
 					self.pushErr(token, "invalid syntax")
