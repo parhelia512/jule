@@ -94,12 +94,12 @@ impl Kind for comptimeStructFields {
 impl comptimeRangeKind for comptimeStructFields {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeStructField),
@@ -199,12 +199,12 @@ impl Kind for comptimeStatics {
 impl comptimeRangeKind for comptimeStatics {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeStatic),
@@ -290,12 +290,12 @@ impl Kind for comptimeEnumFields {
 impl comptimeRangeKind for comptimeEnumFields {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeEnumField),
@@ -415,12 +415,12 @@ impl Kind for comptimeParams {
 impl comptimeRangeKind for comptimeParams {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeParam),
@@ -469,12 +469,12 @@ impl Kind for comptimeTypeInfos {
 impl comptimeRangeKind for comptimeTypeInfos {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeTypeInfo),
@@ -1373,12 +1373,12 @@ impl Kind for comptimeFiles {
 impl comptimeRangeKind for comptimeFiles {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeFile),
@@ -1506,12 +1506,12 @@ impl Kind for comptimeDecls {
 impl comptimeRangeKind for comptimeDecls {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = &Type{
 				Kind: new(comptimeDecl),
@@ -1649,26 +1649,26 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Public", self.declAsStr())
 			return nil
 		| &Struct:
-			public = self.decl.(&Struct).AST.Public
+			public = self.decl.(&Struct).AST.Flags&ast::F_PUBLIC != 0
 		| &Func:
-			public = self.decl.(&Func).AST.Public
+			public = self.decl.(&Func).AST.Flags&ast::F_PUBLIC != 0
 		| &Enum:
-			public = self.decl.(&Enum).AST.Public
+			public = self.decl.(&Enum).AST.Flags&ast::F_PUBLIC != 0
 		| &TypeEnum:
-			public = self.decl.(&TypeEnum).AST.Public
+			public = self.decl.(&TypeEnum).AST.Flags&ast::F_PUBLIC != 0
 		| &Trait:
-			public = self.decl.(&Trait).AST.Public
+			public = self.decl.(&Trait).AST.Flags&ast::F_PUBLIC != 0
 		| &Field:
-			public = self.decl.(&Field).AST.Public
+			public = self.decl.(&Field).AST.Flags&ast::F_PUBLIC != 0
 		| &TypeAlias:
-			public = self.decl.(&TypeAlias).AST.Public
+			public = self.decl.(&TypeAlias).AST.Flags&ast::F_PUBLIC != 0
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Public", self.declAsStr())
 				return nil
 			}
-			public = v.AST.Public
+			public = v.AST.Flags&ast::F_PUBLIC != 0
 		|:
 			panic("sema: comptimeDecl.Public: unimplemented declaration kind")
 		}
@@ -1697,18 +1697,18 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Extern", self.declAsStr())
 			return nil
 		| &Struct:
-			_extern = self.decl.(&Struct).AST.Extern
+			_extern = self.decl.(&Struct).AST.Flags&ast::F_EXTERN != 0
 		| &Func:
-			_extern = self.decl.(&Func).AST.Extern
+			_extern = self.decl.(&Func).AST.Flags&ast::F_EXTERN != 0
 		| &TypeAlias:
-			_extern = self.decl.(&TypeAlias).AST.Extern
+			_extern = self.decl.(&TypeAlias).AST.Flags&ast::F_EXTERN != 0
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Extern", self.declAsStr())
 				return nil
 			}
-			_extern = v.AST.Extern
+			_extern = v.AST.Flags&ast::F_EXTERN != 0
 		|:
 			panic("sema: comptimeDecl.Extern: unimplemented declaration kind")
 		}
@@ -1735,7 +1735,7 @@ impl comptimeDecl {
 			return nil
 		}
 		mut f := self.decl.(&Func)
-		mut constant := constant::NewBool(f.AST.Fallible)
+		mut constant := constant::NewBool(f.AST.Flags&ast::F_FALLIBLE != 0)
 		return &Value{
 			untyped:  true,
 			Type:     primBool,
@@ -1761,16 +1761,16 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Mutable", self.declAsStr())
 			return nil
 		| &Param:
-			mutable = self.decl.(&Param).AST.Mutable
+			mutable = self.decl.(&Param).AST.Flags&ast::F_MUTABLE != 0
 		| &Field:
-			mutable = self.decl.(&Field).AST.Mutable
+			mutable = self.decl.(&Field).AST.Flags&ast::F_MUTABLE != 0
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Mutable", self.declAsStr())
 				return nil
 			}
-			mutable = v.AST.Mutable
+			mutable = v.AST.Flags&ast::F_MUTABLE != 0
 		|:
 			panic("sema: comptimeDecl.Mutable: unimplemented declaration kind")
 		}
@@ -1802,7 +1802,7 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Variadic", self.declAsStr())
 			return nil
 		| &Param:
-			variadic = self.decl.(&Param).AST.Variadic
+			variadic = self.decl.(&Param).AST.Flags&ast::F_VARIADIC != 0
 		|:
 			panic("sema: comptimeDecl.Variadic: unimplemented declaration kind")
 		}
@@ -1838,9 +1838,9 @@ impl comptimeDecl {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Reference", self.declAsStr())
 				return nil
 			}
-			ref = v.AST.Reference
+			ref = v.AST.Flags&ast::F_REFERENCE != 0
 		| &Param:
-			ref = self.decl.(&Param).AST.Reference
+			ref = self.decl.(&Param).AST.Flags&ast::F_REFERENCE != 0
 		|:
 			panic("sema: comptimeDecl.Reference: unimplemented declaration kind")
 		}
@@ -2144,12 +2144,12 @@ struct comptimeSliceRange {
 impl comptimeRangeKind for comptimeSliceRange {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.AST.Const = true
+			keyA.AST.Flags |= ast::F_CONST
 			keyA.Value = new(Value)
 			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.AST.Const = true
+			keyB.AST.Flags |= ast::F_CONST
 			keyB.Value = new(Value)
 			keyB.Type = self.s.ElemType
 		}

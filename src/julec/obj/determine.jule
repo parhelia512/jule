@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule/ast"
 use "std/jule/build"
 use "std/jule/sema"
 use "std/os/filepath"
@@ -24,7 +25,7 @@ fn IsForwarded(s: &sema::Scope): bool {
 fn IsExprComesFromExtern(v: &sema::Value): bool {
 	match type v.Model {
 	| &sema::Var:
-		return v.Model.(&sema::Var).AST.Extern
+		return v.Model.(&sema::Var).AST.Flags&ast::F_EXTERN != 0
 	| &sema::StructSubIdentExpr:
 		return IsExternStruct(v.Model.(&sema::StructSubIdentExpr).Owner)
 	|:
@@ -76,7 +77,7 @@ fn IsImplicitImport(imp: &sema::ImportInfo): bool {
 // Reports whether structure is represents external type.
 // Assumes the source type is struct if exist.
 fn IsExternStruct(s: &sema::StructIns): bool {
-	if s.Decl.AST.Extern {
+	if s.Decl.AST.Flags&ast::F_EXTERN != 0 {
 		return true
 	}
 	if s.Source != nil {

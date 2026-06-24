@@ -283,7 +283,7 @@ impl scopeParser {
 			Op:    tokens[0],
 		}
 		if key.Token.ID == token::MUT {
-			key.Mutable = true
+			key.Flags |= ast::F_MUTABLE
 			if len(tokens) == 1 {
 				self.pushErr(key.Token, "invalid syntax")
 			}
@@ -545,7 +545,7 @@ impl scopeParser {
 		}
 		match type e.Data {
 		| &ast::CallExpr:
-			e.Data.(&ast::CallExpr).IsCo = true
+			e.Data.(&ast::CallExpr).Flags |= ast::F_CO
 		|:
 			self.pushErr(token, "co statement must have function call expression")
 		}
@@ -750,14 +750,14 @@ impl scopeParser {
 		tokens = tokens[1:] // Remove "match" keyword.
 
 		if len(tokens) > 0 && tokens[0].ID == token::TYPE {
-			m.Type = true
+			m.Flags |= ast::F_TYPE
 			tokens = tokens[1:] // Skip "type" keyword
 		}
 
 		mut exprTokens := getBlockExpr(tokens)
 		if len(exprTokens) > 0 {
 			m.X = self.p.buildExpr(exprTokens)
-		} else if m.Type {
+		} else if m.Flags&ast::F_TYPE != 0 {
 			self.pushErr(m.Token, "missing type-match statement expression")
 		}
 
@@ -771,7 +771,7 @@ impl scopeParser {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
 		m.End = tokens[i-1]
-		m.Cases, m.Default = self.buildCases(blockToks, m.Type)
+		m.Cases, m.Default = self.buildCases(blockToks, m.Flags&ast::F_TYPE != 0)
 		return m
 	}
 
@@ -923,7 +923,7 @@ impl scopeParser {
 		return m
 	}
 
-	fn buildThrow(mut *self, mut tokens: []&token::Token, _unsafe: bool): &ast::Throw {
+	fn buildThrow(mut *self, mut tokens: []&token::Token, flags: ast::Flag): &ast::Throw {
 		if len(tokens) == 1 {
 			self.pushErr(tokens[0], "throw statement needs an error expression")
 			self.pushSuggestion("write like; throw myError")
@@ -934,18 +934,17 @@ impl scopeParser {
 			return nil
 		}
 		return &ast::Throw{
-			Token:  tokens[0],
-			Unsafe: _unsafe,
-			Error:  x,
+			Token: tokens[0],
+			Error: x,
+			Flags: flags,
 		}
 	}
 
 	fn buildScopeStmt(mut *self, mut tokens: []&token::Token): &ast::Scope {
-		mut isUnsafe := false
-		mut isDeferred := false
+		mut flags := ast::Flag(0)
 		mut token := tokens[0]
 		if token.ID == token::UNSAFE {
-			isUnsafe = true
+			flags |= ast::F_UNSAFE
 			tokens = tokens[1:]
 			if len(tokens) == 0 {
 				self.pushErr(token, "invalid syntax")
@@ -961,7 +960,7 @@ impl scopeParser {
 				}
 			}
 		} else if token.ID == token::DEFER {
-			isDeferred = true
+			flags |= ast::F_DEFER
 			tokens = tokens[1:]
 			if len(tokens) == 0 {
 				self.pushErr(token, "invalid syntax")
@@ -978,8 +977,7 @@ impl scopeParser {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
 		mut scope := self.buildScope(scopeTokens, tokens[i-1])
-		scope.Unsafe = isUnsafe
-		scope.Deferred = isDeferred
+		scope.Flags |= flags
 		return scope
 	}
 
@@ -1139,13 +1137,12 @@ impl scopeParser {
 			_, isIdent := left.X.Data.(&ast::NameExpr)
 			if isIdent {
 				mut decl := &ast::Var{
-					Token:     left.Token,
-					Op:        assign.Op,
-					Name:      left.Name,
-					Mutable:   left.Mutable,
-					Reference: left.Reference,
-					Scope:     self.s,
-					X:         assign.Y,
+					Token: left.Token,
+					Op:    assign.Op,
+					Name:  left.Name,
+					Scope: self.s,
+					X:     assign.Y,
+					Flags: left.Flags & (ast::F_MUTABLE | ast::F_REFERENCE),
 				}
 				return decl, true
 			}
@@ -1178,12 +1175,11 @@ impl scopeParser {
 		}
 
 		for (_, mut part) in parts {
-			mut isMut := false
-			mut isRef := false
+			mut flags := ast::Flag(0)
 
 			token := part[0]
 			if token.ID == token::MUT {
-				isMut = true
+				flags |= ast::F_MUTABLE
 				part = part[1:]
 				if len(part) == 0 {
 					self.pushErr(token, "invalid syntax")
@@ -1192,7 +1188,7 @@ impl scopeParser {
 			}
 
 			if part[0].ID == token::AND {
-				isRef = true
+				flags |= ast::F_REFERENCE
 				part = part[1:]
 				if len(part) == 0 {
 					self.pushErr(token, "invalid syntax")
@@ -1209,8 +1205,7 @@ impl scopeParser {
 			if x.X == nil {
 				return false
 			}
-			x.Mutable = isMut
-			x.Reference = isRef
+			x.Flags |= flags
 			assign.X = append(assign.X, x)
 		}
 
@@ -1303,14 +1298,14 @@ impl scopeParser {
 			stmt.tokens = stmt.tokens[1:]
 			mut iter := self.buildIterStmt(stmt)
 			if iter != nil {
-				iter.Comptime = true
+				iter.Flags |= ast::F_CONST
 			}
 			return iter
 		| token::MATCH:
 			stmt.tokens = stmt.tokens[1:]
 			mut mt := self.buildMatch(stmt.tokens)
 			if mt != nil {
-				mt.Comptime = true
+				mt.Flags |= ast::F_CONST
 			}
 			return mt
 		|:
@@ -1368,7 +1363,7 @@ impl scopeParser {
 		| token::SELECT:
 			return self.buildSelect(stmt.tokens)
 		| token::THROW:
-			return self.buildThrow(stmt.tokens, false)
+			return self.buildThrow(stmt.tokens, 0)
 		| token::UNSAFE:
 			if len(stmt.tokens) < 1 {
 				break
@@ -1379,7 +1374,7 @@ impl scopeParser {
 				return self.buildScopeStmt(stmt.tokens)
 			| token::THROW: // Throw statement.
 				stmt.tokens = stmt.tokens[1:] // Trim unsafe keyword.
-				return self.buildThrow(stmt.tokens, true)
+				return self.buildThrow(stmt.tokens, ast::F_UNSAFE)
 			}
 		| token::DEFER:
 			return self.buildScopeStmt(stmt.tokens)

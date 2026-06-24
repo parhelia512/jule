@@ -7,6 +7,7 @@ use "julec/obj"
 use "julec/obj/cst"
 use "julec/obj/meta"
 use "std/comptime"
+use "std/jule/ast"
 use "std/jule/constant"
 use "std/jule/sema"
 use "std/jule/token"
@@ -889,7 +890,8 @@ impl exprOptimizer {
 				continue
 			}
 			mut p := params[i]
-			if p.Decl.AST.Mutable && p.Decl.AST.Reference {
+			const requiredMask = ast::F_MUTABLE | ast::F_REFERENCE
+			if p.Decl.AST.Flags&requiredMask == requiredMask {
 				if self.data.boundary != nil {
 					if isBoundaryRiskyType(p.Type) {
 						possibleBoundaryRemove(self.data.boundary, arg)

@@ -9,6 +9,7 @@ use "julec/opt"
 use "std/comptime"
 use "std/conv"
 use "std/jule"
+use "std/jule/ast"
 use "std/jule/build"
 use "std/jule/directive"
 use "std/jule/dist"
@@ -225,7 +226,7 @@ impl ObjectCoder {
 		for (j, mut p) in f.Params {
 			self.coSpawnObj.WriteByte(indentKind)!
 			// If parameter is variadic, we handle it as slice.
-			if p.Decl.AST.Variadic {
+			if p.Decl.AST.Flags&ast::F_VARIADIC != 0 {
 				self.tc.asSlice(&self.coSpawnObj, p.Type)
 			} else {
 				self.tc.kind(&self.coSpawnObj, p.Type)
@@ -890,7 +891,7 @@ impl ObjectCoder {
 		for (_, mut f) in s.Fields {
 			// Skip external struct kinds.
 			strct := f.Type.Struct()
-			if strct != nil && strct.Decl != nil && strct.Decl.AST.Extern {
+			if strct != nil && strct.Decl != nil && strct.Decl.AST.Flags&ast::F_EXTERN != 0 {
 				continue
 			}
 			if written {
@@ -986,8 +987,8 @@ impl ObjectCoder {
 		if !ptr && opt::Inline && !f.Decl.IsEntryPoint() {
 			buf.WriteString("inline ")!
 		}
-		if f.Decl.AST.Async {
-			if f.Decl.IsVoid() && !f.Decl.AST.Fallible {
+		if f.Decl.AST.Flags&ast::F_ASYNC != 0 {
+			if f.Decl.IsVoid() && f.Decl.AST.Flags&ast::F_FALLIBLE == 0 {
 				buf.WriteString("__jule_VoidAsync")!
 			} else {
 				buf.WriteString("__jule_Async<")!
@@ -1038,7 +1039,7 @@ impl ObjectCoder {
 		obj::IterPackages(self.ir, fn|mut pkg| {
 			obj::IterFiles(pkg, fn|mut file| {
 				for (_, mut f) in file.Funcs {
-					if !f.AST.Extern && f.AST.Token != nil {
+					if f.AST.Flags&ast::F_EXTERN == 0 && f.AST.Token != nil {
 						self.pushResult(f)
 						self.funcDecl(f, false)
 					}
@@ -1118,7 +1119,7 @@ impl ObjectCoder {
 	}
 
 	fn varInitExpr(mut &self, mut v: &sema::Var, init: fn()) {
-		if v.AST.Static {
+		if v.AST.Flags&ast::F_STATIC != 0 {
 			self.write("static ")
 		}
 
@@ -1157,7 +1158,7 @@ impl ObjectCoder {
 		}
 		if v.Value != nil && v.AST.X != nil {
 			if v.Value.Model != nil {
-				if v.AST.Static {
+				if v.AST.Flags&ast::F_STATIC != 0 {
 					self.varInitExpr(v, fn|| self.ec.possibleRefExpr(v.Value.Model))
 				} else {
 					self.varInitExpr(v, nil)
@@ -1228,7 +1229,7 @@ impl ObjectCoder {
 		mut mins := m.Instances[0]
 		for (mut f, _) in self.traitMetMap {
 			fAST, mAST := f.Decl.AST, m.AST
-			if fAST.Public == mAST.Public &&
+			if fAST.Flags&ast::F_PUBLIC == mAST.Flags&ast::F_PUBLIC &&
 				fAST.Name == mAST.Name &&
 				f.EqualFunc(mins, false) {
 				return f, true
@@ -1268,12 +1269,12 @@ impl ObjectCoder {
 				self.addIndent()
 				self.write("{\n")
 				self.indent()
-				if m.AST.Async {
-					if !m.IsVoid() || m.AST.Fallible {
+				if m.AST.Flags&ast::F_ASYNC != 0 {
+					if !m.IsVoid() || m.AST.Flags&ast::F_FALLIBLE != 0 {
 						self.write("__jule_AsyncReturn ")
 					}
 					self.write("__jule_AsyncAwait ")
-				} else if m.AST.Fallible || !m.IsVoid() {
+				} else if m.AST.Flags&ast::F_FALLIBLE != 0 || !m.IsVoid() {
 					self.write("return ")
 				}
 				// Generate function identifier using the instance.
@@ -1530,7 +1531,7 @@ impl ObjectCoder {
 							continue
 						}
 					}
-					if !f.AST.Extern && f.AST.Token != nil {
+					if f.AST.Flags&ast::F_EXTERN == 0 && f.AST.Token != nil {
 						self.func(f)
 						self.write("\n\n")
 					}
@@ -1615,7 +1616,7 @@ impl ObjectCoder {
 	}
 
 	fn end(mut &self) {
-		asyncRuntime := env::Test || meta::Program.EntryPoint.AST.Async
+		asyncRuntime := env::Test || meta::Program.EntryPoint.AST.Flags&ast::F_ASYNC != 0
 		self.meta.concurrent = self.meta.concurrent || asyncRuntime
 
 		self.addIndent()

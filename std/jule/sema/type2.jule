@@ -28,7 +28,7 @@ fn checkTypeForRef(mut s: &sema, mut t: &Type, errorToken: &token::Token) {
 fn traitHasReferenceReceiver(t: &Trait): bool {
 	for _, f in t.Methods {
 		// Skip static functions.
-		if f.AST.Static {
+		if f.AST.Flags&ast::F_STATIC != 0 {
 			continue
 		}
 
@@ -340,10 +340,10 @@ impl assignTypeChecker {
 			| f.IsBuiltin():
 				self.s.pushErr(self.errorToken, "built-in functions cannot be anonymous")
 				valid = false
-			| f.Decl.AST.Extern:
+			| f.Decl.AST.Flags&ast::F_EXTERN != 0:
 				self.s.pushErr(self.errorToken, "external functions cannot be anonymous")
 				valid = false
-			| !f.Decl.AST.Static && f.Decl.IsMethod():
+			| f.Decl.AST.Flags&ast::F_STATIC == 0 && f.Decl.IsMethod():
 				self.s.pushErr(self.errorToken, "methods cannot be anonymous")
 				valid = false
 			| len(f.Decl.AST.Generics) > 0 && len(f.Generics) == 0:
@@ -948,7 +948,7 @@ impl fnCallArgChecker {
 		if n > 0 && params[0].Decl.IsSelf() {
 			n--
 		}
-		variadic := n > 0 && params[len(params)-1].Decl.AST.Variadic
+		variadic := n > 0 && params[len(params)-1].Decl.AST.Flags&ast::F_VARIADIC != 0
 		if variadic {
 			n--
 		}
@@ -1013,9 +1013,14 @@ impl fnCallArgChecker {
 
 		// Check type if validity is good.
 		// Helps to reduce error logs and duplicated logs.
-		if self.e.s.checkValidityForInitExpr(p.Decl.AST.Mutable, p.Decl.AST.Reference, p.Type, arg, errorToken) {
+		if self.e.s.checkValidityForInitExpr(
+			p.Decl.AST.Flags&ast::F_MUTABLE != 0,
+			p.Decl.AST.Flags&ast::F_REFERENCE != 0,
+			p.Type, arg, errorToken) {
 			const FirstAssignToDest = true // The argument takes first assignment with the function call.
-			return self.e.s.checkAssignType(p.Decl.AST.Reference, FirstAssignToDest, p.Type, arg, errorToken, self.e.getOwnerRefers())
+			return self.e.s.checkAssignType(
+				p.Decl.AST.Flags&ast::F_REFERENCE != 0,
+				FirstAssignToDest, p.Type, arg, errorToken, self.e.getOwnerRefers())
 		}
 		return false
 	}
@@ -1024,8 +1029,9 @@ impl fnCallArgChecker {
 		mut old := self.e.prefix
 		oldMut := self.e.target.mutable
 
-		self.e.target.mutable = p.Decl.AST.Mutable
-		if !p.Decl.AST.Variadic && (!self.dynamicAnnotation || !parameterUsesGenerics(p, self.f.Decl.AST.Generics)) {
+		self.e.target.mutable = p.Decl.AST.Flags&ast::F_MUTABLE != 0
+		if p.Decl.AST.Flags&ast::F_VARIADIC == 0 &&
+			(!self.dynamicAnnotation || !parameterUsesGenerics(p, self.f.Decl.AST.Generics)) {
 			self.e.prefix = p.Type
 		} else {
 			self.e.prefix = nil
@@ -1038,7 +1044,7 @@ impl fnCallArgChecker {
 				mut dest := p.Type.Func()
 				if dest != nil && !funcParametersUseGenerics(dest.Params, self.f.Decl.AST.Generics) {
 					mut src, isFunc := arg.Data.(&ast::Func)
-					if isFunc && src.IsShort() && src.Scope.Deferred {
+					if isFunc && src.IsShort() && src.Scope.Flags&ast::F_DEFER != 0 {
 						// Set the prefix type.
 						self.e.prefix = p.Type
 						// Set the generics from the owner function to detect generics.
@@ -1051,7 +1057,7 @@ impl fnCallArgChecker {
 		}
 		// Do not unwrap untyped literals, type analysis will check overflows.
 		mut evalFlags := evalDefault
-		if p.Decl.AST.Reference {
+		if p.Decl.AST.Flags&ast::F_REFERENCE != 0 {
 			evalFlags |= evalRefptr
 		}
 		mut v := self.e.evalExpr(arg, evalFlags)
@@ -1083,7 +1089,7 @@ impl fnCallArgChecker {
 		mut old := self.e.prefix
 
 		oldMut := self.e.target.mutable
-		self.e.target.mutable = p.Decl.AST.Mutable
+		self.e.target.mutable = p.Decl.AST.Flags&ast::F_MUTABLE != 0
 
 		// Save variadic status into separate variable.
 		// Because parameter might be variadic, but type might be not variadic.
@@ -1171,7 +1177,7 @@ impl fnCallArgChecker {
 		for i < len(params) {
 			mut p := params[i]
 			match {
-			| p.Decl.AST.Variadic:
+			| p.Decl.AST.Flags&ast::F_VARIADIC != 0:
 				ok = self.pushVariadic(p, i) && ok
 				// Variadiced parameters always last.
 				break iter
@@ -1219,7 +1225,7 @@ impl fnCallArgChecker {
 // Assumes mutable structure literal and checks field assignments.
 fn checkMutRiskOfStructLit(mut s: &sema, m: &StructLitExpr) {
 	for _, arg in m.Args {
-		if arg.Field.Decl.AST.Mutable {
+		if arg.Field.Decl.AST.Flags&ast::F_MUTABLE != 0 {
 			// Skip this field.
 			// If there is a mutability risk, it will be logged by [structLitChecker].
 			continue
@@ -1254,7 +1260,8 @@ impl structLitChecker {
 		// But if field in scope of the interior mutability, check as mutable.
 		// Do not accept as risky if structure is not have any method.
 		// Because if there is no method, no risk for interior mutability.
-		mutable := self.e.target.mutable || (f.Decl.AST.Mutable && len(self.s.Methods) > 0)
+		mutable := self.e.target.mutable ||
+			(f.Decl.AST.Flags&ast::F_MUTABLE != 0 && len(self.s.Methods) > 0)
 		// Check type if validity is good.
 		// Helps to reduce error logs and duplicated logs.
 		if self.e.s.checkValidityForInitExpr(mutable, Reference, f.Type, v, errorToken) {
@@ -1296,7 +1303,7 @@ impl structLitChecker {
 			}
 		}
 
-		if !self.e.s.isAccessibleDefine(f.Decl.AST.Public, f.Decl.AST.Token) {
+		if !self.e.s.isAccessibleDefine(f.Decl.AST.Flags&ast::F_PUBLIC != 0, f.Decl.AST.Token) {
 			self.pushErr(pair.Key.Token, "define is private and could not be accessed: "+name.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return
@@ -1358,7 +1365,7 @@ impl structLitChecker {
 
 				mut field := self.s.Fields[i]
 
-				if !self.e.s.isAccessibleDefine(field.Decl.AST.Public, field.Decl.AST.Token) {
+				if !self.e.s.isAccessibleDefine(field.Decl.AST.Flags&ast::F_PUBLIC != 0, field.Decl.AST.Token) {
 					self.pushErr(self.errorToken, "structure cannot be instantiated because it has both public and private fields")
 					self.pushSuggestion("use label-expression pairs to instantiate (e.g. Struct{x:foo, y:bar})")
 					return
@@ -1430,7 +1437,7 @@ impl rangeChecker {
 	//	- key: data passed to this key.
 	//	- k:   element kind of expression.
 	fn checkRangeExprValidity(mut *self, mut v: &Value, key: &Var, mut k: &Type) {
-		mut _mut := key.AST.Mutable
+		mut _mut := key.AST.Flags&ast::F_MUTABLE != 0
 		if _mut && !k.Mutable() {
 			// Bypass mutability error.
 			// Element kind is immutable.
@@ -1439,7 +1446,7 @@ impl rangeChecker {
 		}
 
 		self.sc.s.checkValidityForInitExpr(
-			_mut, key.AST.Reference, key.Type, v, self.rang.InToken)
+			_mut, key.AST.Flags&ast::F_REFERENCE != 0, key.Type, v, self.rang.InToken)
 	}
 
 	fn checkSlice(mut *self) {
@@ -1535,10 +1542,10 @@ impl rangeChecker {
 
 	fn checkComptime(mut *self) {
 		self.setSizeKey()
-		if self.rang.A != nil && self.rang.A.Mutable {
+		if self.rang.A != nil && self.rang.A.Flags&ast::F_MUTABLE != 0 {
 			self.sc.s.pushErr(self.rang.A.Token, "variable of comptime iteration cannot be mutable", self.rang.A.Name)
 		}
-		if self.rang.B != nil && self.rang.B.Mutable {
+		if self.rang.B != nil && self.rang.B.Flags&ast::F_MUTABLE != 0 {
 			self.sc.s.pushErr(self.rang.B.Token, "variable of comptime iteration cannot be mutable", self.rang.B.Name)
 		}
 		if self.rang.B == nil || jule::IsBlank(self.rang.B.Name) {

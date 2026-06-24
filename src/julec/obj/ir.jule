@@ -126,12 +126,13 @@ impl IR {
 	fn appendStructs(*self, mut p: &sema::Package, mut &buffer: *[]&sema::Struct) {
 		for (_, mut f) in p.Files {
 			for (_, mut s) in f.Structs {
-				if !s.AST.Extern {
+				if s.AST.Flags&ast::F_EXTERN == 0 {
 					*buffer = append(*buffer, s)
 				}
 			}
 			for (_, mut ta) in f.TypeAliases {
-				if !ta.AST.Extern && ta.AST.Strict {
+				if ta.AST.Flags&ast::F_EXTERN == 0 &&
+					ta.AST.Flags&ast::F_STRICT != 0 {
 					*buffer = append(*buffer, ta.Type.Kind.(&sema::StructIns).Decl)
 				}
 			}
@@ -155,7 +156,7 @@ impl IR {
 	fn appendGlobals(*self, mut p: &sema::Package, mut &buffer: *[]&sema::Var) {
 		for (_, mut f) in p.Files {
 			for (_, mut v) in f.Vars {
-				if v.AST.Token != nil && !v.AST.Extern && !v.AST.Const {
+				if v.AST.Token != nil && v.AST.Flags&(ast::F_CONST|ast::F_EXTERN) == 0 {
 					*buffer = append(*buffer, v)
 				}
 			}
@@ -256,8 +257,7 @@ fn pushRuntimeToAST(mut f: &ast::AST) {
 			ID:   token::STRING,
 			Kind: `"std/runtime"`,
 		},
-		Alias:  nil,
-		Extern: false,
+		Alias: nil,
 	}
 	f.UseDecls = slices::Insert(f.UseDecls, 0, decl)
 }
@@ -270,8 +270,7 @@ fn pushInternalRuntimeBuiltinToAST(mut f: &ast::AST) {
 			ID:   token::STRING,
 			Kind: `"std/internal/runtime/builtin"`,
 		},
-		Alias:  nil,
-		Extern: false,
+		Alias: nil,
 	}
 	f.UseDecls = slices::Insert(f.UseDecls, 0, decl)
 }

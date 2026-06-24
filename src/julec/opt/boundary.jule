@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 use "julec/obj"
+use "std/jule/ast"
 use "std/jule/constant"
 use "std/jule/sema"
 use "std/jule/token"
@@ -238,7 +239,7 @@ fn getBoundaryVar(mut m: sema::Expr): uintptr {
 	// Special case: if expression is reference pointer, return invalid address directly.
 	// Otherwise it might be dereferenced, investigate deeper.
 	mut v, _ := m.(&sema::Var)
-	if v != nil && v.AST.Reference {
+	if v != nil && v.AST.Flags&ast::F_REFERENCE != 0 {
 		return invalidBoundary
 	}
 
@@ -246,7 +247,7 @@ fn getBoundaryVar(mut m: sema::Expr): uintptr {
 		match type m {
 		| &sema::Var:
 			v = m.(&sema::Var)
-			if !v.AST.Reference || v.Value == nil {
+			if v.AST.Flags&ast::F_REFERENCE == 0 || v.Value == nil {
 				// Variable is not reference (or points to unknown such as parameters), return address of it.
 				return uintptr(m.(&sema::Var))
 			}

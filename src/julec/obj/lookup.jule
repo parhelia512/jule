@@ -177,7 +177,7 @@ fn GetExternName(t: &sema::Type): string {
 	match type t.Kind {
 	| &sema::StructIns:
 		s := t.Kind.(&sema::StructIns)
-		if s.Decl.AST.Extern {
+		if s.Decl.AST.Flags&ast::F_EXTERN != 0 {
 			return s.Decl.AST.Name
 		}
 		if s.Source != nil {

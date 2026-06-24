@@ -999,7 +999,7 @@ impl scopeCoder {
 			mut l := a.Left[i]
 			if l != nil {
 				mut v, _ := l.Model.(&sema::Var)
-				if v != nil && v.AST.Reference {
+				if v != nil && v.AST.Flags&ast::F_REFERENCE != 0 {
 					// left expression is a reference variable
 					// lookup declared variables in this assignment
 					// so we can detetermine reference variable is declared or assigned
@@ -1052,7 +1052,7 @@ impl scopeCoder {
 
 		mut fc := a.Right.(&sema::FuncCallExpr)
 		self.oc.tc.rc.codeMut1(&self.oc.Buf, fc.Func.Result)
-		if fc.Func.Decl != nil && fc.Func.Decl.AST.Fallible {
+		if fc.Func.Decl != nil && fc.Func.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 			let mut dest = useExprMemory{
 				Loc:      nil,
 				DestType: nil, // Should not be required in this case.
@@ -1779,7 +1779,7 @@ impl scopeCoder {
 				self.oc.write("\n")
 				self.oc.indent()
 			}
-			if r.Func.Decl.AST.Fallible {
+			if r.Func.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 				self.oc.write(returnKw(r.Func))
 				self.oc.write(" __jule_VoidFallible{};")
 				return
@@ -1788,7 +1788,7 @@ impl scopeCoder {
 			self.oc.write(";")
 			return
 		} else if len(r.Func.Decl.Result.AST.Names) == 0 && fc == nil {
-			if r.Func.Decl.AST.Fallible {
+			if r.Func.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 				// Use scope to prevent "goto" errors about declarations.
 				self.oc.write("{\n")
 				self.oc.addIndent()
@@ -1870,7 +1870,7 @@ impl scopeCoder {
 			self.oc.write("\n")
 			self.oc.indent()
 		}
-		if r.Func.Decl.AST.Fallible {
+		if r.Func.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 			self.oc.write(returnKw(r.Func))
 			self.oc.write(" __jule_Fallible<")
 			self.oc.tc.rc.codeMut1(&self.oc.Buf, r.Func.Result)
@@ -1901,7 +1901,7 @@ impl scopeCoder {
 	}
 
 	fn var(mut &self, mut v: &sema::Var) {
-		if !v.AST.Const {
+		if v.AST.Flags&ast::F_CONST == 0 {
 			self.oc.var(v)
 		}
 	}
@@ -2352,7 +2352,7 @@ impl scopeCoder {
 		self.emitDefers(nds, true)
 
 		if !raw && f.Decl.IsVoid() {
-			if f.Decl.AST.Fallible {
+			if f.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 				// Just for void fallible.
 				// Other cases checked by semantic analsis and disallowed
 				// if they are not returns.
@@ -2389,7 +2389,7 @@ impl scopeCoder {
 
 		// Anonymous function may have different runtime model.
 		oldAsync := self.oc.mode & _OBJ_ASYNC
-		if m.Func.Decl.AST.Async {
+		if m.Func.Decl.AST.Flags&ast::F_ASYNC != 0 {
 			self.oc.mode |= _OBJ_ASYNC
 		} else {
 			self.oc.mode &= ^_OBJ_ASYNC
@@ -2426,7 +2426,7 @@ impl scopeCoder {
 			self.oc.mode = obj::HasDirectiveArg(disable, "boundary", self.oc.mode, _OBJC_DISABLE_BOUNDARY)
 			self.oc.mode = obj::HasDirectiveArg(disable, "nilptr", self.oc.mode, _OBJC_DISABLE_NILPTR)
 		}
-		if f.Decl.AST.Async {
+		if f.Decl.AST.Flags&ast::F_ASYNC != 0 {
 			self.oc.mode |= _OBJ_ASYNC
 		} else {
 			self.oc.mode &= ^_OBJ_ASYNC
@@ -2461,11 +2461,11 @@ fn isIterCopyOptimizable(val: &sema::Value, v: &sema::Var): bool {
 	if !val.Lvalue && !val.Type.Mutable() {
 		return true
 	}
-	return !v.AST.Mutable && !val.Mutable
+	return v.AST.Flags&ast::F_MUTABLE == 0 && !val.Mutable
 }
 
 fn returnKw(f: &sema::FuncIns): string {
-	if f.Decl == nil || !f.Decl.AST.Async {
+	if f.Decl == nil || f.Decl.AST.Flags&ast::F_ASYNC == 0 {
 		return "return"
 	}
 	return "__jule_AsyncReturn"

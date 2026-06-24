@@ -29,8 +29,8 @@ fn findBuiltinFunc(name: string): &FuncIns {
 fn primTypeAlias(name: string, mut k: &Type): &TypeAlias {
 	return &TypeAlias{
 		AST: &ast::TypeAlias{
-			Name:   name,
-			Public: true,
+			Name:  name,
+			Flags: ast::F_PUBLIC,
 		},
 		Type: k,
 	}
@@ -60,9 +60,7 @@ let mut primCmplx128 = &Type{Kind: buildPrimType(types::Cmplx128)}
 let mut builtinVars = map[string]&Var{
 	"nil": &Var{
 		AST: &ast::Var{
-			Public:  true,
-			Mutable: false,
-			Const:   true,
+			Flags: ast::F_PUBLIC | ast::F_CONST,
 		},
 		Type: primNil,
 		Value: &Value{
@@ -71,9 +69,7 @@ let mut builtinVars = map[string]&Var{
 	},
 	"true": &Var{
 		AST: &ast::Var{
-			Public:  true,
-			Mutable: false,
-			Const:   true,
+			Flags: ast::F_PUBLIC | ast::F_CONST,
 		},
 		Type: primBool,
 		Value: &Value{
@@ -83,9 +79,7 @@ let mut builtinVars = map[string]&Var{
 	},
 	"false": &Var{
 		AST: &ast::Var{
-			Public:  true,
-			Mutable: false,
-			Const:   true,
+			Flags: ast::F_PUBLIC | ast::F_CONST,
 		},
 		Type: primBool,
 		Value: &Value{
@@ -1243,13 +1237,15 @@ fn builtinCallerStdComptimeTypeAlias(mut e: &eval, mut fc: &ast::CallExpr, _: &V
 	mut name := ie.Token
 	mut alias := &TypeAlias{
 		AST: &ast::TypeAlias{
-			Token:  name,
-			Name:   name.Kind,
-			Public: mod::IsPub(name.Kind),
+			Token: name,
+			Name:  name.Kind,
 		},
 		Scope:   sc.tree,
 		Used:    false,
 		Generic: false,
+	}
+	if mod::IsPub(name.Kind) {
+		alias.AST.Flags |= ast::F_PUBLIC
 	}
 	mut t := e.eval1(fc.Args[1], evalDefault|evalPhysicalMem|evalUnwrapUntyped)
 	if t == nil {
@@ -1551,10 +1547,8 @@ fn builtinCallerStdSysAddrcall(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Val
 fn buildIota(i: i64): &Var {
 	return &Var{
 		AST: &ast::Var{
-			Name:    "iota",
-			Public:  true,
-			Mutable: true,
-			Const:   true,
+			Name:  "iota",
+			Flags: ast::F_PUBLIC | ast::F_MUTABLE | ast::F_CONST,
 		},
 		Checked: true,
 		Type:    primInt,

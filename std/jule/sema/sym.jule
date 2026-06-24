@@ -154,11 +154,10 @@ fn buildEnumItems(mut decls: []&ast::EnumItem): []&Var {
 	for (i, mut decl) in decls {
 		items[i] = &Var{
 			AST: &ast::Var{
-				Name:   decl.Name,
-				Public: true,
-				Const:  true,
-				Token:  decl.Token,
-				X:      decl.X,
+				Name:  decl.Name,
+				Token: decl.Token,
+				X:     decl.X,
+				Flags: ast::F_PUBLIC | ast::F_CONST,
 			},
 			Group:      items,
 			GroupIndex: i,
@@ -281,7 +280,7 @@ impl symBuilder {
 	// Checks import path and returns as filepath if no error exist.
 	fn checkImpPath(mut &self, mut decl: &ast::Use): (std: bool, filepath: string) {
 		path := decl.Path.Kind[1 : len(decl.Path.Kind)-1] // remove quotes
-		if decl.Extern {
+		if decl.Flags&ast::F_EXTERN != 0 {
 			if build::IsStdHeaderPath(path) {
 				// Check for reserved aliases.
 				if decl.Alias != nil && !isExternUseScopeLink(decl.Alias.Kind) {
@@ -339,9 +338,9 @@ impl symBuilder {
 		}
 
 		// Path must be directory.
-		mustDir := !decl.Extern || decl.Alias != nil
+		mustDir := decl.Flags&ast::F_EXTERN == 0 || decl.Alias != nil
 
-		if decl.Extern && !mustDir {
+		if decl.Flags&ast::F_EXTERN != 0 && !mustDir {
 			ext := filepath::Ext(filepath)
 			if !build::IsValidHeaderExt(ext) &&
 				!build::IsValidCppExt(ext) &&
@@ -387,7 +386,7 @@ impl symBuilder {
 			Std:      std,
 		}
 
-		if decl.Extern {
+		if decl.Flags&ast::F_EXTERN != 0 {
 			imp.Extern = true
 			imp.Package = nil // Cpp headers haven't symbol table.
 			if decl.Alias != nil {

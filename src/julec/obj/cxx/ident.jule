@@ -104,11 +104,11 @@ impl identCoder {
 
 	fn func(*self, mut &buf: *strings::Builder, mut f: &sema::Func) {
 		match {
-		| f.AST.Extern:
+		| f.AST.Flags&ast::F_EXTERN != 0:
 			buf.WriteString(f.AST.Name)!
 			return
 		| f.IsMethod():
-			if f.AST.Static {
+			if f.AST.Flags&ast::F_STATIC != 0 {
 				self.structure(buf, f.Owner.(&sema::Struct))
 				buf.WriteString("_static_")!
 				self.writeIdentTo(buf, f.AST.Name)
@@ -139,12 +139,12 @@ impl identCoder {
 	}
 
 	fn funcIns(*self, mut &buf: *strings::Builder, mut f: &sema::FuncIns) {
-		if f.Decl.AST.Extern || len(f.Generics) == 0 {
+		if f.Decl.AST.Flags&ast::F_EXTERN != 0 || len(f.Generics) == 0 {
 			// Function may have zero generics, but owner needs a special treatment.
 			// Because it have generic types.
 			if f.Owner != nil && len(f.Owner.Generics) > 0 {
 				self.structureIns(buf, f.Owner)
-				if f.Decl.AST.Static {
+				if f.Decl.AST.Flags&ast::F_STATIC != 0 {
 					buf.WriteString("_static_")!
 					self.writeIdentTo(buf, f.Decl.AST.Name)
 				} else {
@@ -186,7 +186,7 @@ impl identCoder {
 	}
 
 	fn structure(*self, mut &buf: *strings::Builder, s: &sema::Struct) {
-		if s.AST.Extern {
+		if s.AST.Flags&ast::F_EXTERN != 0 {
 			if !obj::HasDirective(s.AST.Directives, directive::Typedef) {
 				buf.WriteString("struct ")!
 			}
@@ -200,7 +200,7 @@ impl identCoder {
 	}
 
 	fn structureIns(*self, mut &buf: *strings::Builder, mut s: &sema::StructIns) {
-		if s.Decl.AST.Extern {
+		if s.Decl.AST.Flags&ast::F_EXTERN != 0 {
 			self.structure(buf, s.Decl)
 			return
 		}
@@ -221,7 +221,7 @@ impl identCoder {
 	}
 
 	fn field(*self, mut &buf: *strings::Builder, f: &sema::Field) {
-		if f.Owner.AST.Extern {
+		if f.Owner.AST.Flags&ast::F_EXTERN != 0 {
 			export, ok := f.Tags["#export"]
 			if ok {
 				buf.WriteString(export)!
@@ -277,7 +277,7 @@ impl identCoder {
 			return
 		}
 		match {
-		| v.AST.Extern:
+		| v.AST.Flags&ast::F_EXTERN != 0:
 			buf.WriteString(v.AST.Name)!
 		| v.AST.Name == "error":
 			buf.WriteString("__jule_error_")!

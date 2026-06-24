@@ -296,7 +296,7 @@ impl parser {
 
 		match token.ID {
 		| token::COLON:
-			tad.Strict = true
+			tad.Flags |= ast::F_STRICT
 			break
 		| token::ASSIGN:
 			break
@@ -315,7 +315,9 @@ impl parser {
 		if ok && i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
-		tad.Public = mod::IsPub(tad.Name)
+		if mod::IsPub(tad.Name) {
+			tad.Flags |= ast::F_PUBLIC
+		}
 		return tad
 	}
 
@@ -333,8 +335,8 @@ impl parser {
 		mut group := make([]&ast::Var, 0, len(stmts))
 		for (_, mut stmt) in stmts {
 			mut v := &ast::Var{
-				Const: true,
 				Token: tokens[0],
+				Flags: ast::F_CONST,
 			}
 			self.buildVarCommon(v, stmt.tokens)
 			group = append(group, v)
@@ -388,7 +390,9 @@ impl parser {
 			return
 		}
 		v.Name = v.Token.Kind
-		v.Public = mod::IsPub(v.Name)
+		if mod::IsPub(v.Name) {
+			v.Flags |= ast::F_PUBLIC
+		}
 		v.Type = nil // For auto-type.
 		if len(tokens) > 1 {
 			tokens = tokens[1:] // Remove identifier.
@@ -408,12 +412,12 @@ impl parser {
 			}
 			*tokens = (*tokens)[1:]
 			if (*tokens)[0].ID == token::MUT {
-				v.Mutable = true
+				v.Flags |= ast::F_MUTABLE
 				// Skip the mut keyword
 				*tokens = (*tokens)[1:]
 			}
 		| token::CONST:
-			v.Const = true
+			v.Flags |= ast::F_CONST
 			*tokens = (*tokens)[1:]
 		|:
 			*tokens = nil
@@ -439,7 +443,7 @@ impl parser {
 			return nil
 		}
 		if tokens[0].ID == token::AND {
-			v.Reference = true
+			v.Flags |= ast::F_REFERENCE
 			if len(tokens) == 1 {
 				return nil
 			}
@@ -529,7 +533,7 @@ impl parser {
 
 		// Detects mut keyword.
 		if tokens[0].ID == token::MUT {
-			param.Mutable = true
+			param.Flags |= ast::F_MUTABLE
 			if len(tokens) == 1 {
 				self.pushErr(tokens[0], "invalid syntax")
 				return nil
@@ -576,11 +580,11 @@ impl parser {
 				return
 			}
 
-			if param.Variadic {
+			if param.Flags&ast::F_VARIADIC != 0 {
 				self.pushErr(token, "parameter is already variadic")
 				continue
 			}
-			param.Variadic = true
+			param.Flags |= ast::F_VARIADIC
 		}
 	}
 
@@ -624,7 +628,7 @@ impl parser {
 
 		// Detects mut keyword.
 		if param.Token.ID == token::MUT {
-			param.Mutable = true
+			param.Flags |= ast::F_MUTABLE
 			if len(tokens) == 1 {
 				self.pushErr(tokens[0], "invalid syntax")
 				return nil
@@ -642,7 +646,7 @@ impl parser {
 				}
 
 				if tokens[1].ID == token::NAME && tokens[2].ID == token::COLON {
-					param.Reference = true
+					param.Flags |= ast::F_REFERENCE
 					tokens = tokens[1:]
 					param.Token = tokens[0]
 				}
@@ -845,7 +849,7 @@ impl parser {
 
 		// Detect unsafe keyword.
 		if f.Token.ID == token::UNSAFE {
-			f.Unsafe = true
+			f.Flags |= ast::F_UNSAFE
 			*i++
 			if *i >= len(tokens) {
 				self.pushErr(f.Token, "invalid syntax")
@@ -856,7 +860,7 @@ impl parser {
 
 		// Detect async keyword.
 		if f.Token.ID == token::ASYNC {
-			f.Async = true
+			f.Flags |= ast::F_ASYNC
 			*i++
 			if *i >= len(tokens) {
 				self.pushErr(f.Token, "invalid syntax")
@@ -907,12 +911,14 @@ impl parser {
 		if *i < len(tokens) {
 			token := tokens[*i]
 			if token.ID == token::NOT {
-				f.Fallible = true
+				f.Flags |= ast::F_FALLIBLE
 				*i++
 			}
 		}
 
-		f.Public = mod::IsPub(f.Name)
+		if mod::IsPub(f.Name) {
+			f.Flags |= ast::F_PUBLIC
+		}
 		f.Result, ok := self.buildReturnType(tokens, expr, i)
 		if !ok {
 			return nil
@@ -945,7 +951,7 @@ impl parser {
 		mut blockTokens := range(i, token::LBRACE, token::RBRACE, tokens)
 		if blockTokens != nil {
 			f.Scope = self.buildScope(blockTokens, tokens[*i-1])
-			f.Scope.Unsafe = f.Unsafe
+			f.Scope.Flags |= f.Flags & ast::F_UNSAFE
 			if *i < len(tokens) {
 				self.pushErr(tokens[*i], "invalid syntax")
 			}
@@ -987,10 +993,10 @@ impl parser {
 		decl.Path = token
 	}
 
-	fn buildUseDecl(mut *self, mut tokens: []&token::Token, _extern: bool): &ast::Use {
+	fn buildUseDecl(mut *self, mut tokens: []&token::Token, flags: ast::Flag): &ast::Use {
 		mut decl := &ast::Use{
-			Token:  tokens[0], // See developer reference (8).
-			Extern: _extern,
+			Token: tokens[0], // See developer reference (8).
+			Flags: flags,
 		}
 		if len(tokens) < 2 {
 			self.pushErr(decl.Token, "path is missing of use declaration")
@@ -1080,7 +1086,9 @@ impl parser {
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
-		e.Public = mod::IsPub(e.Name)
+		if mod::IsPub(e.Name) {
+			e.Flags |= ast::F_PUBLIC
+		}
 		e.End = tokens[i-1]
 		e.Items = self.buildTypeEnumItems(itemTokens)
 		return e
@@ -1192,7 +1200,9 @@ impl parser {
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
-		e.Public = mod::IsPub(e.Name)
+		if mod::IsPub(e.Name) {
+			e.Flags |= ast::F_PUBLIC
+		}
 		e.End = tokens[i-1]
 		e.Items = self.buildEnumItems(itemTokens)
 		return e
@@ -1210,8 +1220,8 @@ impl parser {
 	fn buildField(mut &self, mut tokens: []&token::Token): &ast::Field {
 		mut f := new(ast::Field)
 
-		f.Mutable = tokens[0].ID == token::MUT
-		if f.Mutable {
+		if tokens[0].ID == token::MUT {
+			f.Flags |= ast::F_MUTABLE
 			if len(tokens) == 1 {
 				self.pushErr(tokens[0], "invalid syntax")
 				return nil
@@ -1250,7 +1260,9 @@ impl parser {
 				self.pushErr(tokens[i], "invalid syntax")
 			}
 		}
-		f.Public = mod::IsPub(f.Name)
+		if mod::IsPub(f.Name) {
+			f.Flags |= ast::F_PUBLIC
+		}
 		return f
 	}
 
@@ -1305,7 +1317,9 @@ impl parser {
 		if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
-		s.Public = mod::IsPub(s.Name)
+		if mod::IsPub(s.Name) {
+			s.Flags |= ast::F_PUBLIC
+		}
 		s.Fields = self.buildStructDeclFields(bodyTokens)
 		s.End = tokens[i-1]
 		return s
@@ -1313,7 +1327,7 @@ impl parser {
 
 	fn checkMethodReceiver(mut *self, mut f: &ast::Func, mustRecv: bool) {
 		if len(f.Params) == 0 {
-			f.Static = true
+			f.Flags |= ast::F_STATIC
 			if mustRecv {
 				self.pushErr(f.Token, "missing receiver parameter")
 			}
@@ -1321,7 +1335,7 @@ impl parser {
 		}
 		param := f.Params[0]
 		if !param.IsSelf() {
-			f.Static = true
+			f.Flags |= ast::F_STATIC
 			if mustRecv {
 				self.pushErr(f.Token, "missing receiver parameter")
 			}
@@ -1385,7 +1399,9 @@ impl parser {
 		if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
-		t.Public = mod::IsPub(t.Name)
+		if mod::IsPub(t.Name) {
+			t.Flags |= ast::F_PUBLIC
+		}
 		self.buildTraitBody(t, bodyTokens)
 		t.End = tokens[i-1]
 		return t
@@ -1395,8 +1411,8 @@ impl parser {
 		mut i := 1 // Skip "cpp" keyword.
 		mut f := self.buildFunc(&i, tokens, false, true)
 		if f != nil {
-			f.Public = false
-			f.Extern = true
+			f.Flags &= ^ast::F_PUBLIC
+			f.Flags |= ast::F_EXTERN
 		}
 		return f
 	}
@@ -1405,10 +1421,9 @@ impl parser {
 		tokens = tokens[1:] // Remove "cpp" keyword.
 		mut v := self.buildVar(tokens)
 		if v != nil {
-			v.Public = false
-			v.Extern = true
-			v.Static = true
-			if v.Const {
+			v.Flags &= ^ast::F_PUBLIC
+			v.Flags |= ast::F_EXTERN | ast::F_STATIC
+			if v.Flags&ast::F_CONST != 0 {
 				self.pushErr(v.Token, "external variables cannot be constant")
 			}
 			if v.X != nil {
@@ -1422,12 +1437,12 @@ impl parser {
 		tokens = tokens[1:] // Remove "cpp" keyword.
 		mut s := self.buildStructDecl(tokens)
 		if s != nil {
-			s.Public = false
+			s.Flags &= ^ast::F_PUBLIC
 			for (_, mut f) in s.Fields {
 				// External structure's fields are always public by default.
-				f.Public = true
+				f.Flags |= ast::F_PUBLIC
 			}
-			s.Extern = true
+			s.Flags |= ast::F_EXTERN
 		}
 		return s
 	}
@@ -1436,8 +1451,8 @@ impl parser {
 		tokens = tokens[1:] // Remove "cpp" keyword.
 		mut t := self.buildTypeAliasDecl(tokens)
 		if t != nil {
-			t.Public = false
-			t.Extern = true
+			t.Flags &= ^ast::F_PUBLIC
+			t.Flags |= ast::F_EXTERN
 		}
 		return t
 	}
@@ -1449,8 +1464,7 @@ impl parser {
 		}
 		tokens = tokens[1:] // Remove the extern keyword.
 
-		const Extern = true
-		return self.buildUseDecl(tokens, Extern)
+		return self.buildUseDecl(tokens, ast::F_EXTERN)
 	}
 
 	fn buildExtern(mut &self, mut tokens: []&token::Token): (data: ast::NodeData) {
@@ -1611,15 +1625,15 @@ impl parser {
 			mut i := 0
 			mut f := self.buildFunc(&i, tokens, false, false)
 			if f != nil {
-				f.Global = true
+				f.Flags |= ast::F_GLOBAL
 			}
 			return f
 		| token::LET
 		| token::CONST
 		| token::MUT:
 			mut v := self.buildVar(tokens)
-			if v != nil && !v.Const {
-				v.Static = true
+			if v != nil && v.Flags&ast::F_CONST == 0 {
+				v.Flags |= ast::F_STATIC
 			}
 			return v
 		| token::TYPE:
@@ -1682,8 +1696,7 @@ impl parser {
 	fn pushMetaNodes(mut &self, mut tokens: []&token::Token): bool {
 		match tokens[0].ID {
 		| token::USE:
-			const Extern = false
-			mut decl := self.buildUseDecl(tokens, Extern)
+			mut decl := self.buildUseDecl(tokens, 0)
 			self.pushUseDecl(decl)
 			return true
 		| token::EXTERN:

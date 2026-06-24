@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule/ast"
 use "std/jule/sema"
 
 // Collection for ordered defines.
@@ -17,13 +18,13 @@ lookup:
 		dAST := d.AST
 		const match type T {
 		| sema::Var:
-			if dAST.Const || dAST.Extern {
+			if dAST.Flags&(ast::F_CONST|ast::F_EXTERN) != 0 {
 				// Skip constant or external variables for dependency analysis.
 				// It is not cost for runtime, so it is not an real-memory dependency.
 				continue
 			}
 		| sema::Struct:
-			if dAST.Extern {
+			if dAST.Flags&ast::F_EXTERN != 0 {
 				// Skip external structures for dependency analysis.
 				// It is not cost for runtime, so it is not an real-memory dependency.
 				continue

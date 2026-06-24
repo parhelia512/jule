@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule/ast"
+
 // Pattern checker for functions and methods.
 struct FuncPattern{}
 
@@ -13,10 +15,7 @@ impl FuncPattern {
 		}
 		ast := f.AST
 		return ast.Name == "main" &&
-			!ast.Extern &&
-			!ast.Static &&
-			!ast.Unsafe &&
-			!ast.Fallible &&
+			ast.Flags&(ast::F_EXTERN|ast::F_STATIC|ast::F_UNSAFE|ast::F_FALLIBLE) == 0 &&
 			len(ast.Generics) == 0
 	}
 
@@ -27,10 +26,7 @@ impl FuncPattern {
 		}
 		ast := f.AST
 		return ast.Name == "init" &&
-			!ast.Extern &&
-			!ast.Static &&
-			!ast.Unsafe &&
-			!ast.Fallible &&
+			ast.Flags&(ast::F_EXTERN|ast::F_STATIC|ast::F_UNSAFE|ast::F_FALLIBLE) == 0 &&
 			len(ast.Generics) == 0
 	}
 
@@ -40,15 +36,13 @@ impl FuncPattern {
 			f.Owner == nil ||
 			f.IsVoid() ||
 			len(f.Params) != 1 ||
-			f.Params[0].AST.Mutable ||
+			f.Params[0].AST.Flags&ast::F_MUTABLE != 0 ||
 			!f.Params[0].IsRefptr() {
 			return false
 		}
 		ast := f.AST
 		if ast.Name != "String" ||
-			ast.Async ||
-			ast.Static ||
-			ast.Unsafe ||
+			ast.Flags&(ast::F_ASYNC|ast::F_STATIC|ast::F_UNSAFE) != 0 ||
 			len(ast.Generics) != 0 {
 			return false
 		}

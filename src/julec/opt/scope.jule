@@ -6,6 +6,7 @@ use "julec/env"
 use "julec/obj"
 use "julec/obj/cst"
 use "julec/obj/meta"
+use "std/jule/ast"
 use "std/jule/build"
 use "std/jule/constant"
 use "std/jule/sema"
@@ -930,7 +931,7 @@ impl scopeOptimizer {
 			return
 		}
 		mut fc := r.Expr.(&sema::FuncCallExpr)
-		if !fc.Func.Decl.AST.Fallible ||
+		if fc.Func.Decl.AST.Flags&ast::F_FALLIBLE == 0 ||
 			fc.Handler == nil ||
 			len(fc.Handler.Stmts) != 1 ||
 			!obj::IsForwarded(fc.Handler) {

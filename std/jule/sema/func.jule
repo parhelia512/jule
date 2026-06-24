@@ -176,11 +176,11 @@ impl ParamIns {
 	// Returns ParamIns's type kind as string.
 	fn String(*self): string {
 		mut s := strings::Builder{}
-		if self.Decl.AST.Mutable {
+		if self.Decl.AST.Flags&ast::F_MUTABLE != 0 {
 			s.WriteString("mut ")!
 		}
 
-		if self.Decl.AST.Reference {
+		if self.Decl.AST.Flags&ast::F_REFERENCE != 0 {
 			s.WriteString("&_:")!
 		}
 
@@ -250,13 +250,13 @@ impl FuncIns {
 	// See: https://manual.jule.dev/responsiveness/mutability
 	fn EqualFunc(&self, f: &FuncIns, responsive: bool): bool {
 		sAST, oAST := self.Decl.AST, f.Decl.AST
-		if sAST.Fallible != oAST.Fallible {
+		if sAST.Flags&ast::F_FALLIBLE != oAST.Flags&ast::F_FALLIBLE {
 			return false
 		}
-		if sAST.Unsafe != oAST.Unsafe {
+		if sAST.Flags&ast::F_UNSAFE != oAST.Flags&ast::F_UNSAFE {
 			return false
 		}
-		if sAST.Async != oAST.Async {
+		if sAST.Flags&ast::F_ASYNC != oAST.Flags&ast::F_ASYNC {
 			return false
 		}
 		if self.Decl.IsVoid() != f.Decl.IsVoid() {
@@ -264,8 +264,8 @@ impl FuncIns {
 		}
 		checkParams := fn(p1: &ParamIns, p2: &ParamIns): bool {
 			p1AST, p2AST := p1.Decl.AST, p2.Decl.AST
-			if p1AST.Variadic != p2AST.Variadic ||
-				p1AST.Reference != p2AST.Reference {
+			if p1AST.Flags&(ast::F_VARIADIC|ast::F_REFERENCE) !=
+				p2AST.Flags&(ast::F_VARIADIC|ast::F_REFERENCE) {
 				return false
 			}
 
@@ -277,23 +277,25 @@ impl FuncIns {
 					return false
 				}
 				if responsive {
-					return p1AST.Mutable || !p2AST.Mutable
+					return p1AST.Flags&ast::F_MUTABLE != 0 ||
+						p2AST.Flags&ast::F_MUTABLE == 0
 				}
-				return p1AST.Mutable == p2AST.Mutable
+				return p1AST.Flags&ast::F_MUTABLE == p2AST.Flags&ast::F_MUTABLE
 			}
 
 			if responsive {
 				if !p1.Type.Equal(p2.Type) {
 					return false
 				}
-				tmut := p1AST.Reference || p1AST.Variadic || p1.Type.Mutable()
+				tmut := p1AST.Flags&(ast::F_REFERENCE|ast::F_VARIADIC) != 0 || p1.Type.Mutable()
 				if !tmut {
 					return true
 				}
-				return p1AST.Mutable || !p2AST.Mutable
+				return p1AST.Flags&ast::F_MUTABLE != 0 ||
+					p2AST.Flags&ast::F_MUTABLE == 0
 			}
 
-			if p1AST.Mutable != p2AST.Mutable {
+			if p1AST.Flags&ast::F_MUTABLE != p2AST.Flags&ast::F_MUTABLE {
 				return false
 			}
 			return p1.Type.Equal(p2.Type)
@@ -322,7 +324,7 @@ impl FuncIns {
 	// Reports whether functions are equals by trait implementation rules.
 	fn equalTrait(&self, other: &FuncIns): bool {
 		sAST, oAST := self.Decl.AST, other.Decl.AST
-		if sAST.Public != oAST.Public {
+		if sAST.Flags&ast::F_PUBLIC != oAST.Flags&ast::F_PUBLIC {
 			return false
 		}
 		if sAST.Name != oAST.Name {
@@ -385,11 +387,11 @@ impl FuncIns {
 		mut s := strings::Builder{}
 		s.Grow(1 << 5)
 
-		if self.Decl != nil && self.Decl.AST.Unsafe {
+		if self.Decl != nil && self.Decl.AST.Flags&ast::F_UNSAFE != 0 {
 			s.WriteString("unsafe ")!
 		}
 
-		if self.Decl != nil && self.Decl.AST.Async {
+		if self.Decl != nil && self.Decl.AST.Flags&ast::F_ASYNC != 0 {
 			s.WriteString("async ")!
 		}
 
@@ -411,7 +413,7 @@ impl FuncIns {
 			}
 		}
 		s.WriteByte(')')!
-		if self.Decl != nil && self.Decl.AST.Fallible {
+		if self.Decl != nil && self.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 			s.WriteByte('!')!
 		}
 		if self.Decl != nil && !self.Decl.IsVoid() {

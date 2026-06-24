@@ -298,9 +298,8 @@ impl exprBuilder {
 			Token: t,
 			End:   t,
 			Data: &ast::NameExpr{
-				Token:  t,
-				Name:   name,
-				Extern: false,
+				Token: t,
+				Name:  name,
 			},
 		}
 
@@ -322,31 +321,31 @@ impl exprBuilder {
 			if !self.expect(token::PERIOD, "expected period") {
 				if self.eof() {
 					self.pushErr(t, "unexpected EOF; expected identifier")
-					return &ast::Expr{} // bad expression
+					return new(ast::Expr) // bad expression
 				}
 				mut name := self.t
 				self.next()
 				// Special case: allow using keywords as identifier for external defines.
 				if name.ID != token::NAME && !token::IsKeyword(name.Kind) {
 					self.pushErr(name, "expected identifier for external namespace type")
-					return &ast::Expr{} // bad expression
+					return new(ast::Expr) // bad expression
 				}
 				mut typ := self.parseNameType(name, name.Kind)
 				if typ != nil {
 					match type typ.Data {
 					| &ast::NameExpr:
 						// Plain identifier.
-						typ.Data.(&ast::NameExpr).Extern = true
+						typ.Data.(&ast::NameExpr).Flags |= ast::F_EXTERN
 					| &ast::IndexExpr:
 						// Identifier with generics.
-						typ.Data.(&ast::IndexExpr).X.Data.(&ast::NameExpr).Extern = true
+						typ.Data.(&ast::IndexExpr).X.Data.(&ast::NameExpr).Flags |= ast::F_EXTERN
 					|:
 						self.pushErr(t, "expected identifier for external namespace type")
 					}
 				}
 				return typ
 			}
-			return &ast::Expr{} // bad expression
+			return new(ast::Expr) // bad expression
 		| token::NAME:
 			mut t := self.t
 			name := self.parseIdent()
@@ -812,13 +811,12 @@ impl exprBuilder {
 		}
 	}
 
-	fn parseShortFuncLit(mut *self, isasync: bool): &ast::Expr {
+	fn parseShortFuncLit(mut *self, flags: ast::Flag): &ast::Expr {
 		mut f := new(ast::Func)
-		f.Async = isasync
+		f.Flags |= flags | ast::F_SHORT
 		f.Token = self.lt
 		f.Name = jule::Anon
 		f.Result = new(ast::ReturnType)
-		f.Short = true
 		// We have content between |...| range.
 		// Build parameters.
 		if self.t.ID == token::OR {
@@ -830,7 +828,7 @@ impl exprBuilder {
 				}
 				mut param := new(ast::Param)
 				if self.t.ID == token::MUT {
-					param.Mutable = true
+					param.Flags |= ast::F_MUTABLE
 					self.next()
 				}
 				if self.eof() {
@@ -868,12 +866,11 @@ impl exprBuilder {
 			self.pushErr(self.t, "unexpected EOF; expected function body")
 			return nil
 		}
-		inliner := self.t.ID != token::LBRACE
-		if inliner {
+		if self.t.ID != token::LBRACE {
 			// We have one-line body.
 			// Accept rest of the tokens as body.
 			f.Scope = newScope()
-			f.Scope.Deferred = true // Mark as one-line body.
+			f.Scope.Flags |= ast::F_DEFER // Mark as one-line body.
 			let mut e: &ast::Expr
 			if self.t.ID == token::LPAREN {
 				// Special case: allow list expressions for inliner short functions in (...) range.
@@ -904,9 +901,9 @@ impl exprBuilder {
 	fn parseFuncTypeOrLit(mut *self): &ast::Expr {
 		mut t := self.t
 		self.next()
-		mut isasync := false
+		mut flags := ast::Flag(0)
 		if t.ID == token::ASYNC {
-			isasync = true
+			flags |= ast::F_ASYNC
 			if self.eof() {
 				self.pushErr(t, "unexpected EOF; expected function type or literal")
 				return nil
@@ -922,7 +919,7 @@ impl exprBuilder {
 			return nil
 		}
 		if self.t.ID == token::OR || self.t.ID == token::LOR {
-			return self.parseShortFuncLit(isasync)
+			return self.parseShortFuncLit(flags)
 		}
 		if self.t.ID != token::LPAREN {
 			self.pushErr(t, "unexpected token; expected ( or |")
@@ -941,7 +938,7 @@ impl exprBuilder {
 		if f == nil {
 			return nil
 		}
-		f.Async = isasync
+		f.Flags |= flags
 		if self.eof() || self.t.ID != token::LBRACE {
 			// Function type.
 			// No extra attention needed.
@@ -992,9 +989,8 @@ impl exprBuilder {
 				Token: t,
 				End:   t,
 				Data: &ast::NameExpr{
-					Token:  t,
-					Name:   name,
-					Extern: false,
+					Token: t,
+					Name:  name,
 				},
 			}
 		| token::STRING | token::INT | token::FLOAT | token::IMAG | token::RUNE:
@@ -1053,9 +1049,9 @@ impl exprBuilder {
 				mut f := self.parseFuncTypeOrLit()
 				if f != nil {
 					mut fnc := f.Data.(&ast::Func)
-					fnc.Unsafe = true
+					fnc.Flags |= ast::F_UNSAFE
 					if fnc.Scope != nil {
-						fnc.Scope.Unsafe = fnc.Unsafe
+						fnc.Scope.Flags |= ast::F_UNSAFE
 					}
 				}
 				return f
@@ -1177,7 +1173,7 @@ impl exprBuilder {
 						self.pushErr(t, "fallible function must be handled after await")
 						break
 					}
-					f.Await = true
+					f.Flags |= ast::F_AWAIT
 					self.next()
 				| token::NAME:
 					x = self.parseSelector(x)

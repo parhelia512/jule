@@ -95,7 +95,7 @@ impl Type {
 	fn Extern(*self): bool {
 		s, ok := self.Kind.(&StructIns)
 		if ok {
-			if s.Decl.AST.Extern {
+			if s.Decl.AST.Flags&ast::F_EXTERN != 0 {
 				return true
 			}
 			if s.Source != nil {
@@ -979,11 +979,11 @@ impl typeChecker {
 		match type decl {
 		| &StructIns:
 			s := decl.(&StructIns)
-			if s.Decl != nil && s.Decl.AST.Extern {
+			if s.Decl != nil && s.Decl.AST.Flags&ast::F_EXTERN != 0 {
 				return true
 			}
 		| &TypeAlias:
-			if decl.(&TypeAlias).AST.Extern {
+			if decl.(&TypeAlias).AST.Flags&ast::F_EXTERN != 0 {
 				return true
 			}
 		}
@@ -1035,7 +1035,7 @@ impl typeChecker {
 	}
 
 	fn fromTypeAlias(mut *self, mut decl: &token::Token, mut ta: &TypeAlias): Kind {
-		if !self.s.isAccessibleDefine(ta.AST.Public, ta.AST.Token) {
+		if !self.s.isAccessibleDefine(ta.AST.Flags&ast::F_PUBLIC != 0, ta.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1061,7 +1061,7 @@ impl typeChecker {
 			}
 		}
 
-		if ta.AST.Strict && self.s.step&stepImplsImplemented != 0 {
+		if ta.AST.Flags&ast::F_STRICT != 0 && self.s.step&stepImplsImplemented != 0 {
 			// Check strict type structure if impl statements are implemented.
 			// But do not check if source type is nil, it means type type alias is still checking.
 			mut s := ta.Type.SoftStruct()
@@ -1091,7 +1091,7 @@ impl typeChecker {
 	}
 
 	fn fromEnum(mut *self, decl: &token::Token, mut e: &Enum): &Enum {
-		if !self.s.isAccessibleDefine(e.AST.Public, e.AST.Token) {
+		if !self.s.isAccessibleDefine(e.AST.Flags&ast::F_PUBLIC != 0, e.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1099,7 +1099,7 @@ impl typeChecker {
 	}
 
 	fn fromTypeEnum(mut *self, decl: &token::Token, mut e: &TypeEnum): &TypeEnum {
-		if !self.s.isAccessibleDefine(e.AST.Public, e.AST.Token) {
+		if !self.s.isAccessibleDefine(e.AST.Flags&ast::F_PUBLIC != 0, e.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1107,7 +1107,7 @@ impl typeChecker {
 	}
 
 	fn fromTrait(mut *self, decl: &token::Token, mut t: &Trait): &Trait {
-		if !self.s.isAccessibleDefine(t.AST.Public, t.AST.Token) {
+		if !self.s.isAccessibleDefine(t.AST.Flags&ast::F_PUBLIC != 0, t.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1414,7 +1414,7 @@ impl typeChecker {
 	}
 
 	fn fromStruct(mut *self, mut decl: &token::Token, mut s: &Struct): &StructIns {
-		if !self.s.isAccessibleDefine(s.AST.Public, s.AST.Token) {
+		if !self.s.isAccessibleDefine(s.AST.Flags&ast::F_PUBLIC != 0, s.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1898,7 +1898,7 @@ impl typeChecker {
 			return self.build(r.X.Data)
 		| &ast::NameExpr:
 			mut name := declKind.(&ast::NameExpr)
-			mut t := self.buildName(name.Token, name.Extern)
+			mut t := self.buildName(name.Token, name.Flags&ast::F_EXTERN != 0)
 			if t != nil {
 				kind = t
 			}

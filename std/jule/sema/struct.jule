@@ -102,7 +102,7 @@ impl Struct {
 			mut f2 := f.instance()
 			f2.Owner = ins
 			ins.Fields = append(ins.Fields, f2)
-			if !f.AST.Mutable && f.Type != nil && f.Type.Mutable() {
+			if f.AST.Flags&ast::F_MUTABLE == 0 && f.Type != nil && f.Type.Mutable() {
 				ins.Mutable = true
 			}
 		}
@@ -143,7 +143,7 @@ impl Struct {
 	// Returns nil if not exist any method in this identifier.
 	fn FindMethod(mut *self, name: string, _static: bool): &Func {
 		for (_, mut f) in self.Methods {
-			if f.AST.Static == _static && f.AST.Name == name {
+			if (f.AST.Flags&ast::F_STATIC != 0) == _static && f.AST.Name == name {
 				return f
 			}
 		}
@@ -209,7 +209,7 @@ impl Kind for StructIns {
 	// Returns Struct's type kind as string.
 	fn String(*self): string {
 		mut kind := strings::Builder{}
-		if self.Decl.AST.Extern {
+		if self.Decl.AST.Flags&ast::F_EXTERN != 0 {
 			kind.WriteString("extern.")!
 		}
 		kind.WriteString(self.Decl.FullName)!
@@ -283,7 +283,7 @@ impl StructIns {
 	// Returns nil if not exist any method in this identifier.
 	fn FindMethod(mut *self, name: string, _static: bool): &Func {
 		for (_, mut f) in self.Methods {
-			if f.AST.Static == _static && f.AST.Name == name {
+			if (f.AST.Flags&ast::F_STATIC != 0) == _static && f.AST.Name == name {
 				return f
 			}
 		}

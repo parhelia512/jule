@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule"
 use "std/jule/token"
 
 // Abstract syntax tree.
@@ -10,4 +11,767 @@ struct AST {
 	TopDirectives: []&Directive
 	UseDecls:      []&Use
 	Nodes:         []Node
+}
+
+// Type of AST Node's data.
+enum NodeData: type {
+	&Enum,
+	&TypeEnum,
+	&Func,
+	&Struct,
+	&Trait,
+	&TypeAlias,
+	&Var,
+	&Impl,
+}
+
+// AST Node.
+struct Node {
+	Token: &token::Token
+	Data:  NodeData
+}
+
+// Directive.
+struct Directive {
+	Tag:  &token::Token
+	Args: []&token::Token
+}
+
+// Channel directions.
+const (
+	SEND = 1 << iota
+	RECV
+)
+
+// Channel type.
+struct ChanType {
+	Arrow: &token::Token // Token of arrow.
+	Dir:   int           // Direction.
+	Value: &Expr         // Value type.
+}
+
+// Slice type.
+struct SliceType {
+	Value: &Expr // Value type.
+}
+
+// Array type.
+// Size expression is nil for auto-sized array.
+struct ArrayType {
+	Value: &Expr // Value type.
+	Size:  &Expr
+}
+
+impl ArrayType {
+	// Reports whether array is auto-sized.
+	fn IsAutoSized(*self): bool {
+		return self.Size == nil
+	}
+}
+
+// Map type.
+struct MapType {
+	Key:   &Expr
+	Value: &Expr
+}
+
+// Return type.
+// Field are nil for the void type.
+struct ReturnType {
+	Type:  &Expr
+	Names: []&token::Token
+}
+
+// Type of Expr's data.
+enum ExprData: type {
+	&RangeExpr,
+	&TupleExpr,
+	&LitExpr,
+	&NameExpr,
+	&UnaryExpr,
+	&SelectorExpr,
+	&NamespaceExpr,
+	&VariadicExpr,
+	&CallExpr,
+	&TypedBraceLit,
+	&BraceLit,
+	&SlicingExpr,
+	&SliceExpr,
+	&BinaryExpr,
+	&UnsafeExpr,
+	&IndexExpr,
+	&Func,
+	&KeyValueExpr,
+	&ChanSend,
+	&TypeAssertionExpr,
+	&ChanType,
+	&ArrayType,
+	&MapType,
+	&SliceType,
+}
+
+// Expression.
+struct Expr {
+	Token: &token::Token
+	End:   &token::Token
+	Data:  ExprData
+}
+
+// Range expression represents an expression between parentheses.
+struct RangeExpr {
+	X: &Expr // Expression.
+}
+
+// Use expression.
+struct UseExpr {
+	Token: &token::Token
+	X:     &Expr // Expression.
+}
+
+// Tuple expression.
+struct TupleExpr {
+	X: []&Expr // Expressions.
+}
+
+// Literal expression.
+struct LitExpr {
+	Token: &token::Token
+	Value: string
+}
+
+// Unsafe expression.
+struct UnsafeExpr {
+	Token: &token::Token // Token of the unsafe keyword.
+	X:     &Expr         // Expression.
+}
+
+// Identifier expression.
+struct NameExpr {
+	Token: &token::Token // Token of identifier.
+	Name:  string        // The name.
+
+	// Possible flags are:
+	//	F_EXTERN: external name
+	Flags: Flag
+}
+
+impl NameExpr {
+	// Reports whether identifier is self keyword.
+	fn IsSelf(*self): bool {
+		return self.Name == "self"
+	}
+}
+
+// Unary expression.
+// For the unsafe pointer (*unsafe) type, Op is star and Expr is nil.
+struct UnaryExpr {
+	Op: &token::Token // Token of the operator.
+	X:  &Expr         // Expression.
+}
+
+impl UnaryExpr {
+	// Reports whether the unary expression is the unsafe pointer type declaration.
+	fn IsUnsafePtr(*self): bool {
+		return self.Op.ID == token::MUL && self.X == nil
+	}
+}
+
+// Variadiced expression.
+struct VariadicExpr {
+	Token: &token::Token
+	X:     &Expr // Expression to variadic.
+}
+
+// Type assertion expression.
+struct TypeAssertionExpr {
+	Type: &Expr
+	X:    &Expr // Expression to assert.
+}
+
+// Namespace identifier selection expression.
+struct NamespaceExpr {
+	Namespace: &token::Token // Tokens of the namespace identifier.
+	Name:      &token::Token // Token of the selected identifier.
+}
+
+// Identifier selector expression.
+struct SelectorExpr {
+	X:    &Expr         // Memory selection based on.
+	Name: &token::Token // Token of the selected identifier.
+}
+
+// Binary operation.
+struct BinaryExpr {
+	X:  &Expr         // Left operand.
+	Y:  &Expr         // Right operand.
+	Op: &token::Token // Operator.
+}
+
+// Special error handler scopes.
+let mut Ignored = new(Scope)   // Error is ignored, like foo()!
+let mut Forwarded = new(Scope) // Error is forwarded, like foo()?
+
+// Function call expression kind.
+struct CallExpr {
+	Token:   &token::Token
+	Func:    &Expr   // Function expression.
+	Args:    []&Expr // Function arguments, or nil.
+	Handler: &Scope  // Error handling scope, or nil.
+
+	// Possible flags are:
+	//	F_CO: if this is a concurrent call.
+	//	F_AWAIT: awaited
+	Flags: Flag
+}
+
+impl CallExpr {
+	// Reports whether error is not handled.
+	fn Unhandled(*self): bool {
+		return self.Handler == nil
+	}
+}
+
+// Typed brace instantiating expression.
+struct TypedBraceLit {
+	Type: &Expr
+	Lit:  &BraceLit
+}
+
+// Anonymous brace instantiating expression.
+struct BraceLit {
+	Token: &token::Token
+	End:   &token::Token
+	X:     []&Expr // Expression.
+}
+
+impl BraceLit {
+	// Reports whether literal is empty ( {} ).
+	fn IsEmpty(*self): bool {
+		return len(self.X) == 0
+	}
+}
+
+// Key-value expression.
+struct KeyValueExpr {
+	Key:   &Expr
+	Value: &Expr
+	Colon: &token::Token
+}
+
+// Slice initiating expression.
+// Also represents array initiating expression.
+// For array-fill initiating expression; len(X)=2 and the second
+// element is a VariadicExpr with nil expression.
+struct SliceExpr {
+	Token: &token::Token
+	End:   &token::Token
+	X:     []&Expr // Elements.
+}
+
+impl SliceExpr {
+	// Reports whether slice is empty.
+	fn IsEmpty(*self): bool {
+		return len(self.X) == 0
+	}
+}
+
+// Index expression.
+struct IndexExpr {
+	Token: &token::Token
+	End:   &token::Token
+	X:     &Expr // Value expression to indexing.
+	Index: &Expr // Index value expression.
+}
+
+// Slicing expression.
+struct SlicingExpr {
+	Token: &token::Token
+	End:   &token::Token
+	X:     &Expr // Value expression to slicing.
+	Low:   &Expr // Low index value expression, or nil.
+	High:  &Expr // High index value expression, or nil.
+	Max:   &Expr // Max index value expression, or nil.
+}
+
+// Single mask value for a constraint.
+struct ConstraintMask {
+	Deep: bool // Whether the operator ~ used.
+	Type: &Expr
+}
+
+// Constraint.
+struct Constraint {
+	Mask: []ConstraintMask
+}
+
+// Generic type declaration.
+struct Generic {
+	Token:      &token::Token
+	Name:       string
+	Constraint: &Constraint
+}
+
+// Label statement.
+struct Label {
+	Token: &token::Token
+	Name:  string
+}
+
+// Goto statement.
+struct Goto {
+	Token: &token::Token
+	Label: &token::Token
+}
+
+// Fall statement.
+struct Fall {
+	Token: &token::Token
+}
+
+// Left expression of assign statement.
+struct AssignLeft {
+	Token: &token::Token
+	Name:  string
+	X:     &Expr // Expression.
+
+	// Possible flags are:
+	//	F_MUTABLE: if name declared as mutable
+	//	F_REFERENCE: if name declared as a reference
+	Flags: Flag
+}
+
+// Assign statement.
+struct Assign {
+	Decl: bool          // Whether the assignment may declare variable.
+	Op:   &token::Token // Setter operator.
+	X:    []&AssignLeft // Lvalue expressions.
+	Y:    &Expr         // Expression to be assigned.
+}
+
+// Type of Stmt's data.
+enum StmtData: type {
+	&Var,
+	&Return,
+	&Goto,
+	&Break,
+	&Continue,
+	&Expr,
+	&Conditional,
+	&Match,
+	&Iter,
+	&Assign,
+	&Fall,
+	&Label,
+	&Scope,
+	&TypeAlias,
+	&UseExpr,
+	&Select,
+	&Throw,
+}
+
+// Statement.
+struct Stmt {
+	Token: &token::Token
+	End:   &token::Token
+	Data:  StmtData
+}
+
+// Scope tree.
+struct Scope {
+	Parent: &Scope // Nil if scope is root.
+	Stmts:  []Stmt
+	End:    &token::Token
+
+	// Possible flags are:
+	//	F_UNSAFE: if scope is unsafe
+	//	F_DEFER: if scope is deferred
+	Flags: Flag
+}
+
+// Channel send data statement.
+struct ChanSend {
+	Chan: &Expr
+	X:    &Expr // Expression.
+}
+
+// Parameter.
+struct Param {
+	Token: &token::Token
+	Type:  &Expr
+	Name:  string
+
+	// Possible flags are:
+	//	F_MUTABLE: if parameter is mutable
+	//	F_VARIADIC: if parameter is variadic
+	//	F_REFERENCE: if parameter is a reference
+	Flags: Flag
+}
+
+impl Param {
+	// Reports whether parameter is self (receiver) parameter.
+	fn IsSelf(*self): bool {
+		return self.Name == "&self" || self.Name == "*self"
+	}
+
+	// Reports whether self (receiver) parameter is smart pointer.
+	fn IsSmartptr(*self): bool {
+		return len(self.Name) > 0 && self.Name[0] == '&'
+	}
+
+	// Reports whether self (receiver) parameter is reference pointer.
+	fn IsRefptr(*self): bool {
+		return len(self.Name) > 0 && self.Name[0] == '*'
+	}
+}
+
+// Function declaration.
+// Also represents anonymous function expression and function type declarations..
+// For short function literals, Scope will be deferred to represent one-line body.
+struct Func {
+	Token:      &token::Token
+	Name:       string
+	Directives: []&Directive
+	Scope:      &Scope
+	Generics:   []&Generic
+	Result:     &ReturnType
+	Params:     []&Param
+
+	// Possible flags are:
+	//	F_GLOBAL: if function declared in the global scope
+	//	F_ASYNC: if function is async
+	//	F_UNSAFE: if function is unsafe
+	//	F_PUBLIC: if function is public
+	//	F_EXTERN: if function is an external declaration
+	//	F_SHORT: if function is an anonymous function, defined by short literal.
+	//	F_STATIC: if function is static
+	//	F_FALLIBLE: if function is fallibe
+	Flags: Flag
+}
+
+impl Func {
+	// Reports whether the function is anonymous.
+	fn IsAnon(*self): bool {
+		return self.Name == jule::Anon
+	}
+
+	// Reports whether the function is anonymous and defined in short way.
+	fn IsShort(*self): bool {
+		return self.Flags&F_SHORT != 0 && self.IsAnon()
+	}
+
+	// Reports whether the function is type declaration.
+	fn IsDecl(*self): bool {
+		return self.Scope == nil
+	}
+}
+
+// Variable declaration.
+struct Var {
+	Scope:      &Scope // nil for global scopes
+	Token:      &token::Token
+	Op:         &token::Token // Expression assign operator token.
+	Name:       string
+	Directives: []&Directive
+	Type:       &Expr // Type declaration, or nil if type inferred.
+	X:          &Expr // Initializer expression, or nil.
+
+	// See developer reference (12).
+	GroupIndex: int    // Index of variable in the group, if variable is grouped.
+	Group:      []&Var // All variables of group in define order, if variable is grouped.
+
+	// Possible flags are:
+	//	F_EXTERN: if variable is an external declaration
+	//	F_PUBLIC: if variable is public
+	//	F_CONST: if variable is constant
+	//	F_STATIC: if variable is static
+	//	F_REFERENCE: if variable is a reference
+	Flags: Flag
+}
+
+// Return statement.
+struct Return {
+	Token: &token::Token
+	X:     &Expr // Expression.
+}
+
+// Throw statement.
+struct Throw {
+	Token: &token::Token
+	Error: &Expr // Error expression.
+
+	// Possible flags are:
+	//	F_UNSAFE: if it is an unsafe throw
+	Flags: Flag
+}
+
+// Type of Iter's kind.
+enum IterKind: type {
+	&WhileKind,
+	&RangeKind,
+}
+
+// Iteration.
+struct Iter {
+	Token: &token::Token
+	Kind:  IterKind
+	Scope: &Scope
+
+	// Possible flags are:
+	//	F_CONST: if it is a comptime iteration
+	Flags: Flag
+}
+
+impl Iter {
+	// Reports whether iteration is infinite.
+	fn IsInfinite(*self): bool { return self.Kind == nil }
+}
+
+// While iteration kind.
+struct WhileKind {
+	X:         &Expr    // Condition expression.
+	Next:      StmtData // Nil if kind is while-next iteration.
+	NextToken: &token::Token
+}
+
+impl WhileKind {
+	// Reports whether kind is while-next iteration.
+	fn IsWhileNext(*self): bool {
+		return self.Next != nil
+	}
+}
+
+// Range iteration kind.
+struct RangeKind {
+	InToken: &token::Token // Token of "in" keyword
+	X:       &Expr         // Range expression.
+	A:       &Var          // First key of range.
+	B:       &Var          // Second key of range.
+}
+
+// Break statement.
+struct Break {
+	Token: &token::Token
+	Label: &token::Token // Label to break, or nil.
+}
+
+// Continue statement.
+struct Continue {
+	Token: &token::Token
+	Label: &token::Token // Label to continue, or nil.
+}
+
+// If condition.
+struct If {
+	Token: &token::Token
+	Scope: &Scope
+	X:     &Expr
+}
+
+// Else condition.
+struct Else {
+	Token: &token::Token
+	Scope: &Scope
+}
+
+// Condition chain.
+struct Conditional {
+	Tail:    []&If // First one is the head condition.
+	Default: &Else
+}
+
+// Type alias declaration.
+struct TypeAlias {
+	Scope:    &Scope
+	Token:    &token::Token
+	Name:     string
+	Type:     &Expr
+	Generics: []&Generic
+
+	// Possible flags are:
+	//	F_PUBLİC: if type alias is public
+	//	F_EXTERN: if type alias stands for an external type declaration
+	//	F_STRICT: if type alias is a strict type alias
+	Flags: Flag
+}
+
+// Case of match-case.
+struct Case {
+	Token: &token::Token
+	Scope: &Scope
+
+	// Holds expression.
+	// Expressions holds *Type if case is for type matching.
+	X: []&Expr
+
+	// Expression might be &Var or &Assign if case is for select statement.
+	//	- `&Var` represents: x := <-chan
+	//	- `&Assign` represents: x = <-x
+	Stmt:      StmtData
+	StmtToken: &token::Token
+}
+
+// Match statement.
+struct Match {
+	Token:   &token::Token
+	End:     &token::Token
+	X:       &Expr   // Expression to match.
+	Cases:   []&Case // First one is the head case.
+	Default: &Else
+
+	// Possible flags are:
+	//	F_CONST: if it is a comptime match
+	//	F_TYPE: if it is a type matching statement
+	Flags: Flag
+}
+
+// Select statement.
+struct Select {
+	Token:   &token::Token
+	End:     &token::Token
+	Cases:   []&Case // First one is the head condition.
+	Default: &Else
+}
+
+// Use declaration statement.
+struct Use {
+	Token: &token::Token
+	Path:  &token::Token // Use declaration path token.
+	Alias: &token::Token // Custom alias. Nil if not given.
+
+	// Possible flags are:
+	//	F_EXTERN: if it is an use declaration for an external resource
+	Flags: Flag
+}
+
+// Enum item.
+struct EnumItem {
+	Token: &token::Token
+	Name:  string
+	X:     &Expr // Nil for auto expression.
+}
+
+impl EnumItem {
+	// Reports whether item has auto expression.
+	fn IsAutoExpr(*self): bool {
+		return self.X == nil
+	}
+}
+
+// Enum declaration.
+struct Enum {
+	Token: &token::Token
+	Name:  string
+	Type:  &Expr
+	Items: []&EnumItem
+	End:   &token::Token
+
+	// Possible flags are:
+	//	F_PUBLIC: if enum is public
+	Flags: Flag
+}
+
+impl Enum {
+	// Reports whether enum's type is default.
+	fn IsDefaultTyped(*self): bool {
+		return self.Type == nil
+	}
+}
+
+// TypeEnum item.
+struct TypeEnumItem {
+	Token: &token::Token
+	Type:  &Expr
+}
+
+// TypeEnum declaration.
+struct TypeEnum {
+	Token: &token::Token
+	Name:  string
+	Items: []&TypeEnumItem
+	End:   &token::Token
+
+	// Possible flags are:
+	//	F_PUBLIC: if type enum is public
+	Flags: Flag
+}
+
+// Field declaration.
+struct Field {
+	Token: &token::Token
+	Name:  string
+	Type:  &Expr
+	Tag:   &token::Token // Nil if not given.
+
+	// Possible flags are:
+	//	F_PUBLIC: if field is public
+	//	F_MUTABLE: if field has interior mutability
+	Flags: Flag
+}
+
+// Structure declaration.
+struct Struct {
+	Token:      &token::Token
+	End:        &token::Token
+	Name:       string
+	Fields:     []&Field
+	Directives: []&Directive
+	Generics:   []&Generic
+
+	// Possible flags are:
+	//	F_PUBLIC: if struct is public
+	//	F_EXTERN: if struct is an external declaration
+	Flags: Flag
+}
+
+struct Trait {
+	// Trait declaration.
+	Token:    &token::Token
+	End:      &token::Token
+	Name:     string
+	Inherits: []&Expr
+	Methods:  []&Func
+
+	// Possible flags are:
+	//	F_PUBLIC: if trait is public
+	Flags: Flag
+}
+
+// Implementation.
+struct Impl {
+	End: &token::Token
+
+	// This token available for these cases:
+	//	- Implementation trait to structure, represents trait's type.
+	Base: &Expr
+
+	// This token available for these cases:
+	//	- Implementation trait to structure, represents structure's type.
+	//	- Implementation to structure, represents structure's type.
+	Dest: &Expr
+
+	// Given methods to implement.
+	Methods: []&Func
+}
+
+impl Impl {
+	// Reports whether implementation type is trait to structure.
+	fn IsTraitImpl(*self): bool {
+		return self.Base != nil
+	}
+
+	// Reports whether implementation type is append to destination structure.
+	fn IsStructImpl(*self): bool {
+		return self.Base == nil
+	}
+}
+
+// Returns the expression with any enclosing parentheses removed.
+fn Unparen(mut e: &Expr): &Expr {
+	for {
+		mut paren, ok := e.Data.(&RangeExpr)
+		if !ok {
+			return e
+		}
+		e = paren.X
+	}
 }

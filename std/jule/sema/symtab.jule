@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule/ast"
 use "std/jule/token"
 
 // Symbol table.
@@ -52,7 +53,7 @@ impl Lookup for SymTab {
 	// Returns nil if not exist any struct in this identifier.
 	fn FindStruct(mut *self, name: string, _extern: bool): &Struct {
 		for (_, mut s) in self.Structs {
-			if s.AST.Name == name && s.AST.Extern == _extern {
+			if s.AST.Name == name && (s.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return s
 			}
 		}
@@ -63,7 +64,7 @@ impl Lookup for SymTab {
 	// Returns nil if not exist any function in this identifier.
 	fn FindFunc(mut *self, name: string, _extern: bool): &Func {
 		for (_, mut f) in self.Funcs {
-			if f.AST.Name == name && f.AST.Extern == _extern {
+			if f.AST.Name == name && (f.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return f
 			}
 		}
@@ -119,13 +120,13 @@ impl SymTab {
 			mut i := len(self.Vars) - 1
 			for i >= 0; i-- {
 				mut v := self.Vars[i]
-				if v.AST.Name == name && v.AST.Extern == _extern {
+				if v.AST.Name == name && (v.AST.Flags&ast::F_EXTERN != 0) == _extern {
 					return v
 				}
 			}
 		} else {
 			for (_, mut v) in self.Vars {
-				if v.AST.Name == name && v.AST.Extern == _extern {
+				if v.AST.Name == name && (v.AST.Flags&ast::F_EXTERN != 0) == _extern {
 					return v
 				}
 			}
@@ -138,13 +139,13 @@ impl SymTab {
 			mut i := len(self.TypeAliases) - 1
 			for i >= 0; i-- {
 				mut ta := self.TypeAliases[i]
-				if ta.AST.Name == name && ta.AST.Extern == _extern {
+				if ta.AST.Name == name && (ta.AST.Flags&ast::F_EXTERN != 0) == _extern {
 					return ta
 				}
 			}
 		} else {
 			for (_, mut ta) in self.TypeAliases {
-				if ta.AST.Name == name && ta.AST.Extern == _extern {
+				if ta.AST.Name == name && (ta.AST.Flags&ast::F_EXTERN != 0) == _extern {
 					return ta
 				}
 			}
@@ -156,25 +157,25 @@ impl SymTab {
 	// Returns nil if not exist any define in this identifier.
 	fn defByIdent(mut *self, name: string, _extern: bool): any {
 		for (_, mut v) in self.Vars {
-			if v.AST.Name == name && v.AST.Extern == _extern {
+			if v.AST.Name == name && (v.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return v
 			}
 		}
 
 		for (_, mut ta) in self.TypeAliases {
-			if ta.AST.Name == name && ta.AST.Extern == _extern {
+			if ta.AST.Name == name && (ta.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return ta
 			}
 		}
 
 		for (_, mut s) in self.Structs {
-			if s.AST.Name == name && s.AST.Extern == _extern {
+			if s.AST.Name == name && (s.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return s
 			}
 		}
 
 		for (_, mut f) in self.Funcs {
-			if f.AST.Name == name && f.AST.Extern == _extern {
+			if f.AST.Name == name && (f.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return f
 			}
 		}
@@ -209,25 +210,25 @@ impl SymTab {
 	// If founded identifier address equals to "itself", it will be skipped.
 	fn isDuplicatedName(*self, itself: uintptr, name: string, _extern: bool): bool {
 		for _, v in self.Vars {
-			if uintptr(v) != itself && v.AST.Name == name && v.AST.Extern == _extern {
+			if uintptr(v) != itself && v.AST.Name == name && (v.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return true
 			}
 		}
 
 		for _, ta in self.TypeAliases {
-			if uintptr(ta) != itself && ta.AST.Name == name && ta.AST.Extern == _extern {
+			if uintptr(ta) != itself && ta.AST.Name == name && (ta.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return true
 			}
 		}
 
 		for _, s in self.Structs {
-			if uintptr(s) != itself && s.AST.Name == name && s.AST.Extern == _extern {
+			if uintptr(s) != itself && s.AST.Name == name && (s.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return true
 			}
 		}
 
 		for _, f in self.Funcs {
-			if uintptr(f) != itself && f.AST.Name == name && f.AST.Extern == _extern {
+			if uintptr(f) != itself && f.AST.Name == name && (f.AST.Flags&ast::F_EXTERN != 0) == _extern {
 				return true
 			}
 		}

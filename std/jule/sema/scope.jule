@@ -444,7 +444,8 @@ impl scopeChecker {
 	// Reports whether scope is unsafe.
 	fn isAsync(mut &self): bool {
 		r := self.getRoot()
-		return r.owner != nil && r.owner.Decl != nil && r.owner.Decl.AST.Async
+		return r.owner != nil && r.owner.Decl != nil &&
+			r.owner.Decl.AST.Flags&ast::F_ASYNC != 0
 	}
 
 	// Reports scope is root.
@@ -717,7 +718,7 @@ impl scopeChecker {
 	}
 
 	fn checkAnonScope(mut &self, mut tree: &ast::Scope) {
-		if tree.Deferred {
+		if tree.Flags&ast::F_DEFER != 0 {
 			self.getRoot().owner.Decl.HasDefer = true
 		}
 		mut s := self.checkChild(tree)
@@ -950,7 +951,7 @@ impl scopeChecker {
 			ExprToken: rang.X.Token,
 		}
 
-		if it.Comptime {
+		if it.Flags&ast::F_CONST != 0 {
 			self.checkComptimeRangeIter(it, kind, v)
 			return
 		}
@@ -998,7 +999,7 @@ impl scopeChecker {
 
 	fn checkIter(mut &self, mut it: &ast::Iter) {
 		if it.IsInfinite() {
-			if it.Comptime {
+			if it.Flags&ast::F_CONST != 0 {
 				self.s.pushErr(it.Token, "comptime iterations can only be range iterations")
 				return
 			}
@@ -1008,7 +1009,7 @@ impl scopeChecker {
 
 		match type it.Kind {
 		| &ast::WhileKind:
-			if it.Comptime {
+			if it.Flags&ast::F_CONST != 0 {
 				self.s.pushErr(it.Token, "comptime iterations can only be range iterations")
 				return
 			}
@@ -1322,7 +1323,7 @@ impl scopeChecker {
 
 	fn processEndPartOfMultiAssign(mut &self, mut stmt: &MultiAssign, mut a: &ast::Assign,
 		mut lexpr: &ast::AssignLeft, mut l: &Value, mut r: exprPart, strict: bool) {
-		if !lexpr.Reference && jule::IsBlank(lexpr.Name) {
+		if lexpr.Flags&ast::F_REFERENCE == 0 && jule::IsBlank(lexpr.Name) {
 			if r.data.Type.Void() {
 				self.s.pushErr(a.Y.Token, "invalid expression")
 				self.s.pushSuggestion("expected value, found void type")
@@ -1337,7 +1338,7 @@ impl scopeChecker {
 					goto norm
 				}
 			|:
-				if lexpr.Mutable || lexpr.Reference {
+				if lexpr.Flags&(ast::F_MUTABLE|ast::F_REFERENCE) != 0 {
 					self.s.pushErr(lexpr.Token, "invalid syntax")
 					return
 				}
@@ -1355,20 +1356,19 @@ impl scopeChecker {
 			// Add new variable declaration statement.
 			mut v := &Var{
 				AST: &ast::Var{
-					Name:      lexpr.Name,
-					Token:     lexpr.Token,
-					Mutable:   lexpr.Mutable,
-					Reference: lexpr.Reference,
-					X:         r.expr,
+					Name:  lexpr.Name,
+					Token: lexpr.Token,
+					X:     r.expr,
+					Flags: lexpr.Flags & (ast::F_MUTABLE | ast::F_REFERENCE),
 				},
 				Scope: self.scope,
 				Value: r.data,
 			}
 			self.s.checkVarValue(v)
 			stmt.Left = append(stmt.Left, &Value{
-				Lvalue:    !v.AST.Const,
-				Mutable:   v.AST.Mutable,
-				Reference: v.AST.Reference,
+				Lvalue:    v.AST.Flags&ast::F_CONST == 0,
+				Mutable:   v.AST.Flags&ast::F_MUTABLE != 0,
+				Reference: v.AST.Flags&ast::F_REFERENCE != 0,
 				Type:      v.Type,
 				Model:     v,
 			})
@@ -1377,7 +1377,7 @@ impl scopeChecker {
 			return
 		}
 	norm:
-		if lexpr.Mutable || lexpr.Reference {
+		if lexpr.Flags&(ast::F_MUTABLE|ast::F_REFERENCE) != 0 {
 			self.s.pushErr(lexpr.Token, "identifier @ is duplicated in this scope", lexpr.Name)
 		}
 
@@ -1412,12 +1412,13 @@ impl scopeChecker {
 			// This just makes responsive-mutability possible and correct.
 			eval.target.mutable = !jule::IsBlank(l.Name) // if assigned to blank identifier, there is no mutability risk
 			if a.Decl && eval.target.mutable {
-				if l.Mutable && l.Reference {
-					eval.target.mutable = l.Mutable
+				const mutableReferenceMask = ast::F_MUTABLE | ast::F_REFERENCE
+				if l.Flags&mutableReferenceMask == mutableReferenceMask {
+					eval.target.mutable = true
 				} else {
 					_, isName := l.X.Data.(&ast::NameExpr)
 					if isName && self.isNewAssignIdent(l.Name) {
-						eval.target.mutable = l.Mutable
+						eval.target.mutable = l.Flags&ast::F_MUTABLE != 0
 					}
 				}
 			}
@@ -1443,7 +1444,7 @@ impl scopeChecker {
 				if jule::IsBlank(a.X[*_i].Name) {
 					flags |= evalPhysicalMem | evalUnwrapUntyped
 				}
-				if a.X[*_i].Reference {
+				if a.X[*_i].Flags&ast::F_REFERENCE != 0 {
 					flags |= evalRefptr
 				}
 				mut v := eval.evalExpr(expr, flags)
@@ -1460,7 +1461,7 @@ impl scopeChecker {
 			// Because mutability will be checked by assignment analysis.
 			updateMut(0)
 			mut evalFlags := evalDefault | evalPhysicalMem | evalUnwrapUntyped | evalFallible
-			if a.X[0].Reference {
+			if a.X[0].Flags&ast::F_REFERENCE != 0 {
 				evalFlags |= evalRefptr
 			}
 			right = eval.evalExpr(a.Y, evalFlags)
@@ -1579,8 +1580,9 @@ impl scopeChecker {
 				if !a.Decl {
 					goto eval
 				}
-				// If variable is reference or mutable, this is exactly a new identifier.
-				if lexpr.Mutable || lexpr.Reference {
+				// If variable is reference or mutable,
+				// this is exactly a new identifier.
+				if lexpr.Flags&(ast::F_MUTABLE|ast::F_REFERENCE) != 0 {
 					goto end
 				}
 				_, ok = lexpr.X.Data.(&ast::NameExpr)
@@ -1865,7 +1867,7 @@ impl scopeChecker {
 		}
 
 		mut te := v.Type.TypeEnum()
-		if m.Comptime {
+		if m.Flags&ast::F_CONST != 0 {
 			mut cti := v.Type.comptimeTypeInfo()
 			if cti == nil {
 				if !v.Decl {
@@ -1885,7 +1887,7 @@ impl scopeChecker {
 			Scope:     self.scope,
 			TypeMatch: true,
 			Expr:      v,
-			Comptime:  m.Comptime,
+			Comptime:  m.Flags&ast::F_CONST != 0,
 		}
 
 		// Do not check default if comptime matching enabled.
@@ -1947,7 +1949,7 @@ impl scopeChecker {
 			}
 		}
 
-		if m.Comptime {
+		if m.Flags&ast::F_CONST != 0 {
 			if !canComptimeMatch(v) {
 				self.s.pushErr(m.X.Token, "expression must be constant")
 				self.s.pushSuggestion("comptime-matching requires constant expression")
@@ -1962,7 +1964,7 @@ impl scopeChecker {
 		mut mc := &Match{
 			Scope:    self.scope,
 			Expr:     v,
-			Comptime: m.Comptime,
+			Comptime: m.Flags&ast::F_CONST != 0,
 		}
 
 		// Push into stmts here. Otherwise, labeled break statements and others
@@ -1996,7 +1998,7 @@ impl scopeChecker {
 	}
 
 	fn checkMatch(mut &self, mut m: &ast::Match) {
-		if m.Type {
+		if m.Flags&ast::F_TYPE != 0 {
 			self.checkTypeMatch(m)
 			return
 		}
@@ -2310,7 +2312,7 @@ impl scopeChecker {
 			return
 		}
 
-		if !t.Unsafe && !isSafeToThrow(expr) {
+		if t.Flags&ast::F_UNSAFE == 0 && !isSafeToThrow(expr) {
 			self.s.pushErr(t.Error.Token, `forbidden throw: error must be an explicit, non-nil type. Avoid using "any" or "nil".`)
 			self.s.pushSuggestion("consider forwarding with error variable or wrapping with a custom error type")
 			return
@@ -2322,7 +2324,7 @@ impl scopeChecker {
 		}
 
 		mut root := self.getRoot()
-		if !root.owner.Decl.AST.Fallible {
+		if root.owner.Decl.AST.Flags&ast::F_FALLIBLE == 0 {
 			self.s.pushErr(t.Token, "throw statements are not allowed in non-fallible scopes")
 		}
 
@@ -2594,7 +2596,8 @@ impl scopeChecker {
 
 	fn checkVars(mut *self) {
 		for _, v in self.table.Vars {
-			if !v.Used && !v.AST.Const && !jule::IsBlank(v.AST.Name) && !jule::IsAnon(v.AST.Name) {
+			if !v.Used && v.AST.Flags&ast::F_CONST == 0 &&
+				!jule::IsBlank(v.AST.Name) && !jule::IsAnon(v.AST.Name) {
 				self.s.pushErr(v.AST.Token, "declared but not used: "+conv::Quote(v.AST.Name))
 			}
 		}
@@ -2610,8 +2613,8 @@ impl scopeChecker {
 
 	// Checks scope tree.
 	fn check(mut &self, mut tree: &ast::Scope, mut s: &Scope) {
-		s.Deferred = tree.Deferred
-		s.Unsafe = tree.Unsafe
+		s.Deferred = tree.Flags&ast::F_DEFER != 0
+		s.Unsafe = tree.Flags&ast::F_UNSAFE != 0
 
 		errors := len(self.s.errors)
 
@@ -2849,7 +2852,7 @@ fn checkAssign(mut s: &sema, mut left: &Value, mut right: &Value, op: &token::To
 	}
 
 	f := left.Type.Func()
-	if f != nil && f.Decl != nil && f.Decl.AST.Global {
+	if f != nil && f.Decl != nil && f.Decl.AST.Flags&ast::F_GLOBAL != 0 {
 		// Make sure function is indeed a global function.
 		// Model is equals to the function when referred to directly.
 		// Otherwise it may be a variable, if it used as anonymous function.

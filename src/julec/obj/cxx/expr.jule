@@ -535,7 +535,7 @@ impl exprCoder {
 				return
 			}
 		}
-		if m.AST.Extern {
+		if m.AST.Flags&ast::F_EXTERN != 0 {
 			d := obj::FindDirective(m.AST.Directives, directive::Namespace)
 			if d != nil {
 				self.oc.writeBytes(concatAllParts(d.Args...))
@@ -595,7 +595,7 @@ impl exprCoder {
 		| token::MUL:
 			nilptr := self.oc.mode&_OBJC_DISABLE_NILPTR != 0
 			mut v, _ := m.Expr.Model.(&sema::Var)
-			if v != nil && v.AST.Reference {
+			if v != nil && v.AST.Flags&ast::F_REFERENCE != 0 {
 				self.oc.write("(*")
 				if nilptr {
 					self.possibleRefExpr(v)
@@ -944,7 +944,7 @@ impl exprCoder {
 
 	fn args(mut &self, mut m: &sema::FuncCallExpr) {
 		mut j := 0
-		if m.Func.Owner != nil && !m.Func.Decl.AST.Static ||
+		if m.Func.Owner != nil && m.Func.Decl.AST.Flags&ast::F_STATIC == 0 ||
 			len(m.Func.Params) > 0 && m.Func.Params[0].Decl.IsSelf() {
 			j++ // Skip receiver parameter.
 		}
@@ -1043,7 +1043,7 @@ impl exprCoder {
 		}
 		self.modelForCall(m.Expr)
 		if !m.Func.IsBuiltin() {
-			if m.Func.Decl.AST.Extern && len(m.Func.Generics) > 0 {
+			if m.Func.Decl.AST.Flags&ast::F_EXTERN != 0 && len(m.Func.Generics) > 0 {
 				if !obj::HasDirective(m.Func.Decl.AST.Directives, directive::Cdef) {
 					self.oc.write("<")
 					for (i, mut g) in m.Func.Generics {
@@ -1091,7 +1091,7 @@ impl exprCoder {
 							match type ssie.Expr.Model {
 							| &sema::Var:
 								v := ssie.Expr.Model.(&sema::Var)
-								if v.AST.Reference {
+								if v.AST.Flags&ast::F_REFERENCE != 0 {
 									break
 								}
 								fall
@@ -1189,7 +1189,7 @@ impl exprCoder {
 		childIndex++
 		if dest.Model != nil {
 			mut fc, ok := val.Model.(&sema::FuncCallExpr)
-			if ok && fc.Func.Decl != nil && fc.Func.Decl.AST.Fallible {
+			if ok && fc.Func.Decl != nil && fc.Func.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 				self.handleFallibleCallWithData(fc, dest)
 				self.oc.sc.emitDefersByLevel(childIndex, true)
 				return
@@ -1406,7 +1406,7 @@ impl exprCoder {
 			return
 		}
 		if m.Func.IsBuiltin() ||
-			!m.Func.Decl.AST.Fallible ||
+			m.Func.Decl.AST.Flags&ast::F_FALLIBLE == 0 ||
 			m.Handler != nil && len(m.Handler.Stmts) == 0 {
 			self.pureFuncCall(m)
 			return
@@ -1670,7 +1670,7 @@ impl exprCoder {
 	}
 
 	fn funcIns(mut &self, mut m: &sema::FuncIns) {
-		if m.Decl != nil && m.Decl.AST.Extern {
+		if m.Decl != nil && m.Decl.AST.Flags&ast::F_EXTERN != 0 {
 			d := obj::FindDirective(m.Decl.AST.Directives, directive::Namespace)
 			if d != nil {
 				self.oc.writeBytes(concatAllParts(d.Args...))
@@ -2727,7 +2727,7 @@ fn isFallibleResult(mut m: cst::Expr): (fc: &sema::FuncCallExpr) {
 		m = c.Expr.Model
 	}
 	fc, ok := m.(&sema::FuncCallExpr)
-	if !ok || fc.Func.Decl == nil || !fc.Func.Decl.AST.Fallible {
+	if !ok || fc.Func.Decl == nil || fc.Func.Decl.AST.Flags&ast::F_FALLIBLE == 0 {
 		fc = nil
 	}
 	return

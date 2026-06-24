@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule/ast"
 use "std/jule/sema"
 use "std/jule/token"
 
@@ -94,7 +95,7 @@ Head:
 	// Special case: if expression is reference pointer, return it directly.
 	// Otherwise it might be dereferenced, investigate deeper.
 	mut v, _ := m.(&sema::Var)
-	if v != nil && v.AST.Reference {
+	if v != nil && v.AST.Flags&ast::F_REFERENCE != 0 {
 		return uintptr(v)
 	}
 
@@ -105,7 +106,7 @@ Head:
 		match type m {
 		| &sema::Var:
 			v = m.(&sema::Var)
-			if !v.AST.Reference || v.Value == nil {
+			if v.AST.Flags&ast::F_REFERENCE == 0 || v.Value == nil {
 				// Variable is not reference (or points to unknown such as parameters), return address of it.
 				return uintptr(m.(&sema::Var))
 			}

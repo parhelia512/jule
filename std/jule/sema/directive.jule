@@ -19,7 +19,7 @@ impl directiveChecker {
 	fn checkCdef(mut *self, d: &ast::Directive) {
 		match type self.o {
 		| &Func:
-			if self.o.(&Func).AST.Extern {
+			if self.o.(&Func).AST.Flags&ast::F_EXTERN != 0 {
 				break
 			}
 			fall
@@ -35,7 +35,7 @@ impl directiveChecker {
 	fn checkTypedef(mut *self, d: &ast::Directive) {
 		match type self.o {
 		| &Struct:
-			if self.o.(&Struct).AST.Extern {
+			if self.o.(&Struct).AST.Flags&ast::F_EXTERN != 0 {
 				break
 			}
 			fall
@@ -51,15 +51,15 @@ impl directiveChecker {
 	fn checkNamespace(mut *self, mut d: &ast::Directive) {
 		match type self.o {
 		| &Struct:
-			if !self.o.(&Struct).AST.Extern {
+			if self.o.(&Struct).AST.Flags&ast::F_EXTERN == 0 {
 				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
 			}
 		| &Func:
-			if !self.o.(&Func).AST.Extern {
+			if self.o.(&Func).AST.Flags&ast::F_EXTERN == 0 {
 				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
 			}
 		| &Var:
-			if !self.o.(&Var).AST.Extern {
+			if self.o.(&Var).AST.Flags&ast::F_EXTERN == 0 {
 				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
 			}
 		|:
@@ -100,7 +100,7 @@ impl directiveChecker {
 		match type self.o {
 		| &Func:
 			f := self.o.(&Func)
-			if !f.AST.Extern && !f.IsInit() && !f.IsEntryPoint() {
+			if f.AST.Flags&ast::F_EXTERN == 0 && !f.IsInit() && !f.IsEntryPoint() {
 				break
 			}
 			if f.IsMethod() {
@@ -121,7 +121,7 @@ impl directiveChecker {
 		match type self.o {
 		| &Func:
 			f := self.o.(&Func)
-			if f.AST.Extern {
+			if f.AST.Flags&ast::F_EXTERN != 0 {
 				self.s.pushErr(d.Tag, "extern function does not supports directive: "+d.Tag.Kind)
 				return
 			}
@@ -143,17 +143,17 @@ impl directiveChecker {
 			}
 		| &Var:
 			v := self.o.(&Var)
-			if v.AST.Extern {
+			if v.AST.Flags&ast::F_EXTERN != 0 {
 				self.s.pushErr(d.Tag, "extern variable does not supports directive: "+d.Tag.Kind)
 				return
 			}
-			if v.AST.Const {
+			if v.AST.Flags&ast::F_CONST != 0 {
 				self.s.pushErr(d.Tag, "constant variable does not supports directive: "+d.Tag.Kind)
 				return
 			}
 		| &Struct:
 			s := self.o.(&Struct)
-			if s.AST.Extern {
+			if s.AST.Flags&ast::F_EXTERN != 0 {
 				self.s.pushErr(d.Tag, "extern struct does not supports directive: "+d.Tag.Kind)
 				return
 			}
@@ -187,7 +187,7 @@ impl directiveChecker {
 		match type self.o {
 		| &Func:
 			f := self.o.(&Func)
-			if f.AST.Extern {
+			if f.AST.Flags&ast::F_EXTERN != 0 {
 				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
 				return
 			}

@@ -4,6 +4,7 @@
 
 use "julec/obj"
 use "std/conv"
+use "std/jule/ast"
 use "std/jule/build"
 use "std/jule/directive"
 use "std/jule/sema"
@@ -47,7 +48,7 @@ impl TestCoder {
 		stringLitAsSlice(&self.oc.Buf, "\n", "1")
 		self.oc.write(");\n")
 		self.oc.indent()
-		if f.Decl.AST.Async {
+		if f.Decl.AST.Flags&ast::F_ASYNC != 0 {
 			self.oc.write("__jule_AsyncAwait ")
 		}
 		self.oc.ic.funcIns(&self.oc.Buf, f)

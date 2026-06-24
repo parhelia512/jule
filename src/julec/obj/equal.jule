@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule/ast"
 use "std/jule/constant"
 use "std/jule/sema"
 
@@ -74,14 +75,14 @@ fn EqualModels(mut l: sema::Expr, mut r: sema::Expr): bool {
 	| &sema::Var:
 		mut lv := l.(&sema::Var)
 		mut rv := r.(&sema::Var)
-		if !lv.AST.Reference && !rv.AST.Reference ||
+		if lv.AST.Flags&ast::F_REFERENCE == 0 && rv.AST.Flags&ast::F_REFERENCE == 0 ||
 			lv.Value == nil || rv.Value == nil {
 			// Variables are not reference (or points to unknown such as parameters), compare directly.
 			return lv == rv
 		}
 		// Dereference variables and compare the referenced values.
-		if lv.AST.Reference {
-			if rv.AST.Reference {
+		if lv.AST.Flags&ast::F_REFERENCE != 0 {
+			if rv.AST.Flags&ast::F_REFERENCE != 0 {
 				return EqualModels(lv.Value.Model, rv.Value.Model)
 			}
 			return EqualModels(lv.Value.Model, rv)

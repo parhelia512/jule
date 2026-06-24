@@ -130,7 +130,7 @@ impl ObjectDeadCode {
 				if self.isLive[&sema::FuncIns](f) {
 					break
 				}
-				if f.Owner != nil && !f.Decl.AST.Static {
+				if f.Owner != nil && f.Decl.AST.Flags&ast::F_STATIC == 0 {
 					if !self.isLive[&sema::StructIns](f.Owner) {
 						self.fusePushLive(f.Owner)
 					}
@@ -366,7 +366,7 @@ impl ObjectDeadCode {
 		mut i := 0
 		for i < len(*aliases) {
 			mut ta := (*aliases)[i]
-			if ta.AST.Strict {
+			if ta.AST.Flags&ast::F_STRICT != 0 {
 				mut s := ta.Type.Kind.(&sema::StructIns).Decl
 				mut j := 0
 				for j < len(s.Instances) {

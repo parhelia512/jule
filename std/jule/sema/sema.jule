@@ -101,9 +101,9 @@ fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 		} else {
 			v = &Var{
 				AST: &ast::Var{
-					Name:    name.Kind,
-					Mutable: true,
-					Token:   name,
+					Name:  name.Kind,
+					Token: name,
+					Flags: ast::F_MUTABLE,
 				},
 				Used:     true,
 				Scope:    f.Scope,
@@ -141,10 +141,9 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 			mut pAST := p.Decl.AST
 			v = &Var{
 				AST: &ast::Var{
-					Reference: pAST.Reference,
-					Mutable:   pAST.Mutable,
-					Name:      pAST.Name,
-					Token:     pAST.Token,
+					Name:  pAST.Name,
+					Token: pAST.Token,
+					Flags: pAST.Flags & (ast::F_REFERENCE | ast::F_MUTABLE),
 				},
 				Checked: true,
 				Used:    true,
@@ -169,7 +168,7 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 				}
 			| p.Decl.IsRefptr():
 				v.AST.Name = v.AST.Name[1:] // Remove refptr sign.
-				v.AST.Reference = true
+				v.AST.Flags |= ast::F_REFERENCE
 				v.Type.Kind = &Ptr{
 					Value: &Type{
 						Kind: f.Owner,
@@ -178,7 +177,7 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 			|:
 				panic("unreachable")
 			}
-		| p.Decl.AST.Variadic:
+		| p.Decl.AST.Flags&ast::F_VARIADIC != 0:
 			v.Type = &Type{
 				Variadic: false,
 				Kind: &Slice{
@@ -718,7 +717,7 @@ impl sema {
 			| &TypeAlias:
 				ta = true
 				mut typal := referencer.owner.(&TypeAlias)
-				if typal.AST.Strict {
+				if typal.AST.Flags&ast::F_STRICT != 0 {
 					refers = typal.Type.SoftStruct().Refers
 				}
 			}
@@ -1069,8 +1068,8 @@ impl sema {
 	}
 
 	fn checkFuncParamKind(mut &self, mut p: &ParamIns) {
-		p.Type.Variadic = p.Decl.AST.Variadic
-		if p.Decl.AST.Reference {
+		p.Type.Variadic = p.Decl.AST.Flags&ast::F_VARIADIC != 0
+		if p.Decl.AST.Flags&ast::F_REFERENCE != 0 {
 			checkTypeForRef(self, p.Type, p.Decl.AST.Token)
 		}
 	}
@@ -1196,8 +1195,8 @@ impl sema {
 			//	b can mutate it, since it is mutable and can access to field x.
 			//	Therefore, copying interior mutable fields with mutable kind
 			//	must be disallowed if field is accessible for safety reasons.
-			if f.Decl.AST.Mutable && f.Type.Mutable() &&
-				self.isAccessibleDefine(f.Decl.AST.Public, f.Decl.AST.Token) {
+			if f.Decl.AST.Flags&ast::F_MUTABLE != 0 && f.Type.Mutable() &&
+				self.isAccessibleDefine(f.Decl.AST.Flags&ast::F_PUBLIC != 0, f.Decl.AST.Token) {
 				return true
 			}
 		}
@@ -1255,7 +1254,7 @@ impl sema {
 		if prev != nil {
 			prev.next = referencer
 		}
-		referencer.tains = ta.AST.Strict
+		referencer.tains = ta.AST.Flags&ast::F_STRICT != 0
 		ok = self.checkTypeSymWithRefers(ta.AST.Type, &ta.Type, l, generics, referencer)
 		if ok && ta.Type.Array() != nil && ta.Type.Array().Auto {
 			self.pushErr(ta.AST.Type.Token, "auto-sized arrays are not allowed as value type")
@@ -1277,15 +1276,14 @@ impl sema {
 		}
 		// Type alias is strict, make strict type alias analysis.
 		// See developer reference (9).
-		if ta.AST.Strict {
+		if ta.AST.Flags&ast::F_STRICT != 0 {
 			mut s := initNewStructType(ta.FullName, ta.AST.Name, pseudoSource)
 			s.Decl.sema = self
-			s.Decl.AST.Extern = ta.AST.Extern
+			s.Decl.AST.Flags |= ta.AST.Flags & (ast::F_EXTERN | ast::F_PUBLIC)
 			s.Decl.AST.Token = ta.AST.Token
-			s.Decl.AST.Public = ta.AST.Public
 			ta.Type = &Type{Kind: s}
 			if len(ta.Generics) > 0 {
-				if ta.AST.Extern {
+				if ta.AST.Flags&ast::F_EXTERN != 0 {
 					self.pushErr(ta.AST.Token, "external strict type alias cannot have generics")
 					return false
 				}
@@ -1314,7 +1312,7 @@ impl sema {
 		if !ok {
 			return false
 		}
-		if !ta.AST.Strict && ta.AST.Extern {
+		if ta.AST.Flags&ast::F_STRICT == 0 && ta.AST.Flags&ast::F_EXTERN != 0 {
 			self.pushErr(ta.AST.Token, "external types cannot be soft type alias")
 			self.pushSuggestion("define as strict type alias, like; type @: Type", ta.AST.Name)
 		}
@@ -1323,7 +1321,7 @@ impl sema {
 
 	// Checks type alias declaration with duplicated identifiers.
 	fn checkTypeAliasDeclDup(mut &self, mut ta: &TypeAlias) {
-		if self.isDuplicatedName(uintptr(ta), ta.AST.Name, ta.AST.Extern) {
+		if self.isDuplicatedName(uintptr(ta), ta.AST.Name, ta.AST.Flags&ast::F_EXTERN != 0) {
 			self.pushErr(ta.AST.Token, "identifier @ is duplicated in this scope", ta.AST.Name)
 		}
 		self.checkTypeAliasDecl(ta, nil, self)
@@ -1617,7 +1615,8 @@ impl sema {
 			return false
 		}
 		mut param := f.Params[len(f.Params)-1]
-		if param.AST.Variadic && param.AST.Reference {
+		const variadicReferenceMask = ast::F_VARIADIC | ast::F_REFERENCE
+		if param.AST.Flags&variadicReferenceMask == variadicReferenceMask {
 			self.pushErr(param.AST.Token, "reference parameter cannot be variadic")
 		}
 		return true
@@ -1626,7 +1625,8 @@ impl sema {
 	// Checks generics, parameters and return type.
 	// Not checks scope, and other things.
 	fn checkFuncDeclPrototype(mut &self, mut f: &Func) {
-		if f.AST.Fallible && f.AST.Extern {
+		const externalFallibleMask = ast::F_FALLIBLE | ast::F_EXTERN
+		if f.AST.Flags&externalFallibleMask == externalFallibleMask {
 			self.pushErr(f.AST.Token, "external functions cannot be fallible")
 			return
 		}
@@ -1829,7 +1829,8 @@ impl sema {
 
 		// Methods.
 		for (_, mut f) in ipl.Methods {
-			if dest.FindMethod(f.AST.Name, f.AST.Static) != nil || dest.FindField(f.AST.Name) != nil {
+			if dest.FindMethod(f.AST.Name, f.AST.Flags&ast::F_STATIC != 0) != nil ||
+				dest.FindField(f.AST.Name) != nil {
 				self.pushErr(f.AST.Token, "identifier @ is duplicated in scope of struct", dest.AST.Name, f.AST.Name)
 				ok = false
 				continue
@@ -1946,7 +1947,8 @@ impl sema {
 		// It will be checked by the [checkVarValue] method.
 		// But if it has type annotation, complain, because enumerators
 		// should be plain, only identifier.
-		groupError := decl.AST.Const && (decl.Group == nil || !decl.IsTypeInferred())
+		groupError := decl.AST.Flags&ast::F_CONST != 0 &&
+			(decl.Group == nil || !decl.IsTypeInferred())
 
 		if decl.IsTypeInferred() {
 			if !decl.IsInitialized() && groupError {
@@ -1965,11 +1967,11 @@ impl sema {
 			decl.Type = self.checkTypeSymRefers(decl.AST.Type, l, refers)
 		}
 
-		if decl.AST.Reference {
-			if decl.AST.Const {
+		if decl.AST.Flags&ast::F_REFERENCE != 0 {
+			if decl.AST.Flags&ast::F_CONST != 0 {
 				self.pushErr(decl.AST.Token, "constant variable cannot be reference")
 			}
-			if decl.AST.Static {
+			if decl.AST.Flags&ast::F_STATIC != 0 {
 				self.pushErr(decl.AST.Token, "static variables cannot be reference")
 			}
 		}
@@ -1978,10 +1980,10 @@ impl sema {
 			if groupError {
 				self.pushErr(decl.AST.Token, "constant variable must be initialized explicitly")
 			}
-			if !decl.AST.Extern && decl.AST.Static {
+			if decl.AST.Flags&ast::F_EXTERN == 0 && decl.AST.Flags&ast::F_STATIC != 0 {
 				self.pushErr(decl.AST.Token, "static variable must be initialized explicitly")
 			}
-			if decl.AST.Reference {
+			if decl.AST.Flags&ast::F_REFERENCE != 0 {
 				self.pushErr(decl.AST.Token, "reference variable must be initialized explicitly")
 			}
 		}
@@ -1990,13 +1992,15 @@ impl sema {
 	// Checks variable declaration for global scope.
 	// Checks duplicated identifiers by Sema.
 	fn checkGlobalVarDecl(mut &self, mut decl: &Var) {
-		if !jule::IsBlank(decl.AST.Name) && self.isDuplicatedName(uintptr(decl), decl.AST.Name, decl.AST.Extern) {
+		if !jule::IsBlank(decl.AST.Name) &&
+			self.isDuplicatedName(uintptr(decl), decl.AST.Name, decl.AST.Flags&ast::F_EXTERN != 0) {
 			self.pushErr(decl.AST.Token, "identifier @ is duplicated in this scope", decl.AST.Name)
 		}
-		if decl.AST.Extern && decl.AST.Const {
+		const externConstMask = ast::F_EXTERN | ast::F_CONST
+		if decl.AST.Flags&externConstMask == externConstMask {
 			self.pushErr(decl.AST.Token, "external variable cannot be constant")
 		}
-		if !decl.AST.Extern && !decl.AST.Const && !decl.AST.Static {
+		if decl.AST.Flags&(ast::F_EXTERN|ast::F_CONST|ast::F_STATIC) == 0 {
 			self.pushErr(decl.AST.Token, "global variable must be static")
 		}
 		self.checkDirectives(decl.AST.Directives, decl)
@@ -2019,7 +2023,7 @@ impl sema {
 		ok = true
 		for (_, mut tf) in trt.Methods {
 			mut exist := false
-			mut sf := strct.FindMethod(tf.AST.Name, tf.AST.Static)
+			mut sf := strct.FindMethod(tf.AST.Name, tf.AST.Flags&ast::F_STATIC != 0)
 			tfK := self.getTraitCheckFuncKind(tf)
 			if sf != nil {
 				mut sfK := self.getTraitCheckFuncKind(sf)
@@ -2081,7 +2085,7 @@ impl sema {
 	fn checkStructDecl(mut &self, mut s: &Struct) {
 		if jule::IsBlank(s.AST.Name) {
 			self.pushErr(s.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
-		} else if self.isDuplicatedName(uintptr(s), s.AST.Name, s.AST.Extern) {
+		} else if self.isDuplicatedName(uintptr(s), s.AST.Name, s.AST.Flags&ast::F_EXTERN != 0) {
 			self.pushErr(s.AST.Token, "identifier @ is duplicated in this scope", s.AST.Name)
 		}
 
@@ -2114,7 +2118,7 @@ impl sema {
 			}
 		}
 		for (_, mut ta) in self.file.TypeAliases {
-			if !ta.AST.Strict {
+			if ta.AST.Flags&ast::F_STRICT == 0 {
 				continue
 			}
 			mut s := ta.Type.Kind.(&StructIns).Decl
@@ -2145,7 +2149,7 @@ impl sema {
 		self.checkDirectives(f.AST.Directives, f)
 		self.checkAnonFuncDecl(f)
 
-		if f.Owner == nil && self.isDuplicatedName(uintptr(f), f.AST.Name, f.AST.Extern) {
+		if f.Owner == nil && self.isDuplicatedName(uintptr(f), f.AST.Name, f.AST.Flags&ast::F_EXTERN != 0) {
 			if f.AST.Name == jule::InitFunc {
 				init := self.FindFunc(jule::InitFunc, false)
 				if init != nil {
@@ -2239,9 +2243,9 @@ impl sema {
 		// Catch the fallible function calls for initialization value if variable static.
 		// If variable is constant, no need for extra attention.
 		// A fallible function cannot return a constant value.
-		if v.AST.Static && v.Value != nil {
+		if v.AST.Flags&ast::F_STATIC != 0 && v.Value != nil {
 			fc, isFuncCall := v.Value.Model.(&FuncCallExpr)
-			if isFuncCall && fc.Func.Decl != nil && fc.Func.Decl.AST.Fallible {
+			if isFuncCall && fc.Func.Decl != nil && fc.Func.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
 				self.pushErr(v.AST.X.Token, "using of fallible function disallowed in this scope")
 				self.pushSuggestion("wrap the fallible function with a non-fallible function")
 			}
@@ -2251,24 +2255,24 @@ impl sema {
 			// Build new Type because auto-type symbols are nil.
 			v.Type = v.Value.Type
 
-			if v.AST.Reference {
+			if v.AST.Flags&ast::F_REFERENCE != 0 {
 				checkTypeForRef(self, v.Type, v.AST.Token)
 			}
 
 			// Check value for unwrap and physical memory constraint.
-			if !v.AST.Const && v.Value.untyped {
+			if v.AST.Flags&ast::F_CONST == 0 && v.Value.untyped {
 				_ = checkValue(v.Value, self, v.AST.X.Token, evalDefault|evalPhysicalMem|evalUnwrapUntyped)
 			}
 
 			self.checkDataForTypeInference(v.Value, v.AST.X.Token)
 			self.checkValidityForInitExpr(
-				v.AST.Mutable,
-				v.AST.Reference,
+				v.AST.Flags&ast::F_MUTABLE != 0,
+				v.AST.Flags&ast::F_REFERENCE != 0,
 				v.Type,
 				v.Value,
 				v.AST.X.Token)
 		} else {
-			if v.AST.Reference {
+			if v.AST.Flags&ast::F_REFERENCE != 0 {
 				checkTypeForRef(self, v.Type, v.AST.Token)
 			}
 
@@ -2284,17 +2288,18 @@ impl sema {
 			}
 
 			const FirstAssignToDest = true // The variable takes first assignment with the initializer value.
-			if self.checkAssignType(v.AST.Reference, FirstAssignToDest, v.Type, v.Value, v.AST.X.Token, v.Refers) {
+			if self.checkAssignType(v.AST.Flags&ast::F_REFERENCE != 0,
+				FirstAssignToDest, v.Type, v.Value, v.AST.X.Token, v.Refers) {
 				self.checkValidityForInitExpr(
-					v.AST.Mutable,
-					v.AST.Reference,
+					v.AST.Flags&ast::F_MUTABLE != 0,
+					v.AST.Flags&ast::F_REFERENCE != 0,
 					v.Type,
 					v.Value,
 					v.AST.X.Token)
 			}
 		}
 
-		if v.AST.Const {
+		if v.AST.Flags&ast::F_CONST != 0 {
 			if !v.Value.IsConst() && !v.Value.Type.comptime() {
 				self.pushErr(v.AST.X.Token, "expression must be constant")
 			}
@@ -2319,7 +2324,7 @@ impl sema {
 		if !v.IsInitialized() {
 			// If variable is constant and grouped, we have to check previous
 			// constants due to possible enumeration.
-			if v.AST.Const && v.Group != nil {
+			if v.AST.Flags&ast::F_CONST != 0 && v.Group != nil {
 				isEnumField := v.Scope == nil && v.IsEnumField()
 				if v.GroupIndex == 0 {
 					if isEnumField {
@@ -2385,7 +2390,7 @@ impl sema {
 		} else {
 			eval = self.evalpd(l, nil, v)
 		}
-		eval.target.mutable = v.AST.Mutable
+		eval.target.mutable = v.AST.Flags&ast::F_MUTABLE != 0
 
 		allowIota := len(v.Group) > 0
 		if allowIota {
@@ -2399,7 +2404,7 @@ impl sema {
 
 		// Do not unwrap untyped literals, type analysis will check overflows.
 		mut evalFlags := evalDefault | evalFallible
-		if v.AST.Reference {
+		if v.AST.Flags&ast::F_REFERENCE != 0 {
 			evalFlags |= evalRefptr
 		}
 		v.Value = eval.evalExpr(v.AST.X, evalFlags)
@@ -2425,7 +2430,7 @@ impl sema {
 		for (_, mut decl) in self.file.Vars {
 			// Skip if variable is external or already used.
 			// If it is already used, should already analyzed.
-			if decl.AST.Extern || decl.Used {
+			if decl.AST.Flags&ast::F_EXTERN != 0 || decl.Used {
 				continue
 			}
 			self.checkVar(decl, self)
@@ -2575,12 +2580,12 @@ impl sema {
 			}
 
 			ok = true
-			s.Comparable = !s.Decl.AST.Extern
+			s.Comparable = s.Decl.AST.Flags&ast::F_EXTERN == 0
 			for (_, mut f) in s.Fields {
 				// Set instance for referencer if field declaration is not mutable.
 				// But field declared as mutable, do not set.
 				// It basically for the `!f.Decl.Mutable && f.Type.Mutable()` condition.
-				if !f.Decl.AST.Mutable {
+				if f.Decl.AST.Flags&ast::F_MUTABLE == 0 {
 					tc.referencer.tains = true
 				} else {
 					tc.referencer.tains = false
@@ -2600,7 +2605,8 @@ impl sema {
 				// Because type analysis is a simple precondition checker.
 				// For the actual type, we have to check.
 				// See developer reference (10.2.1).
-				s.Mutable = s.Mutable || (!f.Decl.AST.Mutable && f.Type.Mutable())
+				s.Mutable = s.Mutable ||
+					(f.Decl.AST.Flags&ast::F_MUTABLE == 0 && f.Type.Mutable())
 				s.Comparable = s.Comparable && f.Type.Comparable()
 			}
 			return
@@ -2680,7 +2686,7 @@ impl sema {
 	}
 
 	fn checkTypeStruct(mut &self, mut s: &Struct) {
-		if s.AST.Extern {
+		if s.AST.Flags&ast::F_EXTERN != 0 {
 			return
 		}
 		s.checked = true
@@ -2714,7 +2720,7 @@ impl sema {
 	}
 
 	fn precheckStructType(mut &self, mut s: &Struct) {
-		if s.AST.Extern {
+		if s.AST.Flags&ast::F_EXTERN != 0 {
 			return
 		}
 
@@ -2778,7 +2784,7 @@ impl sema {
 	}
 
 	fn checkFuncInsCaller(mut &self, mut f: &FuncIns, mut caller: &token::Token) {
-		if f.Decl.AST.Extern || f.checked {
+		if f.Decl.AST.Flags&ast::F_EXTERN != 0 || f.checked {
 			return
 		}
 		f.checked = true
@@ -2808,7 +2814,7 @@ impl sema {
 	}
 
 	fn checkFunc(mut &self, mut f: &Func) {
-		if f.AST.Extern {
+		if f.AST.Flags&ast::F_EXTERN != 0 {
 			return
 		}
 		for (_, mut ins) in f.Instances {
@@ -2817,17 +2823,17 @@ impl sema {
 	}
 
 	fn checkTestFunc(mut *self, mut f: &FuncIns) {
-		if f.Decl.AST.Public {
+		if f.Decl.AST.Flags&ast::F_PUBLIC != 0 {
 			self.pushErr(f.Decl.AST.Token, "test functions cannot be public")
 			return
 		}
 
-		if f.Decl.AST.Unsafe ||
+		if f.Decl.AST.Flags&ast::F_UNSAFE != 0 ||
 			!f.Decl.IsVoid() ||
 			len(f.Decl.AST.Generics) != 0 ||
 			len(f.Params) != 1 ||
-			f.Decl.Params[0].AST.Mutable ||
-			f.Decl.Params[0].AST.Reference {
+			f.Decl.Params[0].AST.Flags&ast::F_MUTABLE != 0 ||
+			f.Decl.Params[0].AST.Flags&ast::F_REFERENCE != 0 {
 			self.pushErr(f.Decl.AST.Token, "wrong test function declaration")
 			self.pushSuggestion("proper declaration; fn myTest(t: &testing::T)")
 			return
@@ -2993,7 +2999,7 @@ impl sema {
 		for (_, mut f) in self.files {
 			self.setCurrentFile(f)
 			for (_, mut ta) in self.file.TypeAliases {
-				if ta.AST.Strict {
+				if ta.AST.Flags&ast::F_STRICT != 0 {
 					mut s := ta.Type.Kind.(&StructIns).Decl
 					for (_, mut ins) in s.Instances {
 						if !ins.checked {
