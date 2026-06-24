@@ -74,15 +74,6 @@ struct Pass {
 	Args:  []string
 }
 
-fn buildType(mut t: &ast::Expr): &TypeSym {
-	if t == nil {
-		return nil
-	}
-	return &TypeSym{
-		Decl: t,
-	}
-}
-
 fn buildExpr(mut expr: &ast::Expr): &ValueSym {
 	if expr == nil {
 		return nil
@@ -94,25 +85,15 @@ fn buildExpr(mut expr: &ast::Expr): &ValueSym {
 
 fn buildTypeAlias(mut decl: &ast::TypeAlias): &TypeAlias {
 	return &TypeAlias{
+		AST:      decl,
 		Scope:    decl.Scope,
-		Strict:   decl.Strict,
-		Public:   decl.Public,
-		Extern:   decl.Extern,
-		Token:    decl.Token,
-		Name:     decl.Name,
-		TypeSym:  buildType(decl.Type),
 		Generics: decl.Generics,
 	}
 }
 
 fn buildField(mut decl: &ast::Field): &Field {
 	return &Field{
-		Token:   decl.Token,
-		Public:  decl.Public,
-		Mutable: decl.Mutable,
-		Name:    decl.Name,
-		TypeSym: buildType(decl.Type),
-		Tag:     decl.Tag,
+		AST: decl,
 	}
 }
 
@@ -126,24 +107,14 @@ fn buildFields(mut decls: []&ast::Field): []&Field {
 
 fn buildStruct(mut decl: &ast::Struct): &Struct {
 	return &Struct{
-		Token:      decl.Token,
-		Name:       decl.Name,
-		Fields:     buildFields(decl.Fields),
-		Public:     decl.Public,
-		Extern:     decl.Extern,
-		Directives: decl.Directives,
-		Generics:   decl.Generics,
+		AST:    decl,
+		Fields: buildFields(decl.Fields),
 	}
 }
 
 fn buildParam(mut decl: &ast::Param): &Param {
 	return &Param{
-		Token:     decl.Token,
-		Mutable:   decl.Mutable,
-		Variadic:  decl.Variadic,
-		Reference: decl.Reference,
-		TypeSym:   buildType(decl.Type),
-		Name:      decl.Name,
+		AST: decl,
 	}
 }
 
@@ -160,27 +131,15 @@ fn buildReturnType(mut decl: &ast::ReturnType): &ReturnType {
 		return nil // Void type.
 	}
 	return &ReturnType{
-		TypeSym: buildType(decl.Type),
-		Names:   decl.Names,
+		AST: decl,
 	}
 }
 
 fn buildFunc(mut decl: &ast::Func): &Func {
 	return &Func{
-		Token:      decl.Token,
-		Global:     decl.Global,
-		Async:      decl.Async,
-		Unsafe:     decl.Unsafe,
-		Public:     decl.Public,
-		Extern:     decl.Extern,
-		Static:     decl.Static,
-		Fallible:   decl.Fallible,
-		Name:       decl.Name,
-		Directives: decl.Directives,
-		Scope:      decl.Scope,
-		Generics:   decl.Generics,
-		Result:     buildReturnType(decl.Result),
-		Params:     buildParams(decl.Params),
+		AST:    decl,
+		Result: buildReturnType(decl.Result),
+		Params: buildParams(decl.Params),
 	}
 }
 
@@ -192,21 +151,10 @@ fn buildMethods(mut decls: []&ast::Func): []&Func {
 	return methods
 }
 
-fn buildTraitInherits(mut inherits: []&ast::Expr): []&TypeSym {
-	mut symbols := make([]&TypeSym, 0, len(inherits))
-	for (_, mut it) in inherits {
-		symbols = append(symbols, buildType(it))
-	}
-	return symbols
-}
-
 fn buildTrait(mut decl: &ast::Trait): &Trait {
 	return &Trait{
-		Token:    decl.Token,
-		Name:     decl.Name,
-		Public:   decl.Public,
-		Methods:  buildMethods(decl.Methods),
-		Inherits: buildTraitInherits(decl.Inherits),
+		AST:     decl,
+		Methods: buildMethods(decl.Methods),
 	}
 }
 
@@ -214,10 +162,12 @@ fn buildEnumItems(mut decls: []&ast::EnumItem): []&Var {
 	mut items := make([]&Var, len(decls)+1)
 	for (i, mut decl) in decls {
 		items[i] = &Var{
-			Public:     true,
-			Constant:   true,
-			Token:      decl.Token,
-			Name:       decl.Name,
+			AST: &ast::Var{
+				Name:   decl.Name,
+				Public: true,
+				Const:  true,
+				Token:  decl.Token,
+			},
 			ValueSym:   buildExpr(decl.X),
 			Group:      items,
 			GroupIndex: i,
@@ -232,18 +182,14 @@ fn buildEnumItems(mut decls: []&ast::EnumItem): []&Var {
 
 fn buildEnum(mut decl: &ast::Enum): &Enum {
 	return &Enum{
-		Token:   decl.Token,
-		Public:  decl.Public,
-		Name:    decl.Name,
-		TypeSym: buildType(decl.Type),
-		Items:   buildEnumItems(decl.Items),
+		AST:   decl,
+		Items: buildEnumItems(decl.Items),
 	}
 }
 
 fn buildTypeEnumItem(mut decl: &ast::TypeEnumItem): &TypeEnumItem {
 	return &TypeEnumItem{
-		Token:   decl.Token,
-		TypeSym: buildType(decl.Type),
+		AST: decl,
 	}
 }
 
@@ -257,34 +203,22 @@ fn buildTypeEnumItems(mut decls: []&ast::TypeEnumItem): []&TypeEnumItem {
 
 fn buildTypeEnum(mut decl: &ast::TypeEnum): &TypeEnum {
 	return &TypeEnum{
-		Token:  decl.Token,
-		Public: decl.Public,
-		Name:   decl.Name,
-		Items:  buildTypeEnumItems(decl.Items),
+		AST:   decl,
+		Items: buildTypeEnumItems(decl.Items),
 	}
 }
 
 fn buildVar(mut decl: &ast::Var): &Var {
 	return &Var{
-		Token:      decl.Token,
-		Name:       decl.Name,
-		Extern:     decl.Extern,
-		Constant:   decl.Const,
-		Mutable:    decl.Mutable,
-		Public:     decl.Public,
-		Static:     decl.Static,
-		Reference:  decl.Reference,
-		Directives: decl.Directives,
-		Refers:     ReferenceStack.new(),
-		TypeSym:    buildType(decl.Type),
-		ValueSym:   buildExpr(decl.X),
+		AST:      decl,
+		Refers:   ReferenceStack.new(),
+		ValueSym: buildExpr(decl.X),
 	}
 }
 
 fn buildImpl(mut decl: &ast::Impl): &Impl {
 	return &Impl{
-		Base:    decl.Base,
-		Dest:    decl.Dest,
+		AST:     decl,
 		Methods: buildMethods(decl.Methods),
 	}
 }
@@ -723,23 +657,23 @@ impl symBuilder {
 		| &ast::TypeAlias:
 			mut ta := buildTypeAlias(node.Data.(&ast::TypeAlias))
 			if ta.Scope == nil {
-				ta.FullName, ta.Name = self.getFullName(ta.Name, ta.Token)
+				ta.FullName, ta.AST.Name = self.getFullName(ta.AST.Name, ta.AST.Token)
 			} else {
 				// For local type alias, use name as full name.
 				// Because it may be confusing due to it is an internal detail.
-				ta.FullName = ta.Name
+				ta.FullName = ta.AST.Name
 			}
 			self.table.TypeAliases = append(self.table.TypeAliases, ta)
 		| &ast::Struct:
 			mut srct := buildStruct(node.Data.(&ast::Struct))
-			srct.FullName, srct.Name = self.getFullName(srct.Name, srct.Token)
+			srct.FullName, srct.AST.Name = self.getFullName(srct.AST.Name, srct.AST.Token)
 			self.table.Structs = append(self.table.Structs, srct)
 		| &ast::Func:
 			mut f := buildFunc(node.Data.(&ast::Func))
 			self.table.Funcs = append(self.table.Funcs, f)
 		| &ast::Trait:
 			mut t := buildTrait(node.Data.(&ast::Trait))
-			t.FullName, t.Name = self.getFullName(t.Name, t.Token)
+			t.FullName, t.AST.Name = self.getFullName(t.AST.Name, t.AST.Token)
 			self.table.Traits = append(self.table.Traits, t)
 		| &ast::Var:
 			mut astv := node.Data.(&ast::Var)
@@ -763,11 +697,11 @@ impl symBuilder {
 			}
 		| &ast::Enum:
 			mut e := buildEnum(node.Data.(&ast::Enum))
-			e.FullName, e.Name = self.getFullName(e.Name, e.Token)
+			e.FullName, e.AST.Name = self.getFullName(e.AST.Name, e.AST.Token)
 			self.table.Enums = append(self.table.Enums, e)
 		| &ast::TypeEnum:
 			mut e := buildTypeEnum(node.Data.(&ast::TypeEnum))
-			e.FullName, e.Name = self.getFullName(e.Name, e.Token)
+			e.FullName, e.AST.Name = self.getFullName(e.AST.Name, e.AST.Token)
 			self.table.TypeEnums = append(self.table.TypeEnums, e)
 		|:
 			self.pushErr(node.Token, "invalid syntax")

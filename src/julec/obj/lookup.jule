@@ -36,7 +36,7 @@ fn HasDirectiveArg(directive: &ast::Directive, arg: string, mode: int, r: int): 
 // Reports whether trait have method in this identifier.
 fn ContainsTraitMethod(mut t: &sema::Trait, name: string): bool {
 	for _, m in t.Methods {
-		if m.Name == name {
+		if m.AST.Name == name {
 			return true
 		}
 	}
@@ -177,8 +177,8 @@ fn GetExternName(t: &sema::Type): string {
 	match type t.Kind {
 	| &sema::StructIns:
 		s := t.Kind.(&sema::StructIns)
-		if s.Decl.Extern {
-			return s.Decl.Name
+		if s.Decl.AST.Extern {
+			return s.Decl.AST.Name
 		}
 		if s.Source != nil {
 			return GetExternName(s.Source)

@@ -42,12 +42,12 @@ impl TestCoder {
 		self.oc.write("__jule_writeStdout(")
 		stringLitAsSlice(&self.oc.Buf, ">>> TEST RUNNING: ", "18")
 		self.oc.write("); __jule_writeStdout(")
-		stringLitAsSlice(&self.oc.Buf, f.Decl.Name, conv::Itoa(len(f.Decl.Name)))
+		stringLitAsSlice(&self.oc.Buf, f.Decl.AST.Name, conv::Itoa(len(f.Decl.AST.Name)))
 		self.oc.write("); __jule_writeStdout(")
 		stringLitAsSlice(&self.oc.Buf, "\n", "1")
 		self.oc.write(");\n")
 		self.oc.indent()
-		if f.Decl.Async {
+		if f.Decl.AST.Async {
 			self.oc.write("__jule_AsyncAwait ")
 		}
 		self.oc.ic.funcIns(&self.oc.Buf, f)
@@ -59,7 +59,7 @@ impl TestCoder {
 	fn appendPackageTests(mut &self, mut p: &sema::Package) {
 		for (_, mut file) in p.Files {
 			for (_, mut f) in file.Funcs {
-				if obj::HasDirective(f.Directives, directive::Test) {
+				if obj::HasDirective(f.AST.Directives, directive::Test) {
 					self.appendTest(f.Instances[0])
 				}
 			}

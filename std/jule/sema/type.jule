@@ -36,16 +36,12 @@ struct InsGeneric {
 
 // Type alias.
 struct TypeAlias {
+	AST:      &ast::TypeAlias
 	Scope:    &ast::Scope
-	Strict:   bool
-	Public:   bool
-	Extern:   bool
 	Used:     bool
 	Generic:  bool
-	Token:    &token::Token
 	FullName: string // See developer reference (16).
-	Name:     string // See developer reference (16).
-	TypeSym:  &TypeSym
+	Type:     &Type
 	Generics: []&ast::Generic // See the developer reference (3).
 }
 
@@ -99,7 +95,7 @@ impl Type {
 	fn Extern(*self): bool {
 		s, ok := self.Kind.(&StructIns)
 		if ok {
-			if s.Decl.Extern {
+			if s.Decl.AST.Extern {
 				return true
 			}
 			if s.Source != nil {
@@ -211,7 +207,7 @@ impl Type {
 			}
 			mut enm := _self.Enum()
 			if enm != nil {
-				return types::IsNum(enm.TypeSym.Type.Prim().String())
+				return types::IsNum(enm.Type.Prim().String())
 			}
 			return false
 		}
@@ -446,21 +442,6 @@ impl Type {
 		mut ct, _ := self.Kind.(&comptimeFiles)
 		return ct
 	}
-}
-
-// Type.
-struct TypeSym {
-	Decl: &ast::Expr // Never changed by semantic analyzer.
-	Type: &Type
-}
-
-impl TypeSym {
-	// Reports whether type is checked already.
-	fn checked(*self): bool { return self.Type != nil }
-
-	// Removes kind and ready to check.
-	// checked() reports false after this function.
-	fn removeKind(mut *self) { self.Type = nil }
 }
 
 // Primitive type.
@@ -844,7 +825,7 @@ impl typeChecker {
 			| &StructIns:
 				s = self.referencer.owner.(&StructIns)
 			| &TypeAlias:
-				s = self.referencer.owner.(&TypeAlias).TypeSym.Type.SoftStruct()
+				s = self.referencer.owner.(&TypeAlias).Type.SoftStruct()
 			|:
 				panic("unreachable")
 			}
@@ -998,11 +979,11 @@ impl typeChecker {
 		match type decl {
 		| &StructIns:
 			s := decl.(&StructIns)
-			if s.Decl != nil && s.Decl.Extern {
+			if s.Decl != nil && s.Decl.AST.Extern {
 				return true
 			}
 		| &TypeAlias:
-			if decl.(&TypeAlias).Extern {
+			if decl.(&TypeAlias).AST.Extern {
 				return true
 			}
 		}
@@ -1054,7 +1035,7 @@ impl typeChecker {
 	}
 
 	fn fromTypeAlias(mut *self, mut decl: &token::Token, mut ta: &TypeAlias): Kind {
-		if !self.s.isAccessibleDefine(ta.Public, ta.Token) {
+		if !self.s.isAccessibleDefine(ta.AST.Public, ta.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1070,7 +1051,7 @@ impl typeChecker {
 
 		// Build kind if not built already.
 		// If this type alias is checking now, do not check again.
-		if ta.TypeSym.Type == nil {
+		if ta.Type == nil {
 			// Use self.referencer instead of getReferencer.
 			// Because we have to catch type alias cycles if exist.
 			// So, do not use possible nil referencer.
@@ -1080,10 +1061,10 @@ impl typeChecker {
 			}
 		}
 
-		if ta.Strict && self.s.step&stepImplsImplemented != 0 {
+		if ta.AST.Strict && self.s.step&stepImplsImplemented != 0 {
 			// Check strict type structure if impl statements are implemented.
 			// But do not check if source type is nil, it means type type alias is still checking.
-			mut s := ta.TypeSym.Type.SoftStruct()
+			mut s := ta.Type.SoftStruct()
 			if s.Source != nil && !s.checked {
 				ok := self.checkStructIns(s, decl)
 				if !ok {
@@ -1095,14 +1076,14 @@ impl typeChecker {
 		mut tk := &Type{
 			Provider: ta.FullName,
 			Generic:  ta.Generic,
-			Kind:     ta.TypeSym.Type.Kind,
+			Kind:     ta.Type.Kind,
 		}
 
 		// Handle generic strict type alias structure instances.
 		// They are must be instantiated and the source instance is a placeholder.
 		// Do not mutate it, never. Allocate a new instance, and handle it.
 		if len(ta.Generics) > 0 {
-			tk.Kind = ta.TypeSym.Type.Kind.(&StructIns).Decl.instance()
+			tk.Kind = ta.Type.Kind.(&StructIns).Decl.instance()
 		} else {
 			self.pushReferenceByKind(tk)
 		}
@@ -1110,7 +1091,7 @@ impl typeChecker {
 	}
 
 	fn fromEnum(mut *self, decl: &token::Token, mut e: &Enum): &Enum {
-		if !self.s.isAccessibleDefine(e.Public, e.Token) {
+		if !self.s.isAccessibleDefine(e.AST.Public, e.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1118,7 +1099,7 @@ impl typeChecker {
 	}
 
 	fn fromTypeEnum(mut *self, decl: &token::Token, mut e: &TypeEnum): &TypeEnum {
-		if !self.s.isAccessibleDefine(e.Public, e.Token) {
+		if !self.s.isAccessibleDefine(e.AST.Public, e.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1126,7 +1107,7 @@ impl typeChecker {
 	}
 
 	fn fromTrait(mut *self, decl: &token::Token, mut t: &Trait): &Trait {
-		if !self.s.isAccessibleDefine(t.Public, t.Token) {
+		if !self.s.isAccessibleDefine(t.AST.Public, t.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1168,26 +1149,26 @@ impl typeChecker {
 		// because this package analysis will not check them, so we have to collect
 		// them for deferred check analysis.
 		gstructs := self.s.meta.flags&semametaGstruct != 0
-		if self.s != ins.Decl.sema && len(ins.Decl.Generics) > 0 {
+		if self.s != ins.Decl.sema && len(ins.Decl.AST.Generics) > 0 {
 			self.s.meta.flags |= semametaGstruct
 		}
 
 		// If instance is generic strict type alias.
 		// Resolve the source type using resolved generics.
 		if len(ins.Generics) > 0 && ins.Decl.alias != nil {
-			mut typ := ins.Decl.alias.TypeSym.Type // Save placeholder type.
-			ins.Decl.alias.TypeSym.Type.Kind = ins // Use instance as placeholder, to resolve source type to it.
+			mut typ := ins.Decl.alias.Type // Save placeholder type.
+			ins.Decl.alias.Type.Kind = ins // Use instance as placeholder, to resolve source type to it.
 			ok = self.s.basicStructEnvironment(ins, fn|mut sema| {
 				return unsafe { self.s.checkTypeAliasDeclKind(ins.Decl.alias, ins.env.generics, nil, sema) }
 			})
-			ins.Decl.alias.TypeSym.Type = typ // Restore placeholder type.
+			ins.Decl.alias.Type = typ // Restore placeholder type.
 			if !ok {
 				return false
 			}
 		}
 
 		ok = self.s.precheckStructIns(ins, self.getReferencer(), errorToken)
-		if ok && len(ins.Decl.Generics) > 0 {
+		if ok && len(ins.Decl.AST.Generics) > 0 {
 			// If gstruct collection mode already enabled for this sema,
 			// just push this instance into the collection.
 			// Otherwise, this semantic analysis process is the root gstruct collector.
@@ -1243,11 +1224,11 @@ impl typeChecker {
 	// Because we can't know exactly there is no cycle risk with no more analysis.
 	// Keep it simple.
 	fn inscatchNeeded(mut *self, mut s: &Struct): (yes: bool, letGenerics: []&ast::Generic) {
-		if len(s.Generics) == 0 {
+		if len(s.AST.Generics) == 0 {
 			return false, nil
 		}
 		if s.alias != nil {
-			return true, s.Generics
+			return true, s.AST.Generics
 		}
 		mut sc, mut ok := self.lookup.(&scopeChecker)
 		if ok {
@@ -1255,7 +1236,7 @@ impl typeChecker {
 			yes = root != nil && root.owner != nil &&
 				root.owner.Decl != nil && root.owner.Decl.Owner == s
 			if yes {
-				letGenerics = s.Generics
+				letGenerics = s.AST.Generics
 			}
 			return
 		}
@@ -1263,7 +1244,7 @@ impl typeChecker {
 		for r != nil; r = r.prev {
 			si, (ok) := r.owner.(&StructIns)
 			if ok && si.Decl == s {
-				return true, s.Generics
+				return true, s.AST.Generics
 			}
 		}
 		return false, nil
@@ -1356,7 +1337,7 @@ impl typeChecker {
 		if s == nil {
 			return nil, false
 		}
-		mut ok := self.s.checkGenericQuantity(len(s.Decl.Generics), len(s.Generics), indx.X.Token)
+		mut ok := self.s.checkGenericQuantity(len(s.Decl.AST.Generics), len(s.Generics), indx.X.Token)
 		if !ok {
 			return nil, false
 		}
@@ -1433,7 +1414,7 @@ impl typeChecker {
 	}
 
 	fn fromStruct(mut *self, mut decl: &token::Token, mut s: &Struct): &StructIns {
-		if !self.s.isAccessibleDefine(s.Public, s.Token) {
+		if !self.s.isAccessibleDefine(s.AST.Public, s.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
@@ -1462,7 +1443,7 @@ impl typeChecker {
 		}
 
 		for (_, mut g) in self.useGenerics {
-			if g.Name == decl.Kind {
+			if g.AST.Name == decl.Kind {
 				// If generic type is a struct, check illegal cycles here.
 				// Because generic types are evaluated without referencer.
 				// So, any dependency will not be collected for structures.
@@ -1472,14 +1453,14 @@ impl typeChecker {
 				//
 				// Type aliases or type enums will not be handled,
 				// because there is no risk for type cycles.
-				mut st := g.TypeSym.Type.Struct()
+				mut st := g.Type.Struct()
 				if st != nil {
 					ok := self.checkIllegalCycles(decl, st)
 					if !ok && self.cycleErr&cycleErrDisable == 0 {
 						return nil
 					}
 				}
-				return g.TypeSym.Type.Kind
+				return g.Type.Kind
 			}
 		}
 
@@ -1511,7 +1492,7 @@ impl typeChecker {
 		mut ta := self.lookup.FindTypeAlias(decl.Kind, _extern)
 		if ta == nil && !self.disBuiltin {
 			ta = findBuiltinTypeAlias(decl.Kind)
-			if ta != nil && ta.Name == types::Any {
+			if ta != nil && ta.AST.Name == types::Any {
 				self.pushTA(taMutable)
 			}
 		}
@@ -1811,7 +1792,7 @@ impl typeChecker {
 
 	fn checkFuncTypes(mut *self, mut f: &FuncIns): (ok: bool) {
 		for (_, mut p) in f.Params {
-			p.Type = self.checkDecl(p.Decl.TypeSym.Decl)
+			p.Type = self.checkDecl(p.Decl.AST.Type)
 			ok = p.Type != nil
 			if !ok {
 				return false
@@ -1820,7 +1801,7 @@ impl typeChecker {
 		}
 
 		if !f.Decl.IsVoid() {
-			f.Result = self.checkDecl(f.Decl.Result.TypeSym.Decl)
+			f.Result = self.checkDecl(f.Decl.Result.AST.Type)
 			return f.Result != nil
 		}
 
@@ -2014,7 +1995,7 @@ impl typeChecker {
 		if typ != nil {
 			mut s, _ := typ.Kind.(&StructIns)
 			if s != nil && !self.selection {
-				if !self.s.checkGenericQuantity(len(s.Decl.Generics), len(s.Generics), self.errorToken) {
+				if !self.s.checkGenericQuantity(len(s.Decl.AST.Generics), len(s.Generics), self.errorToken) {
 					return nil
 				}
 				// If there is no generics and it passes the generics analysis,
@@ -2032,16 +2013,16 @@ impl typeChecker {
 		return typ
 	}
 
-	fn check(mut *self, mut t: &TypeSym) {
-		if t.Decl == nil {
+	fn check(mut *self, mut ast: &ast::Expr, mut &t: *&Type) {
+		if ast == nil {
 			return
 		}
-		mut kind := self.checkDecl(t.Decl)
-		if kind == nil {
-			t.removeKind()
+		mut typ := self.checkDecl(ast)
+		if typ == nil {
+			*t = nil
 			return
 		}
-		t.Type = kind
+		*t = typ
 	}
 
 	// Rechecks structure instance.
@@ -2238,7 +2219,8 @@ let mut pseudoSource = new(Type)
 fn initNewStructType(fullName: string, name: string, mut source: &Type): &StructIns {
 	mut s := new(Struct)
 	s.FullName = fullName
-	s.Name = name
+	s.AST = new(ast::Struct)
+	s.AST.Name = name
 	mut ins := s.instance()
 	s.appendInstance(ins)
 	ins.setSource(source)

@@ -80,16 +80,16 @@ fn compilerErr(token: &token::Token, line: bool, fmt: string, args: ...any): log
 // If variable is exist, updates it.
 // Assumes return variable part of dest is dest[i:].
 fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
-	if f.Decl.IsVoid() || f.Result == nil || len(f.Decl.Result.Names) == 0 {
+	if f.Decl.IsVoid() || f.Result == nil || len(f.Decl.Result.AST.Names) == 0 {
 		return
 	}
 	mut rst := RetState.Single
 	// There is more than one return type, it is tuple.
-	if len(f.Decl.Result.Names) > 1 {
+	if len(f.Decl.Result.AST.Names) > 1 {
 		rst = RetState.Tuple
 	}
 	mut types := f.Types()
-	for (j, mut name) in f.Decl.Result.Names {
+	for (j, mut name) in f.Decl.Result.AST.Names {
 		if jule::IsBlank(name.Kind) || jule::IsAnon(name.Kind) {
 			continue
 		}
@@ -100,12 +100,13 @@ fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 			v = (*dest)[i]
 		} else {
 			v = &Var{
-				Used:    true,
-				Mutable: true,
-				Name:    name.Kind,
-				Token:   name,
-				Scope:   f.Scope,
-				TypeSym: new(TypeSym),
+				AST: &ast::Var{
+					Name:    name.Kind,
+					Mutable: true,
+					Token:   name,
+				},
+				Used:  true,
+				Scope: f.Scope,
 				ValueSym: &ValueSym{
 					Value: new(Value),
 				},
@@ -114,7 +115,7 @@ fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 			}
 			*dest = append(*dest, v)
 		}
-		v.TypeSym.Type = types[j]
+		v.Type = types[j]
 		i++
 	}
 }
@@ -128,7 +129,7 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 	}
 
 	for (i, mut p) in f.Params {
-		if jule::IsBlank(p.Decl.Name) || jule::IsAnon(p.Decl.Name) {
+		if jule::IsBlank(p.Decl.AST.Name) || jule::IsAnon(p.Decl.AST.Name) {
 			continue
 		}
 		n++
@@ -139,38 +140,40 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 		if i < len(*dest) {
 			v = (*dest)[i]
 		} else {
+			mut pAST := p.Decl.AST
 			v = &Var{
-				Checked:   true,
-				Used:      true,
-				Reference: p.Decl.Reference,
-				Mutable:   p.Decl.Mutable,
-				Name:      p.Decl.Name,
-				Token:     p.Decl.Token,
-				TypeSym:   new(TypeSym),
-				Scope:     f.Scope,
-				ValueSym:  new(ValueSym),
+				AST: &ast::Var{
+					Reference: pAST.Reference,
+					Mutable:   pAST.Mutable,
+					Name:      pAST.Name,
+					Token:     pAST.Token,
+				},
+				Checked:  true,
+				Used:     true,
+				Scope:    f.Scope,
+				ValueSym: new(ValueSym),
 			}
 			*dest = append(*dest, v)
 		}
 
 		match {
 		| p.Decl.IsSelf():
-			v.TypeSym.Type = &Type{
+			v.Type = &Type{
 				Variadic: false,
 				Kind:     f.Owner,
 			}
 			match {
 			| p.Decl.IsSmartptr():
-				v.Name = v.Name[1:] // Remove smartptr sign.
-				v.TypeSym.Type.Kind = &Sptr{
+				v.AST.Name = v.AST.Name[1:] // Remove smartptr sign.
+				v.Type.Kind = &Sptr{
 					Value: &Type{
 						Kind: f.Owner,
 					},
 				}
 			| p.Decl.IsRefptr():
-				v.Name = v.Name[1:] // Remove refptr sign.
-				v.Reference = true
-				v.TypeSym.Type.Kind = &Ptr{
+				v.AST.Name = v.AST.Name[1:] // Remove refptr sign.
+				v.AST.Reference = true
+				v.Type.Kind = &Ptr{
 					Value: &Type{
 						Kind: f.Owner,
 					},
@@ -178,8 +181,8 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 			|:
 				panic("unreachable")
 			}
-		| p.Decl.Variadic:
-			v.TypeSym.Type = &Type{
+		| p.Decl.AST.Variadic:
+			v.Type = &Type{
 				Variadic: false,
 				Kind: &Slice{
 					Value: &Type{
@@ -188,7 +191,7 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 				},
 			}
 		|:
-			v.TypeSym.Type = p.Type
+			v.Type = p.Type
 		}
 	}
 	return
@@ -199,7 +202,7 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 	mut size := len(f.Generics)
 	if f.Owner != nil {
-		size += len(f.Owner.Decl.Generics)
+		size += len(f.Owner.Decl.AST.Generics)
 	}
 
 	if size == 0 {
@@ -210,27 +213,31 @@ fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 		if g == nil {
 			continue
 		}
-		mut decl := f.Decl.Generics[i]
+		mut decl := f.Decl.AST.Generics[i]
 		*dest = append(*dest, &TypeAlias{
+			AST: &ast::TypeAlias{
+				Name:  decl.Name,
+				Token: decl.Token,
+			},
 			Used:    true,
 			Generic: true,
-			Scope:   f.Decl.Scope,
-			Name:    decl.Name,
-			Token:   decl.Token,
-			TypeSym: &TypeSym{Type: g.Type},
+			Scope:   f.Decl.AST.Scope,
+			Type:    g.Type,
 		})
 	}
 
 	if f.Owner != nil {
 		for (i, mut g) in f.Owner.Generics {
-			mut decl := f.Owner.Decl.Generics[i]
+			mut decl := f.Owner.Decl.AST.Generics[i]
 			*dest = append(*dest, &TypeAlias{
+				AST: &ast::TypeAlias{
+					Name:  decl.Name,
+					Token: decl.Token,
+				},
 				Used:    true,
 				Generic: true,
-				Scope:   f.Decl.Scope,
-				Name:    decl.Name,
-				Token:   decl.Token,
-				TypeSym: &TypeSym{Type: g.Type},
+				Scope:   f.Decl.AST.Scope,
+				Type:    g.Type,
 			})
 		}
 	}
@@ -706,29 +713,29 @@ impl sema {
 	// Checks TypeSYm, builds result as Type and collects referred type aliases.
 	// Skips already checked types.
 	// See also developer reference (9).
-	fn checkTypeSymWithRefers(mut &self, mut t: &TypeSym, mut l: Lookup, mut generics: []&TypeAlias, mut referencer: &referencer): (ok: bool) {
+	fn checkTypeSymWithRefers(mut &self, mut ast: &ast::Expr, mut &t: *&Type, mut l: Lookup, mut generics: []&TypeAlias, mut referencer: &referencer): (ok: bool) {
 		mut ta := false // Referencer owner is type alias.
 		let mut refers: &ReferenceStack
-		if t.checked() {
+		if *t != nil {
 			match type referencer.owner {
 			| &TypeAlias:
 				ta = true
 				mut typal := referencer.owner.(&TypeAlias)
-				if typal.Strict {
-					refers = typal.TypeSym.Type.SoftStruct().Refers
+				if typal.AST.Strict {
+					refers = typal.Type.SoftStruct().Refers
 				}
 			}
 			if !ta {
 				return true
 			}
 		}
-		mut tt := self.buildTypeWithRefers(t.Decl, l, generics, referencer, refers)
+		mut tt := self.buildTypeWithRefers(ast, l, generics, referencer, refers)
 		if tt == nil || !ta {
-			t.Type = tt
+			*t = tt
 		} else {
-			t.Type.Kind.(&StructIns).setSource(tt)
+			(*t).Kind.(&StructIns).setSource(tt)
 		}
-		return t.checked()
+		return *t != nil
 	}
 
 	fn constraintChecker(mut &self): &constraintChecker {
@@ -737,8 +744,8 @@ impl sema {
 
 	// Checks type and builds result as Type.
 	// Skips already checked types.
-	fn checkTypeSym(mut &self, mut t: &TypeSym, mut l: Lookup): bool {
-		return self.checkTypeSymWithRefers(t, l, nil, nil)
+	fn checkTypeSym(mut &self, mut ast: &ast::Expr, mut &t: *&Type, mut l: Lookup): bool {
+		return self.checkTypeSymWithRefers(ast, t, l, nil, nil)
 	}
 
 	// Same as the checkTypeSym but takes referencer.
@@ -942,12 +949,12 @@ impl sema {
 			ok = true
 			for (_, mut p) in f.Params {
 				if !p.Decl.IsSelf() {
-					p.Type = sema.buildNonGenericType(p.Decl.TypeSym.Decl, generics, f.Decl.Generics, unsafe { ignored }, unsafe { recheckNeed })
+					p.Type = sema.buildNonGenericType(p.Decl.AST.Type, generics, f.Decl.AST.Generics, unsafe { ignored }, unsafe { recheckNeed })
 					ok = ok && p.Type != nil
 				}
 			}
 			if !f.Decl.IsVoid() {
-				f.Result = sema.buildNonGenericType(f.Decl.Result.TypeSym.Decl, generics, f.Decl.Generics, unsafe { ignored }, unsafe { recheckNeed })
+				f.Result = sema.buildNonGenericType(f.Decl.Result.AST.Type, generics, f.Decl.AST.Generics, unsafe { ignored }, unsafe { recheckNeed })
 				ok = ok && f.Result != nil
 			}
 			return ok
@@ -968,14 +975,14 @@ impl sema {
 		}
 		for (_, mut p) in ins.Params {
 			if !p.Decl.IsSelf() {
-				p.Type = tc.checkDecl(p.Decl.TypeSym.Decl)
+				p.Type = tc.checkDecl(p.Decl.AST.Type)
 				if p.Type == nil {
 					return nil
 				}
 			}
 		}
 		if !f.IsVoid() {
-			ins.Result = tc.checkDecl(f.Result.TypeSym.Decl)
+			ins.Result = tc.checkDecl(f.Result.AST.Type)
 			if ins.Result == nil {
 				return nil
 			}
@@ -1065,9 +1072,9 @@ impl sema {
 	}
 
 	fn checkFuncParamKind(mut &self, mut p: &ParamIns) {
-		p.Type.Variadic = p.Decl.Variadic
-		if p.Decl.Reference {
-			checkTypeForRef(self, p.Type, p.Decl.Token)
+		p.Type.Variadic = p.Decl.AST.Variadic
+		if p.Decl.AST.Reference {
+			checkTypeForRef(self, p.Type, p.Decl.AST.Token)
 		}
 	}
 
@@ -1120,7 +1127,7 @@ impl sema {
 				if p.Decl.IsSelf() {
 					continue
 				}
-				p.Type = sema.buildTypeWithGenerics(p.Decl.TypeSym.Decl, generics, f.Refers)
+				p.Type = sema.buildTypeWithGenerics(p.Decl.AST.Type, generics, f.Refers)
 				if p.Type != nil {
 					self.checkFuncParamKind(p)
 				} else {
@@ -1128,7 +1135,7 @@ impl sema {
 				}
 			}
 			if !f.Decl.IsVoid() {
-				f.Result = sema.buildTypeWithGenerics(f.Decl.Result.TypeSym.Decl, generics, f.Refers)
+				f.Result = sema.buildTypeWithGenerics(f.Decl.Result.AST.Type, generics, f.Refers)
 				ok = f.Result != nil && ok
 			}
 			return ok
@@ -1192,8 +1199,8 @@ impl sema {
 			//	b can mutate it, since it is mutable and can access to field x.
 			//	Therefore, copying interior mutable fields with mutable kind
 			//	must be disallowed if field is accessible for safety reasons.
-			if f.Decl.Mutable && f.Type.Mutable() &&
-				self.isAccessibleDefine(f.Decl.Public, f.Decl.Token) {
+			if f.Decl.AST.Mutable && f.Type.Mutable() &&
+				self.isAccessibleDefine(f.Decl.AST.Public, f.Decl.AST.Token) {
 				return true
 			}
 		}
@@ -1215,7 +1222,7 @@ impl sema {
 			// will check the mutability.
 
 			// Check classical assignment mutability.
-			if v.Type.Mutable() || v.Type.Variadic {
+			if !v.IsConst() && v.Type.Mutable() || v.Type.Variadic {
 				self.pushErr(errorToken, "immutable data cannot be assigned to a mutable memory because of type @, which is mutable", v.Type.String())
 				return false
 			}
@@ -1237,24 +1244,24 @@ impl sema {
 	fn checkTypeAliasDeclKind(mut &self, mut ta: &TypeAlias, mut generics: []&TypeAlias, mut prev: &referencer, mut l: Lookup): (ok: bool) {
 		mut old := self.file
 		defer { self.setCurrentFile(old) }
-		if ta.Token != nil {
-			mut file := findFile(self.files, ta.Token.File)
+		if ta.AST.Token != nil {
+			mut file := findFile(self.files, ta.AST.Token.File)
 			if file != nil {
 				self.setCurrentFile(file)
 			}
 		}
 		mut referencer := &referencer{
-			name:  ta.Name,
+			name:  ta.AST.Name,
 			owner: ta,
 			prev:  prev,
 		}
 		if prev != nil {
 			prev.next = referencer
 		}
-		referencer.tains = ta.Strict
-		ok = self.checkTypeSymWithRefers(ta.TypeSym, l, generics, referencer)
-		if ok && ta.TypeSym.Type.Array() != nil && ta.TypeSym.Type.Array().Auto {
-			self.pushErr(ta.TypeSym.Decl.Token, "auto-sized arrays are not allowed as value type")
+		referencer.tains = ta.AST.Strict
+		ok = self.checkTypeSymWithRefers(ta.AST.Type, &ta.Type, l, generics, referencer)
+		if ok && ta.Type.Array() != nil && ta.Type.Array().Auto {
+			self.pushErr(ta.AST.Type.Token, "auto-sized arrays are not allowed as value type")
 			ok = false
 		}
 		if prev != nil {
@@ -1264,25 +1271,25 @@ impl sema {
 	}
 
 	fn checkTypeAliasDecl(mut &self, mut ta: &TypeAlias, mut prev: &referencer, mut l: Lookup): (ok: bool) {
-		if jule::IsBlank(ta.Name) {
-			self.pushErr(ta.Token, "blank identifier cannot be used as an identifier for this declaration")
+		if jule::IsBlank(ta.AST.Name) {
+			self.pushErr(ta.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
 		}
-		if ta.TypeSym.Type != nil {
+		if ta.Type != nil {
 			// already checked
 			return true
 		}
 		// Type alias is strict, make strict type alias analysis.
 		// See developer reference (9).
-		if ta.Strict {
-			mut s := initNewStructType(ta.FullName, ta.Name, pseudoSource)
+		if ta.AST.Strict {
+			mut s := initNewStructType(ta.FullName, ta.AST.Name, pseudoSource)
 			s.Decl.sema = self
-			s.Decl.Extern = ta.Extern
-			s.Decl.Token = ta.Token
-			s.Decl.Public = ta.Public
-			ta.TypeSym.Type = &Type{Kind: s}
+			s.Decl.AST.Extern = ta.AST.Extern
+			s.Decl.AST.Token = ta.AST.Token
+			s.Decl.AST.Public = ta.AST.Public
+			ta.Type = &Type{Kind: s}
 			if len(ta.Generics) > 0 {
-				if ta.Extern {
-					self.pushErr(ta.Token, "external strict type alias cannot have generics")
+				if ta.AST.Extern {
+					self.pushErr(ta.AST.Token, "external strict type alias cannot have generics")
 					return false
 				}
 				ok = self.checkDeclGenerics(ta.Generics)
@@ -1297,30 +1304,30 @@ impl sema {
 				// This enables generic type analysis and support for the struct type.
 				// Also assign the type alias to the struct.
 				// See developer reference (3).
-				s.Decl.Generics = ta.Generics
+				s.Decl.AST.Generics = ta.Generics
 				s.Decl.alias = ta
 				return true
 			}
 		} else if len(ta.Generics) > 0 {
-			self.pushErr(ta.Token, "soft type alias cannot have generics")
-			self.pushSuggestion("define as strict type alias, like; type @[Generics]: Type", ta.Name)
+			self.pushErr(ta.AST.Token, "soft type alias cannot have generics")
+			self.pushSuggestion("define as strict type alias, like; type @[Generics]: Type", ta.AST.Name)
 			return false
 		}
 		ok = self.checkTypeAliasDeclKind(ta, nil, prev, l)
 		if !ok {
 			return false
 		}
-		if !ta.Strict && ta.Extern {
-			self.pushErr(ta.Token, "external types cannot be soft type alias")
-			self.pushSuggestion("define as strict type alias, like; type @: Type", ta.Name)
+		if !ta.AST.Strict && ta.AST.Extern {
+			self.pushErr(ta.AST.Token, "external types cannot be soft type alias")
+			self.pushSuggestion("define as strict type alias, like; type @: Type", ta.AST.Name)
 		}
 		return true
 	}
 
 	// Checks type alias declaration with duplicated identifiers.
 	fn checkTypeAliasDeclDup(mut &self, mut ta: &TypeAlias) {
-		if self.isDuplicatedName(uintptr(ta), ta.Name, ta.Extern) {
-			self.pushErr(ta.Token, "identifier @ is duplicated in this scope", ta.Name)
+		if self.isDuplicatedName(uintptr(ta), ta.AST.Name, ta.AST.Extern) {
+			self.pushErr(ta.AST.Token, "identifier @ is duplicated in this scope", ta.AST.Name)
 		}
 		self.checkTypeAliasDecl(ta, nil, self)
 	}
@@ -1341,15 +1348,15 @@ impl sema {
 	fn checkTypeEnumItemType(mut &self, mut e: &TypeEnum, mut item: &TypeEnumItem): (ok: bool) {
 		mut old := self.file
 		defer { self.setCurrentFile(old) }
-		if e.Token != nil {
-			mut file := findFile(self.files, e.Token.File)
+		if e.AST.Token != nil {
+			mut file := findFile(self.files, e.AST.Token.File)
 			if file != nil {
 				self.setCurrentFile(file)
 			}
 		}
-		ok = self.checkTypeSym(item.TypeSym, self)
-		if ok && item.TypeSym.Type.Array() != nil && item.TypeSym.Type.Array().Auto {
-			self.pushErr(item.TypeSym.Decl.Token, "auto-sized arrays are not allowed as value type")
+		ok = self.checkTypeSym(item.AST.Type, &item.Type, self)
+		if ok && item.Type.Array() != nil && item.Type.Array().Auto {
+			self.pushErr(item.AST.Type.Token, "auto-sized arrays are not allowed as value type")
 			ok = false
 		}
 		if ok {
@@ -1359,20 +1366,20 @@ impl sema {
 	}
 
 	fn checkTypeEnumDecl(mut &self, mut e: &TypeEnum) {
-		if jule::IsBlank(e.Name) {
-			self.pushErr(e.Token, "blank identifier cannot be used as an identifier for this declaration")
-		} else if self.isDuplicatedName(uintptr(e), e.Name, false) {
-			self.pushErr(e.Token, "identifier @ is duplicated in this scope", e.Name)
+		if jule::IsBlank(e.AST.Name) {
+			self.pushErr(e.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
+		} else if self.isDuplicatedName(uintptr(e), e.AST.Name, false) {
+			self.pushErr(e.AST.Token, "identifier @ is duplicated in this scope", e.AST.Name)
 		}
 
 		if len(e.Items) == 0 {
-			self.pushErr(e.Token, "enum @ have not any member", conv::Quote(e.Name))
+			self.pushErr(e.AST.Token, "enum @ have not any member", conv::Quote(e.AST.Name))
 			return
 		}
 
 		for (_, mut item) in e.Items {
-			if item.TypeSym == nil {
-				self.pushErr(item.Token, "missing type")
+			if item.AST.Type == nil {
+				self.pushErr(item.AST.Token, "missing type")
 				continue
 			}
 			ok := self.checkTypeEnumItemType(e, item)
@@ -1380,9 +1387,9 @@ impl sema {
 				continue
 			}
 			// Disallow plain <any> type, but allow strict type aliases to type <any>.
-			p := item.TypeSym.Type.Prim()
-			if item.TypeSym.Type.SoftStruct() == nil && p != nil && p.IsAny() {
-				self.pushErr(item.Token, "type any does not makes sense in type-enum")
+			p := item.Type.Prim()
+			if item.Type.SoftStruct() == nil && p != nil && p.IsAny() {
+				self.pushErr(item.AST.Token, "type any does not makes sense in type-enum")
 			}
 		}
 	}
@@ -1406,16 +1413,16 @@ impl sema {
 			if item == nil {
 				continue
 			}
-			if item.Name == "" {
+			if item.AST.Name == "" {
 				continue
-			} else if jule::IsBlank(item.Name) {
-				self.pushErr(item.Token, "blank identifier cannot be used as an identifier for this declaration")
+			} else if jule::IsBlank(item.AST.Name) {
+				self.pushErr(item.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
 			} else {
 				for _, citem in items {
 					if item == citem {
 						break
-					} else if item.Name == citem.Name {
-						self.pushErr(item.Token, "identifier @ is duplicated in this scope", item.Name)
+					} else if item.AST.Name == citem.AST.Name {
+						self.pushErr(item.AST.Token, "identifier @ is duplicated in this scope", item.AST.Name)
 						break
 					}
 				}
@@ -1424,37 +1431,37 @@ impl sema {
 	}
 
 	fn precheckEnumDecl(mut &self, mut e: &Enum) {
-		if jule::IsBlank(e.Name) {
-			self.pushErr(e.Token, "blank identifier cannot be used as an identifier for this declaration")
-		} else if self.isDuplicatedName(uintptr(e), e.Name, false) {
-			self.pushErr(e.Token, "identifier @ is duplicated in this scope", e.Name)
+		if jule::IsBlank(e.AST.Name) {
+			self.pushErr(e.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
+		} else if self.isDuplicatedName(uintptr(e), e.AST.Name, false) {
+			self.pushErr(e.AST.Token, "identifier @ is duplicated in this scope", e.AST.Name)
 		}
 
 		if len(e.Items) == 0 {
-			self.pushErr(e.Token, "enum @ have not any member", conv::Quote(e.Name))
+			self.pushErr(e.AST.Token, "enum @ have not any member", conv::Quote(e.AST.Name))
 			return
 		}
 
 		self.checkEnumItemsDup(e.Items)
 
-		if e.TypeSym != nil {
-			if !self.checkTypeSym(e.TypeSym, self) {
+		if e.AST.Type != nil {
+			if !self.checkTypeSym(e.AST.Type, &e.Type, self) {
 				return
 			}
 		} else {
 			// Set to default type.
-			e.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			e.Type = primInt
 		}
 
-		mut t := e.TypeSym.Type.Prim()
+		mut t := e.Type.Prim()
 		if t == nil {
-			self.pushErr(e.Token, "invalid type for enum: "+t.String())
+			self.pushErr(e.AST.Token, "invalid type for enum: "+t.String())
 			return
 		}
 
 		supportsIota := types::IsInt(t.String())
 		if !t.IsString() && !supportsIota {
-			self.pushErr(e.Token, "invalid type for enum: "+t.String())
+			self.pushErr(e.AST.Token, "invalid type for enum: "+t.String())
 			return
 		}
 		for (_, mut item) in e.Items {
@@ -1463,10 +1470,10 @@ impl sema {
 			if item == nil {
 				continue
 			}
-			item.TypeSym = new(TypeSym, *e.TypeSym)
-			if e.TypeSym.Decl != nil {
-				item.TypeSym.Decl = new(ast::Expr, *e.TypeSym.Decl)
-				item.TypeSym.Decl.Token = item.Token
+			item.Type = e.Type
+			if e.AST.Type != nil {
+				item.AST.Type = new(ast::Expr, *e.AST.Type)
+				item.AST.Type.Token = item.AST.Token
 			}
 		}
 	}
@@ -1534,10 +1541,10 @@ impl sema {
 	check:
 		for i, p in f.Params {
 			// Lookup in generics.
-			for _, g in f.Generics {
-				if p.Name == g.Name {
+			for _, g in f.AST.Generics {
+				if p.AST.Name == g.Name {
 					ok = false
-					self.pushErr(p.Token, "identifier @ is duplicated in this scope", p.Name)
+					self.pushErr(p.AST.Token, "identifier @ is duplicated in this scope", p.AST.Name)
 					continue check
 				}
 			}
@@ -1548,15 +1555,15 @@ impl sema {
 				| j >= i:
 					// Skip current and following parameters.
 					break paramsLookup
-				| jule::IsBlank(p.Name)
-				| jule::IsBlank(jp.Name)
-				| jule::IsAnon(p.Name)
-				| jule::IsAnon(jp.Name):
+				| jule::IsBlank(p.AST.Name)
+				| jule::IsBlank(jp.AST.Name)
+				| jule::IsAnon(p.AST.Name)
+				| jule::IsAnon(jp.AST.Name):
 					// Skip anonymous parameters.
 					break paramsLookup
-				| p.Name == jp.Name:
+				| p.AST.Name == jp.AST.Name:
 					ok = false
-					self.pushErr(p.Token, "identifier @ is duplicated in this scope", p.Name)
+					self.pushErr(p.AST.Token, "identifier @ is duplicated in this scope", p.AST.Name)
 					continue check
 				}
 			}
@@ -1571,26 +1578,26 @@ impl sema {
 		}
 
 		// Check duplications.
-		for i, v in f.Result.Names {
+		for i, v in f.Result.AST.Names {
 			if jule::IsBlank(v.Kind) || jule::IsAnon(v.Kind) {
 				continue // Skip anonymous return variables.
 			}
 			// Lookup in generics.
-			for _, g in f.Generics {
+			for _, g in f.AST.Generics {
 				if v.Kind == g.Name {
 					goto exist
 				}
 			}
 			// Lookup in parameters.
 			for _, p in f.Params {
-				if v.Kind == p.Name {
+				if v.Kind == p.AST.Name {
 					goto exist
 				}
 			}
 
 			// Lookup in return identifiers.
 		itselfLookup:
-			for j, jv in f.Result.Names {
+			for j, jv in f.Result.AST.Names {
 				match {
 				| j >= i:
 					// Skip current and following identifiers.
@@ -1613,8 +1620,8 @@ impl sema {
 			return false
 		}
 		mut param := f.Params[len(f.Params)-1]
-		if param.Variadic && param.Reference {
-			self.pushErr(param.Token, "reference parameter cannot be variadic")
+		if param.AST.Variadic && param.AST.Reference {
+			self.pushErr(param.AST.Token, "reference parameter cannot be variadic")
 		}
 		return true
 	}
@@ -1622,26 +1629,26 @@ impl sema {
 	// Checks generics, parameters and return type.
 	// Not checks scope, and other things.
 	fn checkFuncDeclPrototype(mut &self, mut f: &Func) {
-		if f.Fallible && f.Extern {
-			self.pushErr(f.Token, "external functions cannot be fallible")
+		if f.AST.Fallible && f.AST.Extern {
+			self.pushErr(f.AST.Token, "external functions cannot be fallible")
 			return
 		}
 
 		// Check special cases for reserved functions, ignore method ones.
 		if f.IsEntryPoint() && f.Owner == nil {
 			if !FuncPattern.Main(f) {
-				self.pushErr(f.Token, "invalid entry point function")
+				self.pushErr(f.AST.Token, "invalid entry point function")
 				self.pushSuggestion("expected; fn main()")
 			}
 		} else if f.IsInit() && f.Owner == nil {
 			if !FuncPattern.Init(f) {
-				self.pushErr(f.Token, "invalid initializer function")
+				self.pushErr(f.AST.Token, "invalid initializer function")
 				self.pushSuggestion("expected; fn init()")
 			}
 		}
 
 		match {
-		| !self.checkDeclGenerics(f.Generics):
+		| !self.checkDeclGenerics(f.AST.Generics):
 		| !self.checkFuncDeclParamsDup(f):
 		| !self.checkFuncDeclResultDup(f):
 		| !self.checkFuncVariadicParam(f):
@@ -1651,16 +1658,16 @@ impl sema {
 	fn catchTraitInheritCycle(mut &self, t1: &Trait, mut t2: &Trait, mut &message: *strings::Builder): (ok: bool) {
 		ok = true
 		for (_, mut i) in t2.Inherits {
-			if i.Type == nil {
+			if i == nil {
 				continue
 			}
-			mut t3 := i.Type.Trait()
+			mut t3 := i.Trait()
 			if t1 == t3 {
-				self.pushCycleError(t2.Name, t3.Name, message)
+				self.pushCycleError(t2.AST.Name, t3.AST.Name, message)
 				return false
 			}
 			if !self.catchTraitInheritCycle(t1, t3, message) {
-				self.pushCycleError(t2.Name, t3.Name, message)
+				self.pushCycleError(t2.AST.Name, t3.AST.Name, message)
 				return false
 			}
 		}
@@ -1669,14 +1676,17 @@ impl sema {
 
 	fn _checkTraitDeclInherits(mut &self, mut t: &Trait): (ok: bool) {
 		ok = true
-		for (i, mut it) in t.Inherits {
-			if !self.checkTypeSym(it, self) {
+		t.Inherits = make([]&Type, 0, len(t.AST.Inherits))
+		for (i, mut itAST) in t.AST.Inherits {
+			let mut it: &Type
+			if !self.checkTypeSym(itAST, &it, self) {
 				ok = false
 				continue
 			}
-			mut t2 := it.Type.Trait()
+			t.Inherits = append(t.Inherits, it)
+			mut t2 := it.Trait()
 			if t2 == nil {
-				self.pushErr(it.Decl.Token, "trait @ cannot inherit @, type should be trait", t.Name, it.Type.String())
+				self.pushErr(itAST.Token, "trait @ cannot inherit @, type should be trait", t.AST.Name, it.String())
 				ok = false
 				continue
 			}
@@ -1684,14 +1694,14 @@ impl sema {
 				if j >= i {
 					break
 				}
-				if it2.Type != nil && it.Type.Equal(it2.Type) {
-					self.pushErr(it.Decl.Token, "identifier @ is duplicated in this scope", t2.Name)
+				if it2 != nil && it.Equal(it2) {
+					self.pushErr(itAST.Token, "identifier @ is duplicated in this scope", t2.AST.Name)
 					ok = false
 					break
 				}
 			}
 			if t == t2 {
-				self.pushErr(it.Decl.Token, "illegal cycle in declaration: @ refers to itself", t.Name)
+				self.pushErr(itAST.Token, "illegal cycle in declaration: @ refers to itself", t.AST.Name)
 				ok = false
 			} else {
 				mut message := strings::Builder{}
@@ -1700,9 +1710,9 @@ impl sema {
 				if message.Len() > 0 {
 					mut errMsg := message.String()
 					message.Clear()
-					self.pushCycleError(t.Name, t2.Name, &message)
+					self.pushCycleError(t.AST.Name, t2.AST.Name, &message)
 					errMsg += message.String()
-					self.pushErr(it.Decl.Token, "illegal cross cycle in declaration:\n"+errMsg)
+					self.pushErr(itAST.Token, "illegal cross cycle in declaration:\n"+errMsg)
 				}
 			}
 		}
@@ -1711,22 +1721,22 @@ impl sema {
 
 	fn checkTraitDeclInherits(mut &self, mut t: &Trait) {
 		for (i, mut it) in t.Inherits {
-			mut t1 := it.Type.Trait()
+			mut t1 := it.Trait()
 			for (j, mut it2) in t.Inherits {
 				if j == i {
 					continue
 				}
-				mut t2 := it2.Type.Trait()
+				mut t2 := it2.Trait()
 				for (_, mut t1m) in t1.Methods {
-					mut t2m := t2.FindMethod(t1m.Name)
+					mut t2m := t2.FindMethod(t1m.AST.Name)
 					if t2m == nil {
 						continue
 					}
 					t1f := self.getTraitCheckFuncKind(t1m)
 					t2f := self.getTraitCheckFuncKind(t2m)
 					if !t1f.equalTrait(t2f) {
-						self.pushErr(it.Decl.Token, "trait @ inherits trait @, but the same identifiers are implemented different:\n       @\n       @",
-							t.Name, t2.Name, t1f.GetKindString(true), t2f.GetKindString(true))
+						self.pushErr(t.AST.Inherits[i].Token, "trait @ inherits trait @, but the same identifiers are implemented different:\n       @\n       @",
+							t.AST.Name, t2.AST.Name, t1f.GetKindString(true), t2f.GetKindString(true))
 						return
 					}
 				}
@@ -1735,10 +1745,10 @@ impl sema {
 	}
 
 	fn checkTraitDeclMethod(mut &self, mut f: &Func) {
-		if jule::IsBlank(f.Name) {
-			self.pushErr(f.Token, "blank identifier cannot be used as an identifier for this declaration")
-		} else if jule::IsAnon(f.Name) {
-			self.pushErr(f.Token, "anonymous functions are not allowed in this scope")
+		if jule::IsBlank(f.AST.Name) {
+			self.pushErr(f.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
+		} else if jule::IsAnon(f.AST.Name) {
+			self.pushErr(f.AST.Token, "anonymous functions are not allowed in this scope")
 		}
 		f.sema = self
 		self.checkFuncDeclPrototype(f)
@@ -1758,8 +1768,8 @@ impl sema {
 				return
 			}
 
-			if t.findMethodInherit(f.Name) != nil {
-				self.pushErr(f.Token, "identifier @ is duplicated in this scope", f.Name)
+			if t.findMethodInherit(f.AST.Name) != nil {
+				self.pushErr(f.AST.Token, "identifier @ is duplicated in this scope", f.AST.Name)
 				continue
 			}
 
@@ -1775,8 +1785,8 @@ impl sema {
 				| j >= i:
 					// Skip current and following methods.
 					break duplicateLookup
-				| f.Name == jf.Name:
-					self.pushErr(f.Token, "identifier @ is duplicated in this scope", f.Name)
+				| f.AST.Name == jf.AST.Name:
+					self.pushErr(f.AST.Token, "identifier @ is duplicated in this scope", f.AST.Name)
 					break duplicateLookup
 				}
 			}
@@ -1784,10 +1794,10 @@ impl sema {
 	}
 
 	fn checkTraitDecl(mut &self, mut t: &Trait) {
-		if jule::IsBlank(t.Name) {
-			self.pushErr(t.Token, "blank identifier cannot be used as an identifier for this declaration")
-		} else if self.isDuplicatedName(uintptr(t), t.Name, false) {
-			self.pushErr(t.Token, "identifier @ is duplicated in this scope", t.Name)
+		if jule::IsBlank(t.AST.Name) {
+			self.pushErr(t.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
+		} else if self.isDuplicatedName(uintptr(t), t.AST.Name, false) {
+			self.pushErr(t.AST.Token, "identifier @ is duplicated in this scope", t.AST.Name)
 		}
 
 		self.checkTraitDeclInherits(t)
@@ -1809,8 +1819,8 @@ impl sema {
 	fn checkTraitImplMethods(mut *self, mut base: &Trait, ipl: &Impl): (ok: bool) {
 		ok = true
 		for _, f in ipl.Methods {
-			if base.FindMethod(f.Name) == nil {
-				self.pushErr(f.Token, "undefined name for trait @: @", conv::Quote(base.Name), conv::Quote(f.Name))
+			if base.FindMethod(f.AST.Name) == nil {
+				self.pushErr(f.AST.Token, "undefined name for trait @: @", conv::Quote(base.AST.Name), conv::Quote(f.AST.Name))
 				ok = false
 			}
 		}
@@ -1822,15 +1832,15 @@ impl sema {
 
 		// Methods.
 		for (_, mut f) in ipl.Methods {
-			if dest.FindMethod(f.Name, f.Static) != nil || dest.FindField(f.Name) != nil {
-				self.pushErr(f.Token, "identifier @ is duplicated in scope of struct", dest.Name, f.Name)
+			if dest.FindMethod(f.AST.Name, f.AST.Static) != nil || dest.FindField(f.AST.Name) != nil {
+				self.pushErr(f.AST.Token, "identifier @ is duplicated in scope of struct", dest.AST.Name, f.AST.Name)
 				ok = false
 				continue
 			}
 
-			if len(dest.Generics) > 0 && len(f.Generics) > 0 {
-				for _, fg in f.Generics {
-					for _, dg in dest.Generics {
+			if len(dest.AST.Generics) > 0 && len(f.AST.Generics) > 0 {
+				for _, fg in f.AST.Generics {
+					for _, dg in dest.AST.Generics {
 						if fg.Name == dg.Name {
 							self.pushErr(fg.Token, "methods cannot have the same generic identifier as owner: "+conv::Quote(fg.Name))
 							ok = false
@@ -1839,7 +1849,7 @@ impl sema {
 				}
 			}
 
-			self.checkDirectives(f.Directives, f)
+			self.checkDirectives(f.AST.Directives, f)
 
 			f.sema = self
 			f.Owner = dest
@@ -1860,32 +1870,32 @@ impl sema {
 
 	// Implement trait to destination.
 	fn implTrait(mut &self, mut decl: &Impl) {
-		mut baseT := self.selectType(decl.Base)
+		mut baseT := self.selectType(decl.AST.Base)
 		if baseT == nil {
 			return
 		}
 		mut base := baseT.Trait()
 		if base == nil {
-			self.pushErr(decl.Base.Token, "base type @ is invalid for impl statement", baseT.String())
+			self.pushErr(decl.AST.Base.Token, "base type @ is invalid for impl statement", baseT.String())
 			self.pushSuggestion("expected trait type")
 			return
 		}
 
-		mut destT := self.selectType(decl.Dest)
+		mut destT := self.selectType(decl.AST.Dest)
 		if destT == nil {
 			return
 		}
 		mut destS := destT.SoftStruct()
 		if destS == nil {
-			self.pushErr(decl.Dest.Token, "destination type @ is invalid for impl statement", destT.String())
+			self.pushErr(decl.AST.Dest.Token, "destination type @ is invalid for impl statement", destT.String())
 			self.pushSuggestion("expected structure type")
 			return
 		}
 
 		mut dest := destS.Decl
 
-		if dest.Token.File.Dir() != self.file.File.Dir() {
-			self.pushErr(decl.Dest.Token, "illegal implementation to structure comes from different package")
+		if dest.AST.Token.File.Dir() != self.file.File.Dir() {
+			self.pushErr(decl.AST.Dest.Token, "illegal implementation to structure comes from different package")
 			return
 		}
 
@@ -1899,20 +1909,20 @@ impl sema {
 	}
 
 	fn implStruct(mut &self, mut decl: &Impl) {
-		mut destT := self.selectType(decl.Dest)
+		mut destT := self.selectType(decl.AST.Dest)
 		if destT == nil {
 			return
 		}
 		mut destS := destT.SoftStruct()
 		if destS == nil {
-			self.pushErr(decl.Dest.Token, "destination type @ is invalid for impl statement", destT.String())
+			self.pushErr(decl.AST.Dest.Token, "destination type @ is invalid for impl statement", destT.String())
 			self.pushSuggestion("expected structure type")
 			return
 		}
 
 		mut dest := destS.Decl
-		if dest.Token.File.Dir() != self.file.File.Dir() {
-			self.pushErr(decl.Dest.Token, "illegal implementation to structure comes from different package")
+		if dest.AST.Token.File.Dir() != self.file.File.Dir() {
+			self.pushErr(decl.AST.Dest.Token, "illegal implementation to structure comes from different package")
 			return
 		}
 
@@ -1939,11 +1949,11 @@ impl sema {
 		// It will be checked by the [checkVarValue] method.
 		// But if it has type annotation, complain, because enumerators
 		// should be plain, only identifier.
-		groupError := decl.Constant && (decl.Group == nil || !decl.IsTypeInferred())
+		groupError := decl.AST.Const && (decl.Group == nil || !decl.IsTypeInferred())
 
 		if decl.IsTypeInferred() {
 			if !decl.IsInitialized() && groupError {
-				self.pushErr(decl.Token, "variable needs to be initialized for type inference")
+				self.pushErr(decl.AST.Token, "variable needs to be initialized for type inference")
 			}
 		} else {
 			mut refers := (&ReferenceStack)(nil)
@@ -1955,27 +1965,27 @@ impl sema {
 			|:
 				panic("sema: checkVarDecl: unimplemented referencer")
 			}
-			decl.TypeSym.Type = self.checkTypeSymRefers(decl.TypeSym.Decl, l, refers)
+			decl.Type = self.checkTypeSymRefers(decl.AST.Type, l, refers)
 		}
 
-		if decl.Reference {
-			if decl.Constant {
-				self.pushErr(decl.Token, "constant variable cannot be reference")
+		if decl.AST.Reference {
+			if decl.AST.Const {
+				self.pushErr(decl.AST.Token, "constant variable cannot be reference")
 			}
-			if decl.Static {
-				self.pushErr(decl.Token, "static variables cannot be reference")
+			if decl.AST.Static {
+				self.pushErr(decl.AST.Token, "static variables cannot be reference")
 			}
 		}
 
 		if !decl.IsInitialized() {
 			if groupError {
-				self.pushErr(decl.Token, "constant variable must be initialized explicitly")
+				self.pushErr(decl.AST.Token, "constant variable must be initialized explicitly")
 			}
-			if !decl.Extern && decl.Static {
-				self.pushErr(decl.Token, "static variable must be initialized explicitly")
+			if !decl.AST.Extern && decl.AST.Static {
+				self.pushErr(decl.AST.Token, "static variable must be initialized explicitly")
 			}
-			if decl.Reference {
-				self.pushErr(decl.Token, "reference variable must be initialized explicitly")
+			if decl.AST.Reference {
+				self.pushErr(decl.AST.Token, "reference variable must be initialized explicitly")
 			}
 		}
 	}
@@ -1983,16 +1993,16 @@ impl sema {
 	// Checks variable declaration for global scope.
 	// Checks duplicated identifiers by Sema.
 	fn checkGlobalVarDecl(mut &self, mut decl: &Var) {
-		if !jule::IsBlank(decl.Name) && self.isDuplicatedName(uintptr(decl), decl.Name, decl.Extern) {
-			self.pushErr(decl.Token, "identifier @ is duplicated in this scope", decl.Name)
+		if !jule::IsBlank(decl.AST.Name) && self.isDuplicatedName(uintptr(decl), decl.AST.Name, decl.AST.Extern) {
+			self.pushErr(decl.AST.Token, "identifier @ is duplicated in this scope", decl.AST.Name)
 		}
-		if decl.Extern && decl.Constant {
-			self.pushErr(decl.Token, "external variable cannot be constant")
+		if decl.AST.Extern && decl.AST.Const {
+			self.pushErr(decl.AST.Token, "external variable cannot be constant")
 		}
-		if !decl.Extern && !decl.Constant && !decl.Static {
-			self.pushErr(decl.Token, "global variable must be static")
+		if !decl.AST.Extern && !decl.AST.Const && !decl.AST.Static {
+			self.pushErr(decl.AST.Token, "global variable must be static")
 		}
-		self.checkDirectives(decl.Directives, decl)
+		self.checkDirectives(decl.AST.Directives, decl)
 		self.checkVarDecl(decl, self)
 	}
 
@@ -2012,7 +2022,7 @@ impl sema {
 		ok = true
 		for (_, mut tf) in trt.Methods {
 			mut exist := false
-			mut sf := strct.FindMethod(tf.Name, tf.Static)
+			mut sf := strct.FindMethod(tf.AST.Name, tf.AST.Static)
 			tfK := self.getTraitCheckFuncKind(tf)
 			if sf != nil {
 				mut sfK := self.getTraitCheckFuncKind(sf)
@@ -2022,7 +2032,7 @@ impl sema {
 			}
 			if !exist {
 				const Name = true
-				self.pushErr(strct.Token, "trait @ implements but structure @ does not; @", trt.Name, strct.Name, tfK.GetKindString(Name))
+				self.pushErr(strct.AST.Token, "trait @ implements but structure @ does not; @", trt.AST.Name, strct.AST.Name, tfK.GetKindString(Name))
 				ok = false
 			}
 		}
@@ -2041,15 +2051,15 @@ impl sema {
 		ok = true
 		for (_, mut f) in s.Fields {
 			f.Owner = s
-			if jule::IsBlank(f.Name) {
+			if jule::IsBlank(f.AST.Name) {
 				continue
 			}
 			// Check duplicated identifiers for fields.
 			for _, cf in s.Fields {
 				if f == cf {
 					break
-				} else if f.Name == cf.Name {
-					self.pushErr(f.Token, "identifier @ is duplicated in this scope", f.Name)
+				} else if f.AST.Name == cf.AST.Name {
+					self.pushErr(f.AST.Token, "identifier @ is duplicated in this scope", f.AST.Name)
 					ok = false
 				}
 			}
@@ -2063,7 +2073,7 @@ impl sema {
 			s: self,
 		}
 		for (_, mut f) in s.Fields {
-			if f.Tag != nil {
+			if f.AST.Tag != nil {
 				tc.f = f
 				ok = tc.check() && ok
 			}
@@ -2072,16 +2082,16 @@ impl sema {
 	}
 
 	fn checkStructDecl(mut &self, mut s: &Struct) {
-		if jule::IsBlank(s.Name) {
-			self.pushErr(s.Token, "blank identifier cannot be used as an identifier for this declaration")
-		} else if self.isDuplicatedName(uintptr(s), s.Name, s.Extern) {
-			self.pushErr(s.Token, "identifier @ is duplicated in this scope", s.Name)
+		if jule::IsBlank(s.AST.Name) {
+			self.pushErr(s.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
+		} else if self.isDuplicatedName(uintptr(s), s.AST.Name, s.AST.Extern) {
+			self.pushErr(s.AST.Token, "identifier @ is duplicated in this scope", s.AST.Name)
 		}
 
-		self.checkDirectives(s.Directives, s)
+		self.checkDirectives(s.AST.Directives, s)
 
 		match {
-		| !self.checkDeclGenerics(s.Generics):
+		| !self.checkDeclGenerics(s.AST.Generics):
 		| !self.checkStructFields(s):
 		| !self.checkStructFieldTags(s):
 		| !self.checkStructImpls(s):
@@ -2107,10 +2117,10 @@ impl sema {
 			}
 		}
 		for (_, mut ta) in self.file.TypeAliases {
-			if !ta.Strict {
+			if !ta.AST.Strict {
 				continue
 			}
-			mut s := ta.TypeSym.Type.Kind.(&StructIns).Decl
+			mut s := ta.Type.Kind.(&StructIns).Decl
 			match {
 			| !self.checkStructImpls(s):
 			| !self.checkFuncDeclsBy(s.Methods):
@@ -2129,23 +2139,23 @@ impl sema {
 	}
 
 	fn checkFuncDecl(mut &self, mut f: &Func) {
-		if jule::IsBlank(f.Name) {
-			self.pushErr(f.Token, "blank identifier cannot be used as an identifier for this declaration")
+		if jule::IsBlank(f.AST.Name) {
+			self.pushErr(f.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
 		} else if f.IsAnon() {
-			self.pushErr(f.Token, "anonymous functions are not allowed in this scope")
+			self.pushErr(f.AST.Token, "anonymous functions are not allowed in this scope")
 		}
 
-		self.checkDirectives(f.Directives, f)
+		self.checkDirectives(f.AST.Directives, f)
 		self.checkAnonFuncDecl(f)
 
-		if f.Owner == nil && self.isDuplicatedName(uintptr(f), f.Name, f.Extern) {
-			if f.Name == jule::InitFunc {
+		if f.Owner == nil && self.isDuplicatedName(uintptr(f), f.AST.Name, f.AST.Extern) {
+			if f.AST.Name == jule::InitFunc {
 				init := self.FindFunc(jule::InitFunc, false)
 				if init != nil {
 					return
 				}
 			}
-			self.pushErr(f.Token, "identifier @ is duplicated in this scope", f.Name)
+			self.pushErr(f.AST.Token, "identifier @ is duplicated in this scope", f.AST.Name)
 		}
 	}
 
@@ -2232,41 +2242,41 @@ impl sema {
 		// Catch the fallible function calls for initialization value if variable static.
 		// If variable is constant, no need for extra attention.
 		// A fallible function cannot return a constant value.
-		if v.Static && v.ValueSym != nil && v.ValueSym.Value != nil {
+		if v.AST.Static && v.ValueSym != nil && v.ValueSym.Value != nil {
 			fc, isFuncCall := v.ValueSym.Value.Model.(&FuncCallExpr)
-			if isFuncCall && fc.Func.Decl != nil && fc.Func.Decl.Fallible {
+			if isFuncCall && fc.Func.Decl != nil && fc.Func.Decl.AST.Fallible {
 				self.pushErr(v.ValueSym.Expr.Token, "using of fallible function disallowed in this scope")
 				self.pushSuggestion("wrap the fallible function with a non-fallible function")
 			}
 		}
 
 		if v.IsTypeInferred() {
-			// Build new TypeSym because auto-type symbols are nil.
-			v.TypeSym = &TypeSym{Type: v.ValueSym.Value.Type}
+			// Build new Type because auto-type symbols are nil.
+			v.Type = v.ValueSym.Value.Type
 
-			if v.Reference {
-				checkTypeForRef(self, v.TypeSym.Type, v.Token)
+			if v.AST.Reference {
+				checkTypeForRef(self, v.Type, v.AST.Token)
 			}
 
 			// Check value for unwrap and physical memory constraint.
-			if !v.Constant && v.ValueSym.Value.untyped {
+			if !v.AST.Const && v.ValueSym.Value.untyped {
 				_ = checkValue(v.ValueSym.Value, self, v.ValueSym.Expr.Token, evalDefault|evalPhysicalMem|evalUnwrapUntyped)
 			}
 
 			self.checkDataForTypeInference(v.ValueSym.Value, v.ValueSym.Expr.Token)
 			self.checkValidityForInitExpr(
-				v.Mutable,
-				v.Reference,
-				v.TypeSym.Type,
+				v.AST.Mutable,
+				v.AST.Reference,
+				v.Type,
 				v.ValueSym.Value,
 				v.ValueSym.Expr.Token)
 		} else {
-			if v.Reference {
-				checkTypeForRef(self, v.TypeSym.Type, v.Token)
+			if v.AST.Reference {
+				checkTypeForRef(self, v.Type, v.AST.Token)
 			}
 
 			// Set the size of the array if it is auto-sized.
-			mut arr := v.TypeSym.Type.Array()
+			mut arr := v.Type.Array()
 			if arr != nil {
 				if arr.Auto {
 					dataArr := v.ValueSym.Value.Type.Array()
@@ -2277,17 +2287,17 @@ impl sema {
 			}
 
 			const FirstAssignToDest = true // The variable takes first assignment with the initializer value.
-			if self.checkAssignType(v.Reference, FirstAssignToDest, v.TypeSym.Type, v.ValueSym.Value, v.ValueSym.Expr.Token, v.Refers) {
+			if self.checkAssignType(v.AST.Reference, FirstAssignToDest, v.Type, v.ValueSym.Value, v.ValueSym.Expr.Token, v.Refers) {
 				self.checkValidityForInitExpr(
-					v.Mutable,
-					v.Reference,
-					v.TypeSym.Type,
+					v.AST.Mutable,
+					v.AST.Reference,
+					v.Type,
 					v.ValueSym.Value,
 					v.ValueSym.Expr.Token)
 			}
 		}
 
-		if v.Constant {
+		if v.AST.Const {
 			if !v.ValueSym.Value.IsConst() && !v.ValueSym.Value.Type.comptime() {
 				self.pushErr(v.ValueSym.Expr.Token, "expression must be constant")
 			}
@@ -2297,8 +2307,8 @@ impl sema {
 		}
 
 		// Remove kind for avoid more tuple-type errors.
-		if v.TypeSym.Type.Tuple() != nil {
-			v.TypeSym.Type = nil
+		if v.Type.Tuple() != nil {
+			v.Type = nil
 		}
 	}
 
@@ -2312,23 +2322,23 @@ impl sema {
 		if !v.IsInitialized() {
 			// If variable is constant and grouped, we have to check previous
 			// constants due to possible enumeration.
-			if v.Constant && v.Group != nil {
+			if v.AST.Const && v.Group != nil {
 				isEnumField := v.Scope == nil && v.IsEnumField()
 				if v.GroupIndex == 0 {
 					if isEnumField {
 						v.ValueSym = new(ValueSym)
 						v.ValueSym.Expr = new(ast::Expr)
-						v.ValueSym.Expr.Token = v.Token
-						prim := v.TypeSym.Type.Prim() // Enum fields must be primitive.
+						v.ValueSym.Expr.Token = v.AST.Token
+						prim := v.Type.Prim() // Enum fields must be primitive.
 						match {
 						| prim.IsString():
 							v.ValueSym.Expr.Data = &ast::LitExpr{
-								Token: v.Token,
-								Value: "\"" + v.Name + "\"",
+								Token: v.AST.Token,
+								Value: "\"" + v.AST.Name + "\"",
 							}
 						| types::IsNum(prim.String()):
 							v.ValueSym.Expr.Data = &ast::NameExpr{
-								Token: v.Token,
+								Token: v.AST.Token,
 								Name:  "iota",
 							}
 						|:
@@ -2336,7 +2346,7 @@ impl sema {
 						}
 						goto Eval
 					} else {
-						self.pushErr(v.Token, "first member of the variable group must be initialized")
+						self.pushErr(v.AST.Token, "first member of the variable group must be initialized")
 					}
 					return false
 				}
@@ -2347,7 +2357,7 @@ impl sema {
 				if dv.ValueSym == nil || dv.ValueSym.Value == nil {
 					return false
 				}
-				v.TypeSym = new(TypeSym, *dv.TypeSym)
+				v.Type = dv.Type
 				// If type is not declared explicitly, remove the derived type.
 				// Type should be inferred like the previous member. Otherwise,
 				// use the same type declaration. Note that if variable is an enum field,
@@ -2355,16 +2365,16 @@ impl sema {
 				// they always have an exact type.
 				if isEnumField {
 					// no-op
-				} else if dv.TypeSym.Decl != nil {
-					v.TypeSym.Decl = new(ast::Expr, *dv.TypeSym.Decl)
-					v.TypeSym.Decl.Token = v.Token
+				} else if dv.AST.Type != nil {
+					v.AST.Type = new(ast::Expr, *dv.AST.Type)
+					v.AST.Type.Token = v.AST.Token
 				} else {
-					v.TypeSym.Type = nil
+					v.Type = nil
 				}
 				v.ValueSym = new(ValueSym)
 				if dv.Iota {
 					v.ValueSym.Expr = new(ast::Expr, *dv.ValueSym.Expr)
-					v.ValueSym.Expr.Token = v.Token
+					v.ValueSym.Expr.Token = v.AST.Token
 					goto Eval
 				} else {
 					v.ValueSym.Value = dv.ValueSym.Value
@@ -2375,12 +2385,12 @@ impl sema {
 
 	Eval:
 		mut eval := (&eval)(nil)
-		if v.TypeSym != nil {
-			eval = self.evalpd(l, v.TypeSym.Type, v)
+		if v.Type != nil {
+			eval = self.evalpd(l, v.Type, v)
 		} else {
 			eval = self.evalpd(l, nil, v)
 		}
-		eval.target.mutable = v.Mutable
+		eval.target.mutable = v.AST.Mutable
 
 		allowIota := len(v.Group) > 0
 		if allowIota {
@@ -2394,7 +2404,7 @@ impl sema {
 
 		// Do not unwrap untyped literals, type analysis will check overflows.
 		mut evalFlags := evalDefault | evalFallible
-		if v.Reference {
+		if v.AST.Reference {
 			evalFlags |= evalRefptr
 		}
 		v.ValueSym.Value = eval.evalExpr(v.ValueSym.Expr, evalFlags)
@@ -2420,7 +2430,7 @@ impl sema {
 		for (_, mut decl) in self.file.Vars {
 			// Skip if variable is external or already used.
 			// If it is already used, should already analyzed.
-			if decl.Extern || decl.Used {
+			if decl.AST.Extern || decl.Used {
 				continue
 			}
 			self.checkVar(decl, self)
@@ -2541,7 +2551,7 @@ impl sema {
 			rootLookup: s.env.sema,
 			lookup:     s.env.sema,
 			referencer: &referencer{
-				name:  s.Decl.Name,
+				name:  s.Decl.AST.Name,
 				owner: s,
 				prev:  prev,
 			},
@@ -2570,17 +2580,17 @@ impl sema {
 			}
 
 			ok = true
-			s.Comparable = !s.Decl.Extern
+			s.Comparable = !s.Decl.AST.Extern
 			for (_, mut f) in s.Fields {
 				// Set instance for referencer if field declaration is not mutable.
 				// But field declared as mutable, do not set.
 				// It basically for the `!f.Decl.Mutable && f.Type.Mutable()` condition.
-				if !f.Decl.Mutable {
+				if !f.Decl.AST.Mutable {
 					tc.referencer.tains = true
 				} else {
 					tc.referencer.tains = false
 				}
-				mut kind := tc.checkDecl(f.Decl.TypeSym.Decl)
+				mut kind := tc.checkDecl(f.Decl.AST.Type)
 				ok = kind != nil && ok
 				if kind == nil {
 					if self != s.env.sema && len(s.env.sema.errors) > 0 {
@@ -2595,7 +2605,7 @@ impl sema {
 				// Because type analysis is a simple precondition checker.
 				// For the actual type, we have to check.
 				// See developer reference (10.2.1).
-				s.Mutable = s.Mutable || (!f.Decl.Mutable && f.Type.Mutable())
+				s.Mutable = s.Mutable || (!f.Decl.AST.Mutable && f.Type.Mutable())
 				s.Comparable = s.Comparable && f.Type.Comparable()
 			}
 			return
@@ -2645,10 +2655,10 @@ impl sema {
 				}
 				if s.Source == nil {
 					for (_, mut field) in s.Fields {
-						pushArr(field.Type.ActualKind(), field.Decl.Token)
+						pushArr(field.Type.ActualKind(), field.Decl.AST.Token)
 					}
 				} else {
-					pushArr(s.Source.ActualKind(), s.Decl.Token)
+					pushArr(s.Source.ActualKind(), s.Decl.AST.Token)
 				}
 			}
 		}
@@ -2657,7 +2667,7 @@ impl sema {
 		// because prechecked structures are assumes they are
 		// have checked instances for non-generic methods.
 		for (_, mut f) in s.Methods {
-			if len(f.Generics) == 0 {
+			if len(f.AST.Generics) == 0 {
 				if self.readyToCheckFunc(s, f) == nil {
 					// Avoid checking body of the function instance and etc.
 					f.Instances[0].checked = true
@@ -2675,18 +2685,18 @@ impl sema {
 	}
 
 	fn checkTypeStruct(mut &self, mut s: &Struct) {
-		if s.Extern {
+		if s.AST.Extern {
 			return
 		}
 		s.checked = true
 
-		if len(s.Generics) == 0 && len(s.Instances) == 0 {
+		if len(s.AST.Generics) == 0 && len(s.Instances) == 0 {
 			mut ins := s.instance()
 			s.appendInstance(ins) // Append instance before precheck.
 		}
 
 		// Precheck is instance is not checked already.
-		if len(s.Generics) == 0 {
+		if len(s.AST.Generics) == 0 {
 			mut ins := s.Instances[0]
 			if !ins.checked {
 				ins.checked = true
@@ -2709,17 +2719,17 @@ impl sema {
 	}
 
 	fn precheckStructType(mut &self, mut s: &Struct) {
-		if s.Extern {
+		if s.AST.Extern {
 			return
 		}
 
-		if len(s.Generics) == 0 && len(s.Instances) == 0 {
+		if len(s.AST.Generics) == 0 && len(s.Instances) == 0 {
 			mut ins := s.instance()
 			s.appendInstance(ins) // Append instance before precheck.
 		}
 
 		// Precheck is instance is not checked already.
-		if len(s.Generics) == 0 {
+		if len(s.AST.Generics) == 0 {
 			mut ins := s.Instances[0]
 			if !ins.checked {
 				ins.checked = true
@@ -2744,11 +2754,11 @@ impl sema {
 		self.meta.mrc.reset()
 		mut ok := self.meta.mrc.memoizeLabelsAndGotos(sc)
 		if !ok {
-			self.pushErr(f.Decl.Token, "missing return at end of function")
+			self.pushErr(f.Decl.AST.Token, "missing return at end of function")
 		}
 		ok = self.meta.mrc.check(f.Scope)
 		if !ok {
-			self.pushErr(f.Decl.Token, "missing return at end of function")
+			self.pushErr(f.Decl.AST.Token, "missing return at end of function")
 		}
 	}
 
@@ -2763,7 +2773,7 @@ impl sema {
 		}
 
 		n := len(sc.s.errors)
-		sc.check(f.Decl.Scope, f.Scope)
+		sc.check(f.Decl.AST.Scope, f.Scope)
 		f.Scope.Owner = uintptr(f)
 
 		// Check return statements if scopeChecker not forced to stop and no error.
@@ -2773,7 +2783,7 @@ impl sema {
 	}
 
 	fn checkFuncInsCaller(mut &self, mut f: &FuncIns, mut caller: &token::Token) {
-		if f.Decl.Extern || f.checked {
+		if f.Decl.AST.Extern || f.checked {
 			return
 		}
 		f.checked = true
@@ -2803,7 +2813,7 @@ impl sema {
 	}
 
 	fn checkFunc(mut &self, mut f: &Func) {
-		if f.Extern {
+		if f.AST.Extern {
 			return
 		}
 		for (_, mut ins) in f.Instances {
@@ -2812,45 +2822,45 @@ impl sema {
 	}
 
 	fn checkTestFunc(mut *self, mut f: &FuncIns) {
-		if f.Decl.Public {
-			self.pushErr(f.Decl.Token, "test functions cannot be public")
+		if f.Decl.AST.Public {
+			self.pushErr(f.Decl.AST.Token, "test functions cannot be public")
 			return
 		}
 
-		if f.Decl.Unsafe ||
+		if f.Decl.AST.Unsafe ||
 			!f.Decl.IsVoid() ||
-			len(f.Decl.Generics) != 0 ||
+			len(f.Decl.AST.Generics) != 0 ||
 			len(f.Params) != 1 ||
-			f.Decl.Params[0].Mutable ||
-			f.Decl.Params[0].Reference {
-			self.pushErr(f.Decl.Token, "wrong test function declaration")
+			f.Decl.Params[0].AST.Mutable ||
+			f.Decl.Params[0].AST.Reference {
+			self.pushErr(f.Decl.AST.Token, "wrong test function declaration")
 			self.pushSuggestion("proper declaration; fn myTest(t: &testing::T)")
 			return
 		}
 
 		mut sptr := f.Params[0].Type.Sptr()
 		if sptr == nil {
-			self.pushErr(f.Decl.Token, "wrong test function declaration")
+			self.pushErr(f.Decl.AST.Token, "wrong test function declaration")
 			self.pushSuggestion("proper declaration; fn myTest(t: &testing::T)")
 			return
 		}
 
 		s, ok := sptr.Value.Kind.(&StructIns)
-		if ok && s.Source == nil && isStdPackage(s.Decl.Token.File.Path, "testing") {
+		if ok && s.Source == nil && isStdPackage(s.Decl.AST.Token.File.Path, "testing") {
 			return
 		}
-		self.pushErr(f.Decl.Token, "wrong test function declaration")
+		self.pushErr(f.Decl.AST.Token, "wrong test function declaration")
 		self.pushSuggestion("proper declaration; fn myTest(t: &testing::T)")
 	}
 
 	fn precheckFunc(mut &self, mut f: &Func) {
-		if len(f.Generics) == 0 && len(f.Instances) == 0 {
+		if len(f.AST.Generics) == 0 && len(f.Instances) == 0 {
 			mut ins := f.instanceForce()
 			f.Instances = append(f.Instances, ins)
 			ok := self.reloadFuncInsTypes(ins)
 			ins.reloaded = true
 
-			if ok && hasDirective(f.Directives, directive::Test) {
+			if ok && hasDirective(f.AST.Directives, directive::Test) {
 				self.checkTestFunc(ins)
 			}
 		}
@@ -2907,8 +2917,8 @@ impl sema {
 							if r == s.Refers {
 								break
 							}
-							pushIllegalCycleError(owner, s.Decl.Name) // Push trace.
-							if unsafe { (*_refCheck)(cached, s.Refers, s.Decl.Name) } {
+							pushIllegalCycleError(owner, s.Decl.AST.Name) // Push trace.
+							if unsafe { (*_refCheck)(cached, s.Refers, s.Decl.AST.Name) } {
 								return true
 							}
 						| &FuncIns:
@@ -2916,17 +2926,17 @@ impl sema {
 							if r == f.Refers {
 								break
 							}
-							pushIllegalCycleError(owner, f.Decl.Name) // Push trace.
-							if unsafe { (*_refCheck)(cached, f.Refers, f.Decl.Name) } {
+							pushIllegalCycleError(owner, f.Decl.AST.Name) // Push trace.
+							if unsafe { (*_refCheck)(cached, f.Refers, f.Decl.AST.Name) } {
 								return true
 							}
 						| &Var:
 							mut v2 := ref.(&Var)
-							pushIllegalCycleError(owner, v2.Name) // Push trace.
+							pushIllegalCycleError(owner, v2.AST.Name) // Push trace.
 							if v2 == v {
 								return true
 							}
-							if unsafe { (*_refCheck)(cached, v2.Refers, v2.Name) } {
+							if unsafe { (*_refCheck)(cached, v2.Refers, v2.AST.Name) } {
 								return true
 							}
 							// Global variable v needs to global variable v2 for initialization.
@@ -2939,8 +2949,8 @@ impl sema {
 					}
 					return false
 				}
-				if refCheck(&cached, v.Refers, v.Name) {
-					self.pushErr(v.Token, "illegal cross cycle in declaration:\n"+message.String())
+				if refCheck(&cached, v.Refers, v.AST.Name) {
+					self.pushErr(v.AST.Token, "illegal cross cycle in declaration:\n"+message.String())
 					return
 				}
 			}
@@ -2988,8 +2998,8 @@ impl sema {
 		for (_, mut f) in self.files {
 			self.setCurrentFile(f)
 			for (_, mut ta) in self.file.TypeAliases {
-				if ta.Strict {
-					mut s := ta.TypeSym.Type.Kind.(&StructIns).Decl
+				if ta.AST.Strict {
+					mut s := ta.Type.Kind.(&StructIns).Decl
 					for (_, mut ins) in s.Instances {
 						if !ins.checked {
 							ins.checked = true
@@ -3535,7 +3545,7 @@ push:
 		t.Implemented = append(t.Implemented, d)
 	}
 	for (_, mut i) in t.Inherits {
-		pushImplemented(i.Type.Trait(), d)
+		pushImplemented(i.Trait(), d)
 	}
 }
 
@@ -3553,7 +3563,7 @@ push:
 		s.Implements = append(s.Implements, t)
 	}
 	for (_, mut i) in t.Inherits {
-		pushImplements(s, i.Type.Trait())
+		pushImplements(s, i.Trait())
 	}
 }
 
@@ -3615,16 +3625,16 @@ fn checkTypeEnumRefCycle(mut s: &sema, mut e: &TypeEnum, mut item: &TypeEnumItem
 	// If item type is a strict type alias (or structure type, does not matter in this case)
 	// return immediately, no risk for cross references.
 	// Strict type aliases will not be inherited.
-	if item.TypeSym.Type.SoftStruct() != nil {
+	if item.Type.SoftStruct() != nil {
 		return
 	}
-	mut e2 := item.TypeSym.Type.TypeEnum()
+	mut e2 := item.Type.TypeEnum()
 	// If item type is not type-enum, no risk for cross references.
 	if e2 == nil {
 		return
 	}
 	if e == e2 {
-		s.pushErr(item.Token, "illegal cycle in declaration: @ refers to itself", e.Name)
+		s.pushErr(item.AST.Token, "illegal cycle in declaration: @ refers to itself", e.AST.Name)
 		return
 	}
 	mut message := new(strings::Builder)
@@ -3640,14 +3650,14 @@ fn checkTypeEnumRefCycle(mut s: &sema, mut e: &TypeEnum, mut item: &TypeEnumItem
 	checkCycles = fn|mut e2| {
 		n := message.Len()
 		for (_, mut item2) in e2.Items {
-			if item2.TypeSym.Type == nil {
+			if item2.Type == nil {
 				continue
 			}
-			mut ie := item2.TypeSym.Type.TypeEnum()
+			mut ie := item2.Type.TypeEnum()
 			if ie == nil {
 				continue
 			}
-			pushIllegalCycleError(e2.Name, ie.Name)
+			pushIllegalCycleError(e2.AST.Name, ie.AST.Name)
 			if ie == e || unsafe { !(*_checkCycles)(ie) } {
 				return false
 			}
@@ -3655,9 +3665,9 @@ fn checkTypeEnumRefCycle(mut s: &sema, mut e: &TypeEnum, mut item: &TypeEnumItem
 		unsafe { message.SetBuf(message.Buf()[:n]) } // Pop last trace.
 		return true
 	}
-	pushIllegalCycleError(e.Name, e2.Name)
+	pushIllegalCycleError(e.AST.Name, e2.AST.Name)
 	ok := checkCycles(e2)
 	if !ok {
-		s.pushErr(e.Token, "illegal cross cycle in declaration:\n"+message.String())
+		s.pushErr(e.AST.Token, "illegal cross cycle in declaration:\n"+message.String())
 	}
 }

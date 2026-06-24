@@ -117,7 +117,7 @@ impl typeCoder {
 
 	// Generates C++ code of Enum type.
 	fn enumDecl(mut *self, mut &buf: *strings::Builder, mut e: &sema::Enum) {
-		self.kind(buf, e.TypeSym.Type)
+		self.kind(buf, e.Type)
 	}
 
 	// Generates C++ code of TypeEnum type.
@@ -151,7 +151,7 @@ impl typeCoder {
 
 	// Generates C++ code of Struct instance type.
 	fn structureIns(mut *self, mut &buf: *strings::Builder, mut s: &sema::StructIns) {
-		if !s.Decl.Extern {
+		if !s.Decl.AST.Extern {
 			if s.Source != nil {
 				self.kind(buf, s.Source)
 			} else {
@@ -159,7 +159,7 @@ impl typeCoder {
 			}
 			return
 		}
-		d := obj::FindDirective(s.Decl.Directives, directive::Namespace)
+		d := obj::FindDirective(s.Decl.AST.Directives, directive::Namespace)
 		if d != nil {
 			buf.Write(concatAllParts(d.Args...))!
 			buf.WriteString("::")!
@@ -188,18 +188,18 @@ impl typeCoder {
 
 	// Generates C++ prototype code of parameter.
 	fn param(mut *self, mut &buf: *strings::Builder, mut p: &sema::Param) {
-		if p.Variadic {
+		if p.AST.Variadic {
 			buf.WriteString(typeSlice + "<")!
-			self.kind(buf, p.TypeSym.Type)
+			self.kind(buf, p.Type)
 			buf.WriteByte('>')!
 		} else {
-			self.kind(buf, p.TypeSym.Type)
+			self.kind(buf, p.Type)
 		}
 	}
 
 	// Generates C++ prototype code of parameter instance.
 	fn paramIns(mut *self, mut &buf: *strings::Builder, mut p: &sema::ParamIns) {
-		if p.Decl.Variadic {
+		if p.Decl.AST.Variadic {
 			buf.WriteString(typeSlice + "<")!
 			self.kind(buf, p.Type)
 			buf.WriteByte('>')!
@@ -211,32 +211,32 @@ impl typeCoder {
 	// Generates C++ code of function's result type.
 	fn funcResult(mut *self, mut &buf: *strings::Builder, mut f: &sema::Func) {
 		if f.IsVoid() {
-			if f.Fallible {
+			if f.AST.Fallible {
 				buf.WriteString("__jule_VoidFallible")!
 				return
 			}
 			buf.WriteString("void")!
 		}
-		if f.Fallible {
+		if f.AST.Fallible {
 			buf.WriteString("__jule_Fallible<")!
-			self.kind(buf, f.Result.TypeSym.Type)
+			self.kind(buf, f.Result.Type)
 			buf.WriteByte('>')!
 			return
 		}
-		self.kind(buf, f.Result.TypeSym.Type)
+		self.kind(buf, f.Result.Type)
 	}
 
 	// Generates C++ code of function instance's result type.
 	fn funcInsResult(mut *self, mut &s: *strings::Builder, mut f: &sema::FuncIns) {
 		if f.Decl.IsVoid() {
-			if f.Decl.Fallible {
+			if f.Decl.AST.Fallible {
 				s.WriteString("__jule_VoidFallible")!
 			} else {
 				s.WriteString("void")!
 			}
 			return
 		}
-		if f.Decl.Fallible {
+		if f.Decl.AST.Fallible {
 			s.WriteString("__jule_Fallible<")!
 			self.rc.codeMut1(s, f.Result)
 			s.WriteByte('>')!
@@ -249,8 +249,8 @@ impl typeCoder {
 		if f.Result != nil && f.Result.Tuple() != nil {
 			self.oc.pushResultIns(f)
 		}
-		if f.Decl.Async {
-			if f.Decl.IsVoid() && !f.Decl.Fallible {
+		if f.Decl.AST.Async {
+			if f.Decl.IsVoid() && !f.Decl.AST.Fallible {
 				buf.WriteString("__jule_VoidAsync")!
 			} else {
 				buf.WriteString("__jule_Async<")!
@@ -443,10 +443,10 @@ impl resultCoder {
 			self.func(s, t.Kind.(&sema::FuncIns))
 		| &sema::Enum:
 			te := t.Kind.(&sema::Enum)
-			self.tc.oc.ic.toOut(s, te.Name, uintptr(te))
+			self.tc.oc.ic.toOut(s, te.AST.Name, uintptr(te))
 		| &sema::TypeEnum:
 			te := t.Kind.(&sema::TypeEnum)
-			self.tc.oc.ic.toOut(s, te.Name, uintptr(te))
+			self.tc.oc.ic.toOut(s, te.AST.Name, uintptr(te))
 		| &sema::StructIns:
 			mut si := t.Kind.(&sema::StructIns)
 			self.tc.oc.ic.structureIns(s, si)

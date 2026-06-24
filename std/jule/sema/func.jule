@@ -9,18 +9,14 @@ use "std/strings"
 
 // Return type.
 struct ReturnType {
-	TypeSym: &TypeSym
-	Names:   []&token::Token
+	AST:  &ast::ReturnType
+	Type: &Type
 }
 
 // Parameter.
 struct Param {
-	Token:     &token::Token
-	Mutable:   bool
-	Variadic:  bool
-	Reference: bool
-	TypeSym:   &TypeSym
-	Name:      string
+	AST:  &ast::Param
+	Type: &Type
 }
 
 impl Param {
@@ -32,17 +28,20 @@ impl Param {
 
 	// Reports whether parameter is self (receiver) parameter.
 	fn IsSelf(*self): bool {
-		return self.Name == "&self" || self.Name == "*self"
+		name := self.AST.Name
+		return name == "&self" || name == "*self"
 	}
 
 	// Reports whether self (receiver) parameter is smart pointer.
 	fn IsSmartptr(*self): bool {
-		return len(self.Name) > 0 && self.Name[0] == '&'
+		name := self.AST.Name
+		return len(name) > 0 && name[0] == '&'
 	}
 
 	// Reports whether self (receiver) parameter is reference pointer.
 	fn IsRefptr(*self): bool {
-		return len(self.Name) > 0 && self.Name[0] == '*'
+		name := self.AST.Name
+		return len(name) > 0 && name[0] == '*'
 	}
 }
 
@@ -54,33 +53,16 @@ enum FuncOwner: type {
 
 // Function.
 struct Func {
+	AST: &ast::Func
+
 	sema: &sema
 
-	// Token of function declaration.
-	// It may be nil if function is created by a deferred scope.
-	Token: &token::Token
+	// Whether function has at least one deferred scope.
+	HasDefer: bool
 
-	Global:     bool
-	Async:      bool
-	Unsafe:     bool
-	Public:     bool
-	Extern:     bool
-	Static:     bool
-	Fallible:   bool
-	HasDefer:   bool // Whether function has at least one deferred scope.
-	Name:       string
-	Directives: []&ast::Directive
-
-	// Scope is the scope of function, aka body.
-	// If this function is created by a deferred scope, the Scope.Deferred will be true.
-	// So it means this function is represents a deferred scope function.
-	// It may be a closure.
-	Scope: &ast::Scope
-
-	Generics: []&ast::Generic
-	Result:   &ReturnType
-	Params:   []&Param
-	Owner:    FuncOwner
+	Result: &ReturnType
+	Params: []&Param
+	Owner:  FuncOwner
 
 	// Function instances for each unique type combination of function call.
 	// Nil if function is never used.
@@ -100,23 +82,23 @@ impl Func {
 
 	// Reports whether function is entry point.
 	fn IsEntryPoint(*self): bool {
-		return self.Name == jule::EntryPoint
+		return self.AST.Name == jule::EntryPoint
 	}
 
 	// Reports whether function is initializer function.
 	fn IsInit(*self): bool {
-		return self.Name == jule::InitFunc
+		return self.AST.Name == jule::InitFunc
 	}
 
 	// Reports whether function is anonymous function.
 	fn IsAnon(*self): bool {
-		return jule::IsAnon(self.Name)
+		return jule::IsAnon(self.AST.Name)
 	}
 
 	// Reports whether function has return variable(s).
 	fn AnyVar(*self): bool {
 		if self.Result != nil {
-			for _, name in self.Result.Names {
+			for _, name in self.Result.AST.Names {
 				if !jule::IsAnon(name.Kind) {
 					return true
 				}
@@ -139,7 +121,7 @@ impl Func {
 		}
 
 		if ins.Decl.Result != nil {
-			ins.Result = ins.Decl.Result.TypeSym.Type
+			ins.Result = ins.Decl.Result.Type
 		}
 
 		return ins
@@ -147,7 +129,7 @@ impl Func {
 
 	fn instance(mut &self): &FuncIns {
 		// Returns already created instance for just one unique combination.
-		if len(self.Generics) == 0 && len(self.Instances) == 1 {
+		if len(self.AST.Generics) == 0 && len(self.Instances) == 1 {
 			return self.Instances[0]
 		}
 		return self.instanceForce()
@@ -156,7 +138,7 @@ impl Func {
 	// Appends function instance.
 	// Returns instance if already instance is already exist, nil if not.
 	fn appendInstance(mut *self, mut ins: &FuncIns): &FuncIns {
-		if len(self.Generics) == 0 {
+		if len(self.AST.Generics) == 0 {
 			// Skip already created instance for just one unique combination.
 			if len(self.Instances) == 1 {
 				return self.Instances[0]
@@ -194,11 +176,11 @@ impl ParamIns {
 	// Returns ParamIns's type kind as string.
 	fn String(*self): string {
 		mut s := strings::Builder{}
-		if self.Decl.Mutable {
+		if self.Decl.AST.Mutable {
 			s.WriteString("mut ")!
 		}
 
-		if self.Decl.Reference {
+		if self.Decl.AST.Reference {
 			s.WriteString("&_:")!
 		}
 
@@ -267,21 +249,23 @@ impl FuncIns {
 	// If the responsive is true, checks by responsiveness of functions.
 	// See: https://manual.jule.dev/responsiveness/mutability
 	fn EqualFunc(&self, f: &FuncIns, responsive: bool): bool {
-		if self.Decl.Fallible != f.Decl.Fallible {
+		sAST, oAST := self.Decl.AST, f.Decl.AST
+		if sAST.Fallible != oAST.Fallible {
 			return false
 		}
-		if self.Decl.Unsafe != f.Decl.Unsafe {
+		if sAST.Unsafe != oAST.Unsafe {
 			return false
 		}
-		if self.Decl.Async != f.Decl.Async {
+		if sAST.Async != oAST.Async {
 			return false
 		}
 		if self.Decl.IsVoid() != f.Decl.IsVoid() {
 			return false
 		}
 		checkParams := fn(p1: &ParamIns, p2: &ParamIns): bool {
-			if p1.Decl.Variadic != p2.Decl.Variadic ||
-				p1.Decl.Reference != p2.Decl.Reference {
+			p1AST, p2AST := p1.Decl.AST, p2.Decl.AST
+			if p1AST.Variadic != p2AST.Variadic ||
+				p1AST.Reference != p2AST.Reference {
 				return false
 			}
 
@@ -293,23 +277,23 @@ impl FuncIns {
 					return false
 				}
 				if responsive {
-					return p1.Decl.Mutable || !p2.Decl.Mutable
+					return p1AST.Mutable || !p2AST.Mutable
 				}
-				return p1.Decl.Mutable == p2.Decl.Mutable
+				return p1AST.Mutable == p2AST.Mutable
 			}
 
 			if responsive {
 				if !p1.Type.Equal(p2.Type) {
 					return false
 				}
-				tmut := p1.Decl.Reference || p1.Decl.Variadic || p1.Type.Mutable()
+				tmut := p1AST.Reference || p1AST.Variadic || p1.Type.Mutable()
 				if !tmut {
 					return true
 				}
-				return p1.Decl.Mutable || !p2.Decl.Mutable
+				return p1AST.Mutable || !p2AST.Mutable
 			}
 
-			if p1.Decl.Mutable != p2.Decl.Mutable {
+			if p1AST.Mutable != p2AST.Mutable {
 				return false
 			}
 			return p1.Type.Equal(p2.Type)
@@ -337,16 +321,17 @@ impl FuncIns {
 
 	// Reports whether functions are equals by trait implementation rules.
 	fn equalTrait(&self, other: &FuncIns): bool {
-		if self.Decl.Public != other.Decl.Public {
+		sAST, oAST := self.Decl.AST, other.Decl.AST
+		if sAST.Public != oAST.Public {
 			return false
 		}
-		if self.Decl.Name != other.Decl.Name {
+		if sAST.Name != oAST.Name {
+			return false
+		}
+		if len(sAST.Generics) != len(oAST.Generics) {
 			return false
 		}
 		if !self.EqualFunc(other, true) {
-			return false
-		}
-		if len(self.Decl.Generics) != len(other.Decl.Generics) {
 			return false
 		}
 		return true
@@ -400,11 +385,11 @@ impl FuncIns {
 		mut s := strings::Builder{}
 		s.Grow(1 << 5)
 
-		if self.Decl != nil && self.Decl.Unsafe {
+		if self.Decl != nil && self.Decl.AST.Unsafe {
 			s.WriteString("unsafe ")!
 		}
 
-		if self.Decl != nil && self.Decl.Async {
+		if self.Decl != nil && self.Decl.AST.Async {
 			s.WriteString("async ")!
 		}
 
@@ -412,7 +397,7 @@ impl FuncIns {
 
 		if name && self.Decl != nil {
 			s.WriteByte(' ')!
-			s.WriteString(self.Decl.Name)!
+			s.WriteString(self.Decl.AST.Name)!
 		}
 
 		s.WriteByte('(')!
@@ -426,7 +411,7 @@ impl FuncIns {
 			}
 		}
 		s.WriteByte(')')!
-		if self.Decl != nil && self.Decl.Fallible {
+		if self.Decl != nil && self.Decl.AST.Fallible {
 			s.WriteByte('!')!
 		}
 		if self.Decl != nil && !self.Decl.IsVoid() {
@@ -440,8 +425,8 @@ impl FuncIns {
 		if self.env == nil {
 			self.env = new(environ)
 			self.env.sema = self.Decl.sema
-			if self.Decl != nil && self.Decl.Token != nil {
-				self.env.file = findFile(self.env.sema.files, self.Decl.Token.File)
+			if self.Decl != nil && self.Decl.AST.Token != nil {
+				self.env.file = findFile(self.env.sema.files, self.Decl.AST.Token.File)
 			}
 		}
 		if len(self.env.generics) == 0 {

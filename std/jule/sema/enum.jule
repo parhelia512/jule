@@ -2,18 +2,17 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
-use "std/jule/token"
+use "std/jule/ast"
 
 // Enum.
 struct Enum {
+	AST: &ast::Enum
+
 	// Associated sema.
 	sema: &sema
 
-	Token:    &token::Token
-	Public:   bool
 	FullName: string // See developer reference (16).
-	Name:     string // See developer reference (16).
-	TypeSym:  &TypeSym
+	Type:     &Type
 	Items:    []&Var // See developer reference (14).
 }
 
@@ -36,7 +35,7 @@ impl Enum {
 	// Returns nil if not exist any item in this identifier.
 	fn FindItem(mut *self, name: string): &Var {
 		for (_, mut item) in self.Items {
-			if item.Name == name {
+			if item.AST.Name == name {
 				return item
 			}
 		}
@@ -46,16 +45,14 @@ impl Enum {
 
 // TypeEnum item.
 struct TypeEnumItem {
-	Token:   &token::Token
-	TypeSym: &TypeSym
+	AST:  &ast::TypeEnumItem
+	Type: &Type
 }
 
 // TypeEnum.
 struct TypeEnum {
-	Token:    &token::Token
-	Public:   bool
+	AST:      &ast::TypeEnum
 	FullName: string // See developer reference (16).
-	Name:     string // See developer reference (16).
 	Items:    []&TypeEnumItem
 }
 

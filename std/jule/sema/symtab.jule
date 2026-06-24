@@ -52,7 +52,7 @@ impl Lookup for SymTab {
 	// Returns nil if not exist any struct in this identifier.
 	fn FindStruct(mut *self, name: string, _extern: bool): &Struct {
 		for (_, mut s) in self.Structs {
-			if s.Name == name && s.Extern == _extern {
+			if s.AST.Name == name && s.AST.Extern == _extern {
 				return s
 			}
 		}
@@ -63,7 +63,7 @@ impl Lookup for SymTab {
 	// Returns nil if not exist any function in this identifier.
 	fn FindFunc(mut *self, name: string, _extern: bool): &Func {
 		for (_, mut f) in self.Funcs {
-			if f.Name == name && f.Extern == _extern {
+			if f.AST.Name == name && f.AST.Extern == _extern {
 				return f
 			}
 		}
@@ -74,7 +74,7 @@ impl Lookup for SymTab {
 	// Returns nil if not exist any trait in this identifier.
 	fn FindTrait(mut *self, name: string): &Trait {
 		for (_, mut t) in self.Traits {
-			if t.Name == name {
+			if t.AST.Name == name {
 				return t
 			}
 		}
@@ -85,7 +85,7 @@ impl Lookup for SymTab {
 	// Returns nil if not exist any enum in this identifier.
 	fn FindEnum(mut *self, name: string): &Enum {
 		for (_, mut e) in self.Enums {
-			if e.Name == name {
+			if e.AST.Name == name {
 				return e
 			}
 		}
@@ -96,7 +96,7 @@ impl Lookup for SymTab {
 	// Returns nil if not exist any type enum in this identifier.
 	fn FindTypeEnum(mut *self, name: string): &TypeEnum {
 		for (_, mut e) in self.TypeEnums {
-			if e.Name == name {
+			if e.AST.Name == name {
 				return e
 			}
 		}
@@ -119,13 +119,13 @@ impl SymTab {
 			mut i := len(self.Vars) - 1
 			for i >= 0; i-- {
 				mut v := self.Vars[i]
-				if v.Name == name && v.Extern == _extern {
+				if v.AST.Name == name && v.AST.Extern == _extern {
 					return v
 				}
 			}
 		} else {
 			for (_, mut v) in self.Vars {
-				if v.Name == name && v.Extern == _extern {
+				if v.AST.Name == name && v.AST.Extern == _extern {
 					return v
 				}
 			}
@@ -138,13 +138,13 @@ impl SymTab {
 			mut i := len(self.TypeAliases) - 1
 			for i >= 0; i-- {
 				mut ta := self.TypeAliases[i]
-				if ta.Name == name && ta.Extern == _extern {
+				if ta.AST.Name == name && ta.AST.Extern == _extern {
 					return ta
 				}
 			}
 		} else {
 			for (_, mut ta) in self.TypeAliases {
-				if ta.Name == name && ta.Extern == _extern {
+				if ta.AST.Name == name && ta.AST.Extern == _extern {
 					return ta
 				}
 			}
@@ -156,25 +156,25 @@ impl SymTab {
 	// Returns nil if not exist any define in this identifier.
 	fn defByIdent(mut *self, name: string, _extern: bool): any {
 		for (_, mut v) in self.Vars {
-			if v.Name == name && v.Extern == _extern {
+			if v.AST.Name == name && v.AST.Extern == _extern {
 				return v
 			}
 		}
 
 		for (_, mut ta) in self.TypeAliases {
-			if ta.Name == name && ta.Extern == _extern {
+			if ta.AST.Name == name && ta.AST.Extern == _extern {
 				return ta
 			}
 		}
 
 		for (_, mut s) in self.Structs {
-			if s.Name == name && s.Extern == _extern {
+			if s.AST.Name == name && s.AST.Extern == _extern {
 				return s
 			}
 		}
 
 		for (_, mut f) in self.Funcs {
-			if f.Name == name && f.Extern == _extern {
+			if f.AST.Name == name && f.AST.Extern == _extern {
 				return f
 			}
 		}
@@ -184,19 +184,19 @@ impl SymTab {
 		}
 
 		for (_, mut t) in self.Traits {
-			if t.Name == name {
+			if t.AST.Name == name {
 				return t
 			}
 		}
 
 		for (_, mut e) in self.Enums {
-			if e.Name == name {
+			if e.AST.Name == name {
 				return e
 			}
 		}
 
 		for (_, mut te) in self.TypeEnums {
-			if te.Name == name {
+			if te.AST.Name == name {
 				return te
 			}
 		}
@@ -209,25 +209,25 @@ impl SymTab {
 	// If founded identifier address equals to "itself", it will be skipped.
 	fn isDuplicatedName(*self, itself: uintptr, name: string, _extern: bool): bool {
 		for _, v in self.Vars {
-			if uintptr(v) != itself && v.Name == name && v.Extern == _extern {
+			if uintptr(v) != itself && v.AST.Name == name && v.AST.Extern == _extern {
 				return true
 			}
 		}
 
 		for _, ta in self.TypeAliases {
-			if uintptr(ta) != itself && ta.Name == name && ta.Extern == _extern {
+			if uintptr(ta) != itself && ta.AST.Name == name && ta.AST.Extern == _extern {
 				return true
 			}
 		}
 
 		for _, s in self.Structs {
-			if uintptr(s) != itself && s.Name == name && s.Extern == _extern {
+			if uintptr(s) != itself && s.AST.Name == name && s.AST.Extern == _extern {
 				return true
 			}
 		}
 
 		for _, f in self.Funcs {
-			if uintptr(f) != itself && f.Name == name && f.Extern == _extern {
+			if uintptr(f) != itself && f.AST.Name == name && f.AST.Extern == _extern {
 				return true
 			}
 		}
@@ -237,19 +237,19 @@ impl SymTab {
 		}
 
 		for _, t in self.Traits {
-			if uintptr(t) != itself && t.Name == name {
+			if uintptr(t) != itself && t.AST.Name == name {
 				return true
 			}
 		}
 
 		for _, e in self.Enums {
-			if uintptr(e) != itself && e.Name == name {
+			if uintptr(e) != itself && e.AST.Name == name {
 				return true
 			}
 		}
 
 		for _, te in self.TypeEnums {
-			if uintptr(te) != itself && te.Name == name {
+			if uintptr(te) != itself && te.AST.Name == name {
 				return true
 			}
 		}

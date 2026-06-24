@@ -126,13 +126,13 @@ impl IR {
 	fn appendStructs(*self, mut p: &sema::Package, mut &buffer: *[]&sema::Struct) {
 		for (_, mut f) in p.Files {
 			for (_, mut s) in f.Structs {
-				if !s.Extern {
+				if !s.AST.Extern {
 					*buffer = append(*buffer, s)
 				}
 			}
 			for (_, mut ta) in f.TypeAliases {
-				if !ta.Extern && ta.Strict {
-					*buffer = append(*buffer, ta.TypeSym.Type.Kind.(&sema::StructIns).Decl)
+				if !ta.AST.Extern && ta.AST.Strict {
+					*buffer = append(*buffer, ta.Type.Kind.(&sema::StructIns).Decl)
 				}
 			}
 		}
@@ -155,7 +155,7 @@ impl IR {
 	fn appendGlobals(*self, mut p: &sema::Package, mut &buffer: *[]&sema::Var) {
 		for (_, mut f) in p.Files {
 			for (_, mut v) in f.Vars {
-				if v.Token != nil && !v.Extern && !v.Constant {
+				if v.AST.Token != nil && !v.AST.Extern && !v.AST.Const {
 					*buffer = append(*buffer, v)
 				}
 			}

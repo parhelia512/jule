@@ -8,46 +8,48 @@ struct FuncPattern{}
 impl FuncPattern {
 	// Reports whether function is the reserved main function.
 	fn Main(f: &Func): bool {
-		return f != nil &&
-			f.Owner == nil &&
-			f.Name == "main" &&
-			!f.Extern &&
-			!f.Static &&
-			!f.Unsafe &&
-			!f.Fallible &&
-			f.IsVoid() &&
-			len(f.Generics) == 0 &&
-			len(f.Params) == 0
+		if f == nil || f.Owner != nil || !f.IsVoid() || len(f.Params) > 0 {
+			return false
+		}
+		ast := f.AST
+		return ast.Name == "main" &&
+			!ast.Extern &&
+			!ast.Static &&
+			!ast.Unsafe &&
+			!ast.Fallible &&
+			len(ast.Generics) == 0
 	}
 
 	// Reports whether function is the reserved init function.
 	fn Init(f: &Func): bool {
-		return f != nil &&
-			f.Owner == nil &&
-			f.Name == "init" &&
-			!f.Async &&
-			!f.Extern &&
-			!f.Static &&
-			!f.Unsafe &&
-			!f.Fallible &&
-			f.IsVoid() &&
-			len(f.Generics) == 0 &&
-			len(f.Params) == 0
+		if f == nil || f.Owner != nil || !f.IsVoid() || len(f.Params) > 0 {
+			return false
+		}
+		ast := f.AST
+		return ast.Name == "init" &&
+			!ast.Extern &&
+			!ast.Static &&
+			!ast.Unsafe &&
+			!ast.Fallible &&
+			len(ast.Generics) == 0
 	}
 
 	// Reports whether function is the reserved String function.
 	fn String(f: &Func): bool {
 		if f == nil ||
 			f.Owner == nil ||
-			f.Name != "String" ||
-			f.Async ||
-			f.Static ||
-			f.Unsafe ||
 			f.IsVoid() ||
-			len(f.Generics) != 0 ||
 			len(f.Params) != 1 ||
-			f.Params[0].Mutable ||
+			f.Params[0].AST.Mutable ||
 			!f.Params[0].IsRefptr() {
+			return false
+		}
+		ast := f.AST
+		if ast.Name != "String" ||
+			ast.Async ||
+			ast.Static ||
+			ast.Unsafe ||
+			len(ast.Generics) != 0 {
 			return false
 		}
 

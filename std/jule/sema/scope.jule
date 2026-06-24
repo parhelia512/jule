@@ -444,7 +444,7 @@ impl scopeChecker {
 	// Reports whether scope is unsafe.
 	fn isAsync(mut &self): bool {
 		r := self.getRoot()
-		return r.owner != nil && r.owner.Decl != nil && r.owner.Decl.Async
+		return r.owner != nil && r.owner.Decl != nil && r.owner.Decl.AST.Async
 	}
 
 	// Reports scope is root.
@@ -619,14 +619,14 @@ impl scopeChecker {
 			self.scope.Stmts = append(self.scope.Stmts, v)
 		}
 
-		if !jule::IsBlank(v.Name) && self.isDuplicatedName(uintptr(v), v.Name) {
-			self.s.pushErr(v.Token, "identifier @ is duplicated in this scope", v.Name)
+		if !jule::IsBlank(v.AST.Name) && self.isDuplicatedName(uintptr(v), v.AST.Name) {
+			self.s.pushErr(v.AST.Token, "identifier @ is duplicated in this scope", v.AST.Name)
 			self.stop()
 			return
 		}
 
 		self.s.checkVarDecl(v, self)
-		if !v.IsTypeInferred() && (v.TypeSym == nil || v.TypeSym.Type == nil) {
+		if !v.IsTypeInferred() && (v.AST.Type == nil || v.Type == nil) {
 			return
 		}
 		// We should imitate the [sema.checkVar].
@@ -671,8 +671,8 @@ impl scopeChecker {
 	}
 
 	fn checkTypeAlias(mut &self, mut ta: &TypeAlias) {
-		if self.isDuplicatedName(uintptr(ta), ta.Name) {
-			self.s.pushErr(ta.Token, "identifier @ is duplicated in this scope", ta.Name)
+		if self.isDuplicatedName(uintptr(ta), ta.AST.Name) {
+			self.s.pushErr(ta.AST.Token, "identifier @ is duplicated in this scope", ta.AST.Name)
 			self.stop()
 			return
 		}
@@ -680,7 +680,7 @@ impl scopeChecker {
 		self.table.TypeAliases = append(self.table.TypeAliases, ta)
 
 		// Stop immediately if destination type is could not evaluated.
-		if ta.TypeSym.Type == nil {
+		if ta.Type == nil {
 			self.stop()
 		}
 	}
@@ -877,13 +877,13 @@ impl scopeChecker {
 
 	fn checkComptimeRangeIter(mut &self, mut it: &ast::Iter, mut kind: &RangeIter, mut v: &Value) {
 		if kind.KeyA != nil {
-			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyA.Name) {
-				self.s.pushErr(kind.KeyA.Token, "identifier @ is duplicated in this scope", kind.KeyA.Name)
+			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyA.AST.Name) {
+				self.s.pushErr(kind.KeyA.AST.Token, "identifier @ is duplicated in this scope", kind.KeyA.AST.Name)
 			}
 		}
 		if kind.KeyB != nil {
-			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyB.Name) {
-				self.s.pushErr(kind.KeyB.Token, "identifier @ is duplicated in this scope", kind.KeyB.Name)
+			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyB.AST.Name) {
+				self.s.pushErr(kind.KeyB.AST.Token, "identifier @ is duplicated in this scope", kind.KeyB.AST.Name)
 			}
 		}
 
@@ -977,16 +977,16 @@ impl scopeChecker {
 		mut scope := self.getChild()
 
 		if kind.KeyA != nil {
-			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyA.Name) {
-				self.s.pushErr(kind.KeyA.Token, "identifier @ is duplicated in this scope", kind.KeyA.Name)
+			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyA.AST.Name) {
+				self.s.pushErr(kind.KeyA.AST.Token, "identifier @ is duplicated in this scope", kind.KeyA.AST.Name)
 			}
 			kind.KeyA.Scope = scope
 			ssc.table.Vars = append(ssc.table.Vars, kind.KeyA)
 		}
 
 		if kind.KeyB != nil {
-			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyB.Name) {
-				self.s.pushErr(kind.KeyB.Token, "identifier @ is duplicated in this scope", kind.KeyB.Name)
+			if !self.s.isFlag(Shadowing) && self.isDuplicatedName(0, kind.KeyB.AST.Name) {
+				self.s.pushErr(kind.KeyB.AST.Token, "identifier @ is duplicated in this scope", kind.KeyB.AST.Name)
 			}
 			kind.KeyB.Scope = scope
 			ssc.table.Vars = append(ssc.table.Vars, kind.KeyB)
@@ -1354,11 +1354,13 @@ impl scopeChecker {
 
 			// Add new variable declaration statement.
 			mut v := &Var{
-				Name:      lexpr.Name,
-				Token:     lexpr.Token,
-				Mutable:   lexpr.Mutable,
-				Reference: lexpr.Reference,
-				Scope:     self.scope,
+				AST: &ast::Var{
+					Name:      lexpr.Name,
+					Token:     lexpr.Token,
+					Mutable:   lexpr.Mutable,
+					Reference: lexpr.Reference,
+				},
+				Scope: self.scope,
 				ValueSym: &ValueSym{
 					Expr:  r.expr,
 					Value: r.data,
@@ -1366,10 +1368,10 @@ impl scopeChecker {
 			}
 			self.s.checkVarValue(v)
 			stmt.Left = append(stmt.Left, &Value{
-				Lvalue:    !v.Constant,
-				Mutable:   v.Mutable,
-				Reference: v.Reference,
-				Type:      v.TypeSym.Type,
+				Lvalue:    !v.AST.Const,
+				Mutable:   v.AST.Mutable,
+				Reference: v.AST.Reference,
+				Type:      v.Type,
 				Model:     v,
 			})
 			stmt.Decls = append(stmt.Decls, v)
@@ -1810,17 +1812,17 @@ impl scopeChecker {
 				if titem == item {
 					return false
 				}
-				mut ke := titem.TypeSym.Type.TypeEnum()
+				mut ke := titem.Type.TypeEnum()
 				// Check if the titem's type is not type-enum.
 				// Because inherited type-enums will not be considered compatible in type matching.
 				// See documentation of the [self.checkCase] function for type-match statements.
 				if ke == nil {
-					if titem.TypeSym.Type.Equal(item.TypeSym.Type) {
+					if titem.Type.Equal(item.Type) {
 						return true
 					}
 				}
 				// If item is not strict type alias, check inherited types if it is type-enum.
-				if titem.TypeSym.Type.SoftStruct() == nil {
+				if titem.Type.SoftStruct() == nil {
 					if ke != nil {
 						pushed := unsafe { (*_isPushedAlready)(ke, item) }
 						if pushed {
@@ -1834,12 +1836,12 @@ impl scopeChecker {
 
 		ok = true
 		for (_, mut item) in te.Items {
-			if countMatchType(m, item.TypeSym.Type, 1) == 1 {
+			if countMatchType(m, item.Type, 1) == 1 {
 				continue
 			}
 			// If item is not strict type alias, check inherited types if it is type-enum.
-			if item.TypeSym.Type.SoftStruct() == nil {
-				mut ke := item.TypeSym.Type.TypeEnum()
+			if item.Type.SoftStruct() == nil {
+				mut ke := item.Type.TypeEnum()
 				if ke != nil {
 					ok = ok && self.checkAllTypeEnumCasesHandled(m, ke, sb)
 					continue
@@ -1853,7 +1855,7 @@ impl scopeChecker {
 			if sb.Len() > 0 {
 				sb.WriteString(", ")!
 			}
-			sb.WriteString(item.TypeSym.Type.String())!
+			sb.WriteString(item.Type.String())!
 		}
 		return
 	}
@@ -1918,11 +1920,11 @@ impl scopeChecker {
 	fn checkAllEnumCasesHandled(mut &self, mut m: &ast::Match, mut enm: &Enum) {
 		mut sb := strings::Builder{}
 		for _, item in enm.Items {
-			if countMatchEnum(m, item.Name, 1) == 0 {
+			if countMatchEnum(m, item.AST.Name, 1) == 0 {
 				if sb.Len() > 0 {
 					sb.WriteString(", ")!
 				}
-				sb.WriteString(item.Name)!
+				sb.WriteString(item.AST.Name)!
 			}
 		}
 		if sb.Len() > 0 {
@@ -2322,7 +2324,7 @@ impl scopeChecker {
 		}
 
 		mut root := self.getRoot()
-		if !root.owner.Decl.Fallible {
+		if !root.owner.Decl.AST.Fallible {
 			self.s.pushErr(t.Token, "throw statements are not allowed in non-fallible scopes")
 		}
 
@@ -2594,16 +2596,16 @@ impl scopeChecker {
 
 	fn checkVars(mut *self) {
 		for _, v in self.table.Vars {
-			if !v.Used && !v.Constant && !jule::IsBlank(v.Name) && !jule::IsAnon(v.Name) {
-				self.s.pushErr(v.Token, "declared but not used: "+conv::Quote(v.Name))
+			if !v.Used && !v.AST.Const && !jule::IsBlank(v.AST.Name) && !jule::IsAnon(v.AST.Name) {
+				self.s.pushErr(v.AST.Token, "declared but not used: "+conv::Quote(v.AST.Name))
 			}
 		}
 	}
 
 	fn checkAliases(mut *self) {
 		for _, a in self.table.TypeAliases {
-			if !a.Used && !jule::IsBlank(a.Name) && !jule::IsAnon(a.Name) {
-				self.s.pushErr(a.Token, "declared but not used: "+conv::Quote(a.Name))
+			if !a.Used && !jule::IsBlank(a.AST.Name) && !jule::IsAnon(a.AST.Name) {
+				self.s.pushErr(a.AST.Token, "declared but not used: "+conv::Quote(a.AST.Name))
 			}
 		}
 	}
@@ -2825,7 +2827,7 @@ fn checkAssignMut(mut s: &sema, left: &Value, mut right: &Value, op: &token::Tok
 	| !left.Mutable:
 		s.pushErr(op, "cannot assign to immutable memory")
 		return false
-	| right != nil && !right.Mutable && right.Type.Mutable():
+	| right != nil && !right.Mutable && !right.IsConst() && right.Type.Mutable():
 		s.pushErr(op, "immutable data cannot be assigned to a mutable memory because of type @, which is mutable", right.Type.String())
 		return false
 	|:
@@ -2843,13 +2845,13 @@ fn checkAssign(mut s: &sema, mut left: &Value, mut right: &Value, op: &token::To
 
 	// If the value is error, complain.
 	var, _ := left.Model.(&Var)
-	if var != nil && var.Name == "error" {
+	if var != nil && var.AST.Name == "error" {
 		s.pushErr(op, "cannot assign to the error value")
 		return false
 	}
 
 	f := left.Type.Func()
-	if f != nil && f.Decl != nil && f.Decl.Global {
+	if f != nil && f.Decl != nil && f.Decl.AST.Global {
 		// Make sure function is indeed a global function.
 		// Model is equals to the function when referred to directly.
 		// Otherwise it may be a variable, if it used as anonymous function.
@@ -2926,7 +2928,7 @@ fn isSafeToThrow(mut v: &Value): bool {
 
 	// May be error value?
 	var, mut ok := v.Model.(&Var)
-	if ok && var.Name == "error" {
+	if ok && var.AST.Name == "error" {
 		return true
 	}
 

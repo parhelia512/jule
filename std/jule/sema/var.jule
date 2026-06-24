@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 use "std/jule/ast"
-use "std/jule/token"
 
 // Return variable states.
 enum RetState {
@@ -14,21 +13,13 @@ enum RetState {
 
 // Variable.
 struct Var {
-	Scope:      &Scope
-	Token:      &token::Token
-	Name:       string
-	Extern:     bool
-	Constant:   bool
-	Mutable:    bool
-	Public:     bool
-	Used:       bool
-	Static:     bool
-	Reference:  bool
-	Checked:    bool
-	TypeSym:    &TypeSym
-	ValueSym:   &ValueSym
-	Refers:     &ReferenceStack
-	Directives: []&ast::Directive
+	AST:      &ast::Var
+	Scope:    &Scope
+	Used:     bool
+	Checked:  bool
+	Type:     &Type
+	ValueSym: &ValueSym
+	Refers:   &ReferenceStack
 
 	// Return variable state for this variable.
 	RetState: RetState
@@ -55,7 +46,7 @@ impl Var {
 
 	// Reports whether variable is type inferred.
 	fn IsTypeInferred(*self): bool {
-		return self.TypeSym == nil || self.TypeSym.Decl == nil
+		return self.AST.Type == nil
 	}
 
 	// Reports whether variable is enum field.

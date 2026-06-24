@@ -28,7 +28,7 @@ fn checkTypeForRef(mut s: &sema, mut t: &Type, errorToken: &token::Token) {
 fn traitHasReferenceReceiver(t: &Trait): bool {
 	for _, f in t.Methods {
 		// Skip static functions.
-		if f.Static {
+		if f.AST.Static {
 			continue
 		}
 
@@ -211,7 +211,7 @@ impl typeCompatibilityChecker {
 				return false
 			}
 			for (_, mut m1) in trt.Methods {
-				mut m2 := base.FindMethod(m1.Name)
+				mut m2 := base.FindMethod(m1.AST.Name)
 				if m2 == nil {
 					return false
 				}
@@ -260,14 +260,14 @@ impl typeCompatibilityChecker {
 
 	fn typeEnum(*self, mut e: &TypeEnum, mut t2: &Type): (ok: bool) {
 		for (_, mut item) in e.Items {
-			mut ke := item.TypeSym.Type.TypeEnum()
+			mut ke := item.Type.TypeEnum()
 			if ke == nil || self.flags&typeCompNoInherited == 0 {
-				if item.TypeSym.Type.Equal(t2) {
+				if item.Type.Equal(t2) {
 					return true
 				}
 			}
 			// If item is not strict type alias, check inherited types if it is type-enum.
-			if item.TypeSym.Type.SoftStruct() == nil {
+			if item.Type.SoftStruct() == nil {
 				if ke == nil {
 					continue
 				}
@@ -340,13 +340,13 @@ impl assignTypeChecker {
 			| f.IsBuiltin():
 				self.s.pushErr(self.errorToken, "built-in functions cannot be anonymous")
 				valid = false
-			| f.Decl.Extern:
+			| f.Decl.AST.Extern:
 				self.s.pushErr(self.errorToken, "external functions cannot be anonymous")
 				valid = false
-			| !f.Decl.Static && f.Decl.IsMethod():
+			| !f.Decl.AST.Static && f.Decl.IsMethod():
 				self.s.pushErr(self.errorToken, "methods cannot be anonymous")
 				valid = false
-			| len(f.Decl.Generics) > 0 && len(f.Generics) == 0:
+			| len(f.Decl.AST.Generics) > 0 && len(f.Generics) == 0:
 				self.s.pushErr(self.errorToken, "generic functions cannot be anonymous")
 				self.s.pushSuggestion("instantiate generic function to use it as ananoymous with explicit types")
 				valid = false
@@ -461,14 +461,14 @@ impl assignTypeChecker {
 		| self.v.Type.Enum() != nil:
 			mut dkind := self.dest
 			if self.dest.Enum() != nil {
-				dkind = self.dest.Enum().TypeSym.Type
+				dkind = self.dest.Enum().Type
 			}
 			prim := self.dest.Prim()
 			if prim == nil || prim.IsAny() {
 				// Ignore direct comparison if prim is nil or any.
 				break
 			}
-			mut dest := self.v.Type.Enum().TypeSym.Type
+			mut dest := self.v.Type.Enum().Type
 			return self.s.checkTypeCompatibility(dest, dkind, self.errorToken, typeCompDefault)
 		| self.v.Type.Chan() != nil:
 			dc := self.dest.Chan()
@@ -623,7 +623,7 @@ impl dynamicTypeAnnotation {
 			return false
 		}
 		mut name := self.c.Data.(&ast::NameExpr)
-		for i, g in self.f.Decl.Generics {
+		for i, g in self.f.Decl.AST.Generics {
 			if g.Name != name.Name {
 				continue
 			}
@@ -671,7 +671,7 @@ impl dynamicTypeAnnotation {
 
 	fn pushGeneric(mut *self, mut k: &Type, i: int) {
 		self.f.Generics[i] = &InsGeneric{Type: k}
-		mut gd := self.f.Decl.Generics[i]
+		mut gd := self.f.Decl.AST.Generics[i]
 		for (_, mut ignored) in self.ignored {
 			if gd.Name == ignored.String() {
 				ignored.Kind = k.Kind
@@ -858,7 +858,7 @@ impl dynamicTypeAnnotation {
 			return false, false
 		}
 		kind := prim.Kind
-		for i, g in self.f.Decl.Generics {
+		for i, g in self.f.Decl.AST.Generics {
 			if kind != g.Name {
 				continue
 			}
@@ -948,7 +948,7 @@ impl fnCallArgChecker {
 		if n > 0 && params[0].Decl.IsSelf() {
 			n--
 		}
-		variadic := n > 0 && params[len(params)-1].Decl.Variadic
+		variadic := n > 0 && params[len(params)-1].Decl.AST.Variadic
 		if variadic {
 			n--
 		}
@@ -970,7 +970,7 @@ impl fnCallArgChecker {
 		}
 		mut err := strings::Builder{}
 		err.Grow(1 << 5)
-		err.WriteString(self.f.Decl.Name)!
+		err.WriteString(self.f.Decl.AST.Name)!
 		err.WriteString("\n       want (")!
 		for i, p in params {
 			err.WriteString(p.Type.String())!
@@ -984,7 +984,7 @@ impl fnCallArgChecker {
 	}
 
 	fn checkArg(mut *self, mut p: &ParamIns, mut arg: &Value, mut errorToken: &token::Token): (ok: bool) {
-		if self.dynamicAnnotation && parameterUsesGenerics(p, self.f.Decl.Generics) {
+		if self.dynamicAnnotation && parameterUsesGenerics(p, self.f.Decl.AST.Generics) {
 			ok = isGoodValueToInfer(arg)
 			if ok {
 				mut dta := dynamicTypeAnnotation{
@@ -1013,9 +1013,9 @@ impl fnCallArgChecker {
 
 		// Check type if validity is good.
 		// Helps to reduce error logs and duplicated logs.
-		if self.e.s.checkValidityForInitExpr(p.Decl.Mutable, p.Decl.Reference, p.Type, arg, errorToken) {
+		if self.e.s.checkValidityForInitExpr(p.Decl.AST.Mutable, p.Decl.AST.Reference, p.Type, arg, errorToken) {
 			const FirstAssignToDest = true // The argument takes first assignment with the function call.
-			return self.e.s.checkAssignType(p.Decl.Reference, FirstAssignToDest, p.Type, arg, errorToken, self.e.getOwnerRefers())
+			return self.e.s.checkAssignType(p.Decl.AST.Reference, FirstAssignToDest, p.Type, arg, errorToken, self.e.getOwnerRefers())
 		}
 		return false
 	}
@@ -1024,8 +1024,8 @@ impl fnCallArgChecker {
 		mut old := self.e.prefix
 		oldMut := self.e.target.mutable
 
-		self.e.target.mutable = p.Decl.Mutable
-		if !p.Decl.Variadic && (!self.dynamicAnnotation || !parameterUsesGenerics(p, self.f.Decl.Generics)) {
+		self.e.target.mutable = p.Decl.AST.Mutable
+		if !p.Decl.AST.Variadic && (!self.dynamicAnnotation || !parameterUsesGenerics(p, self.f.Decl.AST.Generics)) {
 			self.e.prefix = p.Type
 		} else {
 			self.e.prefix = nil
@@ -1036,7 +1036,7 @@ impl fnCallArgChecker {
 			// To to that, use type of the return value by default.
 			if self.dynamicAnnotation {
 				mut dest := p.Type.Func()
-				if dest != nil && !funcParametersUseGenerics(dest.Params, self.f.Decl.Generics) {
+				if dest != nil && !funcParametersUseGenerics(dest.Params, self.f.Decl.AST.Generics) {
 					mut src, isFunc := arg.Data.(&ast::Func)
 					if isFunc && src.IsShort() && src.Scope.Deferred {
 						// Set the prefix type.
@@ -1044,14 +1044,14 @@ impl fnCallArgChecker {
 						// Set the generics from the owner function to detect generics.
 						// It will be cleaned after eval.
 						// Refer to retTypeChecker documentation.
-						src.Generics = self.f.Decl.Generics
+						src.Generics = self.f.Decl.AST.Generics
 					}
 				}
 			}
 		}
 		// Do not unwrap untyped literals, type analysis will check overflows.
 		mut evalFlags := evalDefault
-		if p.Decl.Reference {
+		if p.Decl.AST.Reference {
 			evalFlags |= evalRefptr
 		}
 		mut v := self.e.evalExpr(arg, evalFlags)
@@ -1083,7 +1083,7 @@ impl fnCallArgChecker {
 		mut old := self.e.prefix
 
 		oldMut := self.e.target.mutable
-		self.e.target.mutable = p.Decl.Mutable
+		self.e.target.mutable = p.Decl.AST.Mutable
 
 		// Save variadic status into separate variable.
 		// Because parameter might be variadic, but type might be not variadic.
@@ -1171,7 +1171,7 @@ impl fnCallArgChecker {
 		for i < len(params) {
 			mut p := params[i]
 			match {
-			| p.Decl.Variadic:
+			| p.Decl.AST.Variadic:
 				ok = self.pushVariadic(p, i) && ok
 				// Variadiced parameters always last.
 				break iter
@@ -1219,12 +1219,12 @@ impl fnCallArgChecker {
 // Assumes mutable structure literal and checks field assignments.
 fn checkMutRiskOfStructLit(mut s: &sema, m: &StructLitExpr) {
 	for _, arg in m.Args {
-		if arg.Field.Decl.Mutable {
+		if arg.Field.Decl.AST.Mutable {
 			// Skip this field.
 			// If there is a mutability risk, it will be logged by [structLitChecker].
 			continue
 		}
-		if !arg.Expr.Mutable && arg.Expr.Type.Mutable() {
+		if !arg.Expr.IsConst() && !arg.Expr.Mutable && arg.Expr.Type.Mutable() {
 			s.pushErr(arg.Token, "immutable data cannot be assigned to a mutable memory because of type @, which is mutable", arg.Expr.Type.String())
 		}
 	}
@@ -1254,7 +1254,7 @@ impl structLitChecker {
 		// But if field in scope of the interior mutability, check as mutable.
 		// Do not accept as risky if structure is not have any method.
 		// Because if there is no method, no risk for interior mutability.
-		mutable := self.e.target.mutable || (f.Decl.Mutable && len(self.s.Methods) > 0)
+		mutable := self.e.target.mutable || (f.Decl.AST.Mutable && len(self.s.Methods) > 0)
 		// Check type if validity is good.
 		// Helps to reduce error logs and duplicated logs.
 		if self.e.s.checkValidityForInitExpr(mutable, Reference, f.Type, v, errorToken) {
@@ -1296,7 +1296,7 @@ impl structLitChecker {
 			}
 		}
 
-		if !self.e.s.isAccessibleDefine(f.Decl.Public, f.Decl.Token) {
+		if !self.e.s.isAccessibleDefine(f.Decl.AST.Public, f.Decl.AST.Token) {
 			self.pushErr(pair.Key.Token, "define is private and could not be accessed: "+name.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return
@@ -1358,7 +1358,7 @@ impl structLitChecker {
 
 				mut field := self.s.Fields[i]
 
-				if !self.e.s.isAccessibleDefine(field.Decl.Public, field.Decl.Token) {
+				if !self.e.s.isAccessibleDefine(field.Decl.AST.Public, field.Decl.AST.Token) {
 					self.pushErr(self.errorToken, "structure cannot be instantiated because it has both public and private fields")
 					self.pushSuggestion("use label-expression pairs to instantiate (e.g. Struct{x:foo, y:bar})")
 					return
@@ -1393,7 +1393,7 @@ impl structLitChecker {
 			idents.Grow(1 << 5)
 			for diff > 0; diff-- {
 				idents.WriteString(", ")!
-				idents.WriteString(self.s.Fields[n-diff].Decl.Name)!
+				idents.WriteString(self.s.Fields[n-diff].Decl.AST.Name)!
 			}
 			self.pushErr(self.errorToken, "missing expression for @",
 				idents.String()[2:]) /* Remove first separator. */
@@ -1420,7 +1420,7 @@ impl rangeChecker {
 			return
 		}
 		self.Kind.KeyA = self.buildVar(self.rang.A)
-		self.Kind.KeyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+		self.Kind.KeyA.Type = primInt
 	}
 
 	// Check range expression validity.
@@ -1430,7 +1430,7 @@ impl rangeChecker {
 	//	- key: data passed to this key.
 	//	- k:   element kind of expression.
 	fn checkRangeExprValidity(mut *self, mut v: &Value, key: &Var, mut k: &Type) {
-		mut _mut := key.Mutable
+		mut _mut := key.AST.Mutable
 		if _mut && !k.Mutable() {
 			// Bypass mutability error.
 			// Element kind is immutable.
@@ -1439,7 +1439,7 @@ impl rangeChecker {
 		}
 
 		self.sc.s.checkValidityForInitExpr(
-			_mut, key.Reference, key.TypeSym.Type, v, self.rang.InToken)
+			_mut, key.AST.Reference, key.Type, v, self.rang.InToken)
 	}
 
 	fn checkSlice(mut *self) {
@@ -1450,7 +1450,7 @@ impl rangeChecker {
 
 		mut slc := self.v.Type.Slice()
 		self.Kind.KeyB = self.buildVar(self.rang.B)
-		self.Kind.KeyB.TypeSym = &TypeSym{Type: slc.Value}
+		self.Kind.KeyB.Type = slc.Value
 
 		self.checkRangeExprValidity(self.v, self.Kind.KeyB, slc.Value)
 	}
@@ -1463,7 +1463,7 @@ impl rangeChecker {
 
 		mut arr := self.v.Type.Array()
 		self.Kind.KeyB = self.buildVar(self.rang.B)
-		self.Kind.KeyB.TypeSym = &TypeSym{Type: arr.Value}
+		self.Kind.KeyB.Type = arr.Value
 
 		self.checkRangeExprValidity(self.v, self.Kind.KeyB, arr.Value)
 	}
@@ -1475,7 +1475,7 @@ impl rangeChecker {
 
 		mut m := self.v.Type.Map()
 		self.Kind.KeyA = self.buildVar(self.rang.A)
-		self.Kind.KeyA.TypeSym = &TypeSym{Type: m.Key}
+		self.Kind.KeyA.Type = m.Key
 
 		mut v := new(Value, *self.v)
 		v.Type = m.Key
@@ -1490,7 +1490,7 @@ impl rangeChecker {
 
 		mut m := self.v.Type.Map()
 		self.Kind.KeyB = self.buildVar(self.rang.B)
-		self.Kind.KeyB.TypeSym = &TypeSym{Type: m.Value}
+		self.Kind.KeyB.Type = m.Value
 
 		mut v := new(Value, *self.v)
 		v.Type = m.Value
@@ -1509,7 +1509,7 @@ impl rangeChecker {
 			return
 		}
 		self.Kind.KeyB = self.buildVar(self.rang.B)
-		self.Kind.KeyB.TypeSym = findBuiltinTypeAlias("rune").TypeSym
+		self.Kind.KeyB.Type = findBuiltinTypeAlias("rune").Type
 	}
 
 	fn checkChan(mut *self) {
@@ -1527,7 +1527,7 @@ impl rangeChecker {
 			return
 		}
 		self.Kind.KeyA = self.buildVar(self.rang.A)
-		self.Kind.KeyA.TypeSym = &TypeSym{Type: c.Value}
+		self.Kind.KeyA.Type = c.Value
 		mut v := new(Value, *self.v)
 		v.Type = c.Value
 		self.checkRangeExprValidity(v, self.Kind.KeyA, c.Value)
@@ -1624,12 +1624,12 @@ impl retTypeChecker {
 		// But analysis requires types, actually.
 		// Types may be provided by the external source.
 		if self.f != nil {
-			if self.f.oneliner && len(self.f.Decl.Generics) > 0 {
+			if self.f.oneliner && len(self.f.Decl.AST.Generics) > 0 {
 				// If the function is one-line short literal and have generics,
 				// we will use type inference.
 				self.types = nil
 				self.inference = true
-				self.f.Decl.Generics = nil // Clean generics.
+				self.f.Decl.AST.Generics = nil // Clean generics.
 			} else {
 				self.types = self.f.Types()
 			}

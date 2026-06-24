@@ -2,15 +2,13 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
-use "std/jule/token"
+use "std/jule/ast"
 
 // Trait.
 struct Trait {
-	Token:       &token::Token
+	AST:         &ast::Trait
 	FullName:    string // See developer reference (16).
-	Name:        string // See developer reference (16).
-	Public:      bool
-	Inherits:    []&TypeSym
+	Inherits:    []&Type
 	Methods:     []&Func
 	Implemented: []&Struct
 }
@@ -34,7 +32,7 @@ impl Trait {
 	// Returns nil if not exist any method in this identifier.
 	fn FindMethod(mut *self, name: string): &Func {
 		for (_, mut f) in self.Methods {
-			if f.Name == name {
+			if f.AST.Name == name {
 				return f
 			}
 		}
@@ -46,7 +44,7 @@ impl Trait {
 			return true
 		}
 		for (_, mut i) in self.Inherits {
-			if i.Type.Trait().inherits(t) {
+			if i.Trait().inherits(t) {
 				return true
 			}
 		}
@@ -55,10 +53,10 @@ impl Trait {
 
 	fn findMethodInherit(mut *self, name: string): &Func {
 		for (_, mut i) in self.Inherits {
-			if i.Type == nil {
+			if i == nil {
 				continue
 			}
-			mut t := i.Type.Trait()
+			mut t := i.Trait()
 			if t != nil {
 				mut f2 := t.FindMethod(name)
 				if f2 != nil {

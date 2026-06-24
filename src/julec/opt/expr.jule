@@ -889,7 +889,7 @@ impl exprOptimizer {
 				continue
 			}
 			mut p := params[i]
-			if p.Decl.Mutable && p.Decl.Reference {
+			if p.Decl.AST.Mutable && p.Decl.AST.Reference {
 				if self.data.boundary != nil {
 					if isBoundaryRiskyType(p.Type) {
 						possibleBoundaryRemove(self.data.boundary, arg)

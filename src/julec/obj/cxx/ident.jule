@@ -99,58 +99,58 @@ impl identCoder {
 	fn traitFunc(*self, mut &buf: *strings::Builder, t: &sema::Trait, mut f: &sema::Func) {
 		self.traitDecl(buf, t)
 		buf.WriteByte('_')!
-		self.writeIdentTo(buf, f.Name)
+		self.writeIdentTo(buf, f.AST.Name)
 	}
 
 	fn func(*self, mut &buf: *strings::Builder, mut f: &sema::Func) {
 		match {
-		| f.Extern:
-			buf.WriteString(f.Name)!
+		| f.AST.Extern:
+			buf.WriteString(f.AST.Name)!
 			return
 		| f.IsMethod():
-			if f.Static {
+			if f.AST.Static {
 				self.structure(buf, f.Owner.(&sema::Struct))
 				buf.WriteString("_static_")!
-				self.writeIdentTo(buf, f.Name)
+				self.writeIdentTo(buf, f.AST.Name)
 			} else {
 				match type f.Owner {
 				| &sema::Struct:
 					self.structure(buf, f.Owner.(&sema::Struct))
 					buf.WriteByte('_')!
-					self.writeIdentTo(buf, f.Name)
+					self.writeIdentTo(buf, f.AST.Name)
 				| &sema::Trait:
 					self.traitFunc(buf, f.Owner.(&sema::Trait), f)
 				}
 			}
 			return
 		| f.IsInit():
-			self.toOut(buf, f.Name, uintptr(f))
+			self.toOut(buf, f.AST.Name, uintptr(f))
 			return
 		}
-		export := obj::FindDirective(f.Directives, directive::Export)
+		export := obj::FindDirective(f.AST.Directives, directive::Export)
 		if export != nil {
 			identCoder.export(buf, export)
 			return
 		}
-		name := self.needCacheHit(f.Token.File.Path)
+		name := self.needCacheHit(f.AST.Token.File.Path)
 		buf.WriteString(name)!
 		buf.WriteByte('_')!
-		self.writeIdentTo(buf, f.Name)
+		self.writeIdentTo(buf, f.AST.Name)
 	}
 
 	fn funcIns(*self, mut &buf: *strings::Builder, mut f: &sema::FuncIns) {
-		if f.Decl.Extern || len(f.Generics) == 0 {
+		if f.Decl.AST.Extern || len(f.Generics) == 0 {
 			// Function may have zero generics, but owner needs a special treatment.
 			// Because it have generic types.
 			if f.Owner != nil && len(f.Owner.Generics) > 0 {
 				self.structureIns(buf, f.Owner)
-				if f.Decl.Static {
+				if f.Decl.AST.Static {
 					buf.WriteString("_static_")!
-					self.writeIdentTo(buf, f.Decl.Name)
+					self.writeIdentTo(buf, f.Decl.AST.Name)
 				} else {
 					buf.WriteByte('_')!
 				}
-				self.writeIdentTo(buf, f.Decl.Name)
+				self.writeIdentTo(buf, f.Decl.AST.Name)
 			} else {
 				// No generics for function or owner.
 				// Handle it like an ordinary function.
@@ -160,51 +160,51 @@ impl identCoder {
 		}
 		// Deterministic identifier generation is not possible.
 		// Fallback to the non-deterministic method.
-		self.toOut(buf, f.Decl.Name, uintptr(f))
+		self.toOut(buf, f.Decl.AST.Name, uintptr(f))
 	}
 
 	fn traitDecl(*self, mut &buf: *strings::Builder, t: &sema::Trait) {
-		name := self.needCacheHit(t.Token.File.Path)
+		name := self.needCacheHit(t.AST.Token.File.Path)
 		buf.WriteString(name)!
 		buf.WriteByte('_')!
-		self.writeIdentTo(buf, t.Name)
+		self.writeIdentTo(buf, t.AST.Name)
 	}
 
 	fn param(*self, mut &buf: *strings::Builder, p: &sema::Param) {
-		if jule::IsAnon(p.Name) || jule::IsBlank(p.Name) {
+		if jule::IsAnon(p.AST.Name) || jule::IsBlank(p.AST.Name) {
 			return
 		}
 		if p.IsSelf() {
 			buf.WriteString(identSelf)!
 			return
 		}
-		if p.Token == nil {
-			self.toLocal(buf, 0, 0, p.Name)
+		if p.AST.Token == nil {
+			self.toLocal(buf, 0, 0, p.AST.Name)
 			return
 		}
-		self.toLocal(buf, p.Token.Row, p.Token.Column, p.Name)
+		self.toLocal(buf, p.AST.Token.Row, p.AST.Token.Column, p.AST.Name)
 	}
 
 	fn structure(*self, mut &buf: *strings::Builder, s: &sema::Struct) {
-		if s.Extern {
-			if !obj::HasDirective(s.Directives, directive::Typedef) {
+		if s.AST.Extern {
+			if !obj::HasDirective(s.AST.Directives, directive::Typedef) {
 				buf.WriteString("struct ")!
 			}
-			buf.WriteString(s.Name)!
+			buf.WriteString(s.AST.Name)!
 			return
 		}
-		name := self.needCacheHit(s.Token.File.Path)
+		name := self.needCacheHit(s.AST.Token.File.Path)
 		buf.WriteString(name)!
 		buf.WriteByte('_')!
-		self.writeIdentTo(buf, s.Name)
+		self.writeIdentTo(buf, s.AST.Name)
 	}
 
 	fn structureIns(*self, mut &buf: *strings::Builder, mut s: &sema::StructIns) {
-		if s.Decl.Extern {
+		if s.Decl.AST.Extern {
 			self.structure(buf, s.Decl)
 			return
 		}
-		export := obj::FindDirective(s.Decl.Directives, directive::Export)
+		export := obj::FindDirective(s.Decl.AST.Directives, directive::Export)
 		if export != nil {
 			identCoder.export(buf, export)
 			return
@@ -217,27 +217,27 @@ impl identCoder {
 		}
 		// Deterministic identifier generation is not possible.
 		// Fallback to the non-deterministic method.
-		self.toOut(buf, s.Decl.Name, uintptr(s))
+		self.toOut(buf, s.Decl.AST.Name, uintptr(s))
 	}
 
 	fn field(*self, mut &buf: *strings::Builder, f: &sema::Field) {
-		if f.Owner.Extern {
+		if f.Owner.AST.Extern {
 			export, ok := f.Tags["#export"]
 			if ok {
 				buf.WriteString(export)!
 			} else {
-				buf.WriteString(f.Name)!
+				buf.WriteString(f.AST.Name)!
 			}
 			return
 		}
 		buf.WriteString("_field_")!
-		if jule::IsBlank(f.Name) {
+		if jule::IsBlank(f.AST.Name) {
 			// If the identifier is blank, there may be other fields like that.
 			// So handle them with unique identifier, avoid duplication.
 			buf.WriteString(conv::FormatUint(u64(uintptr(f)), 0xF))!
 			return
 		}
-		self.writeIdentTo(buf, f.Name)
+		self.writeIdentTo(buf, f.AST.Name)
 	}
 
 	// Returns output identifier of captured variable by anonymous function.
@@ -246,13 +246,13 @@ impl identCoder {
 		| Tuple:
 			// This means variable one of the structure fields of multiple-return.
 			// To avoid generating invalid IR code, use the variable's unique identifier.
-			self.toOut(buf, v.Name, uintptr(v))
+			self.toOut(buf, v.AST.Name, uintptr(v))
 		| Single:
 			// Use the common identifier coder for single variable returns.
 			fall
 		| NA:
 			// Use the common identifier coder.
-			if v.Name == "error" {
+			if v.AST.Name == "error" {
 				// The error variable captured, handle it as "__jule_error".
 				buf.WriteString("__jule_error")!
 				return
@@ -277,26 +277,26 @@ impl identCoder {
 			return
 		}
 		match {
-		| v.Extern:
-			buf.WriteString(v.Name)!
-		| v.Name == "error":
+		| v.AST.Extern:
+			buf.WriteString(v.AST.Name)!
+		| v.AST.Name == "error":
 			buf.WriteString("__jule_error_")!
 			buf.WriteString(conv::FormatUint(u64(uintptr(v.Scope)), 16))!
 			buf.WriteString(".error")!
-		| v.Name == "self":
+		| v.AST.Name == "self":
 			buf.WriteString(identSelf)!
 		| v.Scope != nil:
-			self.toLocal(buf, v.Token.Row, v.Token.Column, v.Name)
+			self.toLocal(buf, v.AST.Token.Row, v.AST.Token.Column, v.AST.Name)
 		|:
-			export := obj::FindDirective(v.Directives, directive::Export)
+			export := obj::FindDirective(v.AST.Directives, directive::Export)
 			if export != nil {
 				identCoder.export(buf, export)
 				return
 			}
-			name := self.needCacheHit(v.Token.File.Path)
+			name := self.needCacheHit(v.AST.Token.File.Path)
 			buf.WriteString(name)!
 			buf.WriteByte('_')!
-			self.writeIdentTo(buf, v.Name)
+			self.writeIdentTo(buf, v.AST.Name)
 		}
 	}
 

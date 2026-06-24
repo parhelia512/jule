@@ -9,6 +9,7 @@ use "julec/obj/meta"
 use "julec/opt"
 use "std/conv"
 use "std/fmt"
+use "std/jule/ast"
 use "std/jule/build"
 use "std/jule/constant"
 use "std/jule/directive"
@@ -534,8 +535,8 @@ impl exprCoder {
 				return
 			}
 		}
-		if m.Extern {
-			d := obj::FindDirective(m.Directives, directive::Namespace)
+		if m.AST.Extern {
+			d := obj::FindDirective(m.AST.Directives, directive::Namespace)
 			if d != nil {
 				self.oc.writeBytes(concatAllParts(d.Args...))
 				self.oc.write("::")
@@ -594,7 +595,7 @@ impl exprCoder {
 		| token::MUL:
 			nilptr := self.oc.mode&_OBJC_DISABLE_NILPTR != 0
 			mut v, _ := m.Expr.Model.(&sema::Var)
-			if v != nil && v.Reference {
+			if v != nil && v.AST.Reference {
 				self.oc.write("(*")
 				if nilptr {
 					self.possibleRefExpr(v)
@@ -677,7 +678,7 @@ impl exprCoder {
 
 	fn checkNilRef(mut &self, mut v: &sema::Var) {
 		self.oc.write("((")
-		self.oc.tc.kind(&self.oc.Buf, v.TypeSym.Type)
+		self.oc.tc.kind(&self.oc.Buf, v.Type)
 		self.oc.write(")(")
 		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.CheckNilRef)
 		self.oc.write("((void*)(")
@@ -943,7 +944,7 @@ impl exprCoder {
 
 	fn args(mut &self, mut m: &sema::FuncCallExpr) {
 		mut j := 0
-		if m.Func.Owner != nil && !m.Func.Decl.Static ||
+		if m.Func.Owner != nil && !m.Func.Decl.AST.Static ||
 			len(m.Func.Params) > 0 && m.Func.Params[0].Decl.IsSelf() {
 			j++ // Skip receiver parameter.
 		}
@@ -1042,8 +1043,8 @@ impl exprCoder {
 		}
 		self.modelForCall(m.Expr)
 		if !m.Func.IsBuiltin() {
-			if m.Func.Decl.Extern && len(m.Func.Generics) > 0 {
-				if !obj::HasDirective(m.Func.Decl.Directives, directive::Cdef) {
+			if m.Func.Decl.AST.Extern && len(m.Func.Generics) > 0 {
+				if !obj::HasDirective(m.Func.Decl.AST.Directives, directive::Cdef) {
 					self.oc.write("<")
 					for (i, mut g) in m.Func.Generics {
 						self.oc.tc.kind(&self.oc.Buf, g.Type)
@@ -1090,7 +1091,7 @@ impl exprCoder {
 							match type ssie.Expr.Model {
 							| &sema::Var:
 								v := ssie.Expr.Model.(&sema::Var)
-								if v.Reference {
+								if v.AST.Reference {
 									break
 								}
 								fall
@@ -1188,7 +1189,7 @@ impl exprCoder {
 		childIndex++
 		if dest.Model != nil {
 			mut fc, ok := val.Model.(&sema::FuncCallExpr)
-			if ok && fc.Func.Decl != nil && fc.Func.Decl.Fallible {
+			if ok && fc.Func.Decl != nil && fc.Func.Decl.AST.Fallible {
 				self.handleFallibleCallWithData(fc, dest)
 				self.oc.sc.emitDefersByLevel(childIndex, true)
 				return
@@ -1239,10 +1240,7 @@ impl exprCoder {
 			errorName += conv::FormatUint(u64(uintptr(m)), 16)
 		}
 
-		let mut destData: sema::Expr = &sema::Var{
-			Extern: true, // to use identifier directly
-			Name:   errorName + ".result",
-		}
+		let mut destData: cst::Expr = errorName + ".result"
 
 		self.oc.write("{\n")
 		// Generate code for fallible.
@@ -1408,7 +1406,7 @@ impl exprCoder {
 			return
 		}
 		if m.Func.IsBuiltin() ||
-			!m.Func.Decl.Fallible ||
+			!m.Func.Decl.AST.Fallible ||
 			m.Handler != nil && len(m.Handler.Stmts) == 0 {
 			self.pureFuncCall(m)
 			return
@@ -1672,8 +1670,8 @@ impl exprCoder {
 	}
 
 	fn funcIns(mut &self, mut m: &sema::FuncIns) {
-		if m.Decl != nil && m.Decl.Extern {
-			d := obj::FindDirective(m.Decl.Directives, directive::Namespace)
+		if m.Decl != nil && m.Decl.AST.Extern {
+			d := obj::FindDirective(m.Decl.AST.Directives, directive::Namespace)
 			if d != nil {
 				self.oc.writeBytes(concatAllParts(d.Args...))
 				self.oc.write("::")
@@ -2619,7 +2617,7 @@ fn utoa(mut &s: *strings::Builder, x: u64) {
 // Writes string literal expression for constant literal to buf.
 // Literal is not including quotes, just string content in bytes.
 fn stringLit(mut &buf: *strings::Builder, lit: string, len: string) {
-	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.Directives, directive::Export)
+	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.AST.Directives, directive::Export)
 	if export == nil {
 		panic("stringLit: expected exported functions")
 	}
@@ -2634,7 +2632,7 @@ fn stringLit(mut &buf: *strings::Builder, lit: string, len: string) {
 // Same as the stringLit function, but uses the lit function to write content.
 // The lit function should return the length of content.
 fn stringLitF(mut &buf: *strings::Builder, lit: fn(): int) {
-	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.Directives, directive::Export)
+	export := obj::FindDirective(meta::Program.Runtime.StringBytePtr.Decl.AST.Directives, directive::Export)
 	if export == nil {
 		panic("stringLitF: expected exported functions")
 	}
@@ -2648,7 +2646,7 @@ fn stringLitF(mut &buf: *strings::Builder, lit: fn(): int) {
 
 // Like the stringLit function, but writes as slice (will not perform allocation).
 fn stringLitAsSlice(mut &buf: *strings::Builder, lit: string, len: string) {
-	export := obj::FindDirective(meta::Program.Runtime.SliceBytePtr.Decl.Directives, directive::Export)
+	export := obj::FindDirective(meta::Program.Runtime.SliceBytePtr.Decl.AST.Directives, directive::Export)
 	if export == nil {
 		panic("stringLitAsSlice: expected exported functions")
 	}
@@ -2664,7 +2662,7 @@ fn stringLitAsSlice(mut &buf: *strings::Builder, lit: string, len: string) {
 
 // Returns string expr as byte slice (will not perform allocation).
 fn stringToSlice(mut &buf: *strings::Builder, expr: string) {
-	export := obj::FindDirective(meta::Program.Runtime.StringAsSlice.Decl.Directives, directive::Export)
+	export := obj::FindDirective(meta::Program.Runtime.StringAsSlice.Decl.AST.Directives, directive::Export)
 	if export == nil {
 		panic("stringToSlice: expected exported functions")
 	}
@@ -2729,7 +2727,7 @@ fn isFallibleResult(mut m: cst::Expr): (fc: &sema::FuncCallExpr) {
 		m = c.Expr.Model
 	}
 	fc, ok := m.(&sema::FuncCallExpr)
-	if !ok || fc.Func.Decl == nil || !fc.Func.Decl.Fallible {
+	if !ok || fc.Func.Decl == nil || !fc.Func.Decl.AST.Fallible {
 		fc = nil
 	}
 	return

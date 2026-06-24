@@ -28,11 +28,11 @@ fn findBuiltinFunc(name: string): &FuncIns {
 
 fn primTypeAlias(name: string, mut k: &Type): &TypeAlias {
 	return &TypeAlias{
-		Name:   name,
-		Public: true,
-		TypeSym: &TypeSym{
-			Type: k,
+		AST: &ast::TypeAlias{
+			Name:   name,
+			Public: true,
 		},
+		Type: k,
 	}
 }
 
@@ -59,12 +59,12 @@ let mut primCmplx128 = &Type{Kind: buildPrimType(types::Cmplx128)}
 
 let mut builtinVars = map[string]&Var{
 	"nil": &Var{
-		Public:  true,
-		Mutable: false,
-		TypeSym: &TypeSym{
-			Type: primNil,
+		AST: &ast::Var{
+			Public:  true,
+			Mutable: false,
+			Const:   true,
 		},
-		Constant: true,
+		Type: primNil,
 		ValueSym: &ValueSym{
 			Value: &Value{
 				Constant: constant::NewNil(),
@@ -72,10 +72,12 @@ let mut builtinVars = map[string]&Var{
 		},
 	},
 	"true": &Var{
-		Public:   true,
-		Mutable:  false,
-		TypeSym:  findBuiltinTypeAlias("bool").TypeSym,
-		Constant: true,
+		AST: &ast::Var{
+			Public:  true,
+			Mutable: false,
+			Const:   true,
+		},
+		Type: primBool,
 		ValueSym: &ValueSym{
 			Value: &Value{
 				Constant: constant::NewBool(true),
@@ -84,10 +86,12 @@ let mut builtinVars = map[string]&Var{
 		},
 	},
 	"false": &Var{
-		Public:   true,
-		Mutable:  false,
-		TypeSym:  findBuiltinTypeAlias("bool").TypeSym,
-		Constant: true,
+		AST: &ast::Var{
+			Public:  true,
+			Mutable: false,
+			Const:   true,
+		},
+		Type: primBool,
 		ValueSym: &ValueSym{
 			Value: &Value{
 				Constant: constant::NewBool(false),
@@ -1126,13 +1130,13 @@ fn builtinCallerStdComptimeTypeOf(mut e: &eval, mut fc: &ast::CallExpr, _: &Valu
 			e.pushErr(fc.Args[0].Token, "TypeOf does not supports built-in functions")
 			return nil
 		}
-		if len(f.Generics) != len(f.Decl.Generics) {
+		if len(f.Generics) != len(f.Decl.AST.Generics) {
 			e.pushErr(fc.Args[0].Token, "function has generics but not instantiated with generics")
 			return nil
 		}
 	}
 	s := v.Type.Struct()
-	if s != nil && len(s.Generics) != len(s.Decl.Generics) {
+	if s != nil && len(s.Generics) != len(s.Decl.AST.Generics) {
 		e.pushErr(fc.Args[0].Token, "structure has generics but not instantiated with generics")
 		return nil
 	}
@@ -1244,21 +1248,21 @@ fn builtinCallerStdComptimeTypeAlias(mut e: &eval, mut fc: &ast::CallExpr, _: &V
 
 	mut name := ie.Token
 	mut alias := &TypeAlias{
+		AST: &ast::TypeAlias{
+			Token:  name,
+			Name:   name.Kind,
+			Public: mod::IsPub(name.Kind),
+		},
 		Scope:   sc.tree,
-		Public:  mod::IsPub(name.Kind),
-		Extern:  false,
 		Used:    false,
 		Generic: false,
-		Token:   name,
-		Name:    name.Kind,
-		TypeSym: new(TypeSym),
 	}
 	mut t := e.eval1(fc.Args[1], evalDefault|evalPhysicalMem|evalUnwrapUntyped)
 	if t == nil {
 		return nil
 	}
 	if t.Decl {
-		alias.TypeSym.Type = t.Type
+		alias.Type = t.Type
 	} else {
 		mut cti := t.Type.comptimeTypeInfo()
 		if cti == nil {
@@ -1266,7 +1270,7 @@ fn builtinCallerStdComptimeTypeAlias(mut e: &eval, mut fc: &ast::CallExpr, _: &V
 			e.pushSuggestion("expected type declaration")
 			return nil
 		}
-		alias.TypeSym.Type = cti.base
+		alias.Type = cti.base
 	}
 	sc.checkTypeAlias(alias)
 	return buildVoidValue()
@@ -1552,12 +1556,14 @@ fn builtinCallerStdSysAddrcall(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Val
 // Builds and returns the built-in iota variable representation.
 fn buildIota(i: i64): &Var {
 	return &Var{
-		Name:     "iota",
-		Public:   true,
-		Mutable:  true,
-		Checked:  true,
-		Constant: true,
-		TypeSym:  findBuiltinTypeAlias("int").TypeSym,
+		AST: &ast::Var{
+			Name:    "iota",
+			Public:  true,
+			Mutable: true,
+			Const:   true,
+		},
+		Checked: true,
+		Type:    primInt,
 		ValueSym: &ValueSym{
 			Value: &Value{
 				Constant: constant::NewI64(i),
@@ -1601,7 +1607,9 @@ fn init() {
 	// Initialize built-in functions of the "std/integ" package.
 	builtinFuncsStdInteg["Emit"] = &FuncIns{
 		Decl: &Func{
-			Generics: make([]&ast::Generic, 1),
+			AST: &ast::Func{
+				Generics: make([]&ast::Generic, 1),
+			},
 		},
 		caller: builtinCallerStdIntegEmit,
 	}
@@ -1609,7 +1617,9 @@ fn init() {
 	// Initialize built-in functions of the "std/sys" package.
 	builtinFuncsStdSys["Addrcall"] = &FuncIns{
 		Decl: &Func{
-			Generics: make([]&ast::Generic, 1),
+			AST: &ast::Func{
+				Generics: make([]&ast::Generic, 1),
+			},
 		},
 		caller: builtinCallerStdSysAddrcall,
 	}

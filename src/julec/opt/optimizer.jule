@@ -29,13 +29,13 @@ impl Optimizer {
 	}
 
 	fn optimizeGlobal(mut *self, mut v: &sema::Var) {
-		if !v.Extern {
+		if !v.AST.Extern {
 			self.optimizeExpr(&v.ValueSym.Value.Model)
 		}
 	}
 
 	fn optimizeFunction(mut *self, mut func: &sema::Func) {
-		if func.Extern {
+		if func.AST.Extern {
 			return
 		}
 		for (_, mut ins) in func.Instances {
@@ -45,7 +45,7 @@ impl Optimizer {
 	}
 
 	fn optimizeStruct(mut *self, mut s: &sema::Struct) {
-		if s.Extern {
+		if s.AST.Extern {
 			return
 		}
 		for (_, mut ins) in s.Instances {
@@ -77,8 +77,8 @@ impl Optimizer {
 				self.optimizeStruct(s)
 			}
 			for (_, mut ta) in f.TypeAliases {
-				if ta.Strict && !ta.Extern {
-					self.optimizeStruct(ta.TypeSym.Type.Kind.(&sema::StructIns).Decl)
+				if ta.AST.Strict && !ta.AST.Extern {
+					self.optimizeStruct(ta.Type.Kind.(&sema::StructIns).Decl)
 				}
 			}
 		}

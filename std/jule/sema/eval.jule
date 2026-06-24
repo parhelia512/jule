@@ -222,7 +222,7 @@ impl eval {
 		mut data := &Value{
 			Constant: constant::NewI64(i64(r)),
 		}
-		data.Type = findBuiltinTypeAlias("rune").TypeSym.Type
+		data.Type = findBuiltinTypeAlias("rune").Type
 		data.Model = &RuneExpr{Code: r}
 		data.Mutable = true
 		data.IsRune = true
@@ -460,8 +460,8 @@ impl eval {
 	}
 
 	fn evalEnum(mut *self, mut enm: &Enum, errorToken: &token::Token): &Value {
-		if !self.s.isAccessibleDefine(enm.Public, enm.Token) {
-			self.pushErr(errorToken, "define is private and could not be accessed: "+enm.Name)
+		if !self.s.isAccessibleDefine(enm.AST.Public, enm.AST.Token) {
+			self.pushErr(errorToken, "define is private and could not be accessed: "+enm.AST.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
@@ -478,8 +478,8 @@ impl eval {
 	}
 
 	fn evalTypeEnum(mut *self, mut enm: &TypeEnum, errorToken: &token::Token): &Value {
-		if !self.s.isAccessibleDefine(enm.Public, enm.Token) {
-			self.pushErr(errorToken, "define is private and could not be accessed: "+enm.Name)
+		if !self.s.isAccessibleDefine(enm.AST.Public, enm.AST.Token) {
+			self.pushErr(errorToken, "define is private and could not be accessed: "+enm.AST.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
@@ -498,14 +498,14 @@ impl eval {
 	}
 
 	fn evalStruct(mut *self, mut s: &Struct, mut errorToken: &token::Token): &Value {
-		if !self.s.isAccessibleDefine(s.Public, s.Token) {
-			self.pushErr(errorToken, "define is private and could not be accessed: "+s.Name)
+		if !self.s.isAccessibleDefine(s.AST.Public, s.AST.Token) {
+			self.pushErr(errorToken, "define is private and could not be accessed: "+s.AST.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
 
 		mut ins := s.instance()
-		if len(s.Generics) == 0 {
+		if len(s.AST.Generics) == 0 {
 			// For generics; it is safe. Because compiler should disallow using
 			// genericed structures without instantiation. So, structures should be
 			// instantiated. But, there is no generics, structure may have different
@@ -537,14 +537,14 @@ impl eval {
 	}
 
 	fn evalFunc(mut *self, mut f: &Func, errorToken: &token::Token): &Value {
-		if !self.s.isAccessibleDefine(f.Public, f.Token) {
-			self.pushErr(errorToken, "define is private and could not be accessed: "+f.Name)
+		if !self.s.isAccessibleDefine(f.AST.Public, f.AST.Token) {
+			self.pushErr(errorToken, "define is private and could not be accessed: "+f.AST.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
 
 		mut ins := f.instance()
-		if len(f.Generics) == 0 {
+		if len(f.AST.Generics) == 0 {
 			// For generics; it is safe. Because compiler should disallow using
 			// genericed functions without instantiation. So, functions should be
 			// instantiated. But, there is no generics, function may have different
@@ -565,13 +565,13 @@ impl eval {
 		// Do not check accessibility if variable is scope-based.
 		// If this variable is available, it should be defined in the scope.
 		// Then, it is accessible.
-		if v.Scope == nil && !self.s.isAccessibleDefine(v.Public, v.Token) {
-			self.pushErr(errorToken, "define is private and could not be accessed: "+v.Name)
+		if v.Scope == nil && !self.s.isAccessibleDefine(v.AST.Public, v.AST.Token) {
+			self.pushErr(errorToken, "define is private and could not be accessed: "+v.AST.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
 
-		if v.Token == nil {
+		if v.AST.Token == nil {
 			// Variable is built-in.
 			v.Used = true
 			goto data
@@ -581,12 +581,12 @@ impl eval {
 		| &scopeChecker:
 			mut s := self.lookup.(&scopeChecker)
 			mut root := s.getRoot()
-			if v.Scope != nil && !v.Constant && root.captured != nil && isVarCaptured(root, s, v) {
+			if v.Scope != nil && !v.AST.Const && root.captured != nil && isVarCaptured(root, s, v) {
 				// Push variable if it is not constant and global.
 				// Only capture scope variables.
 				root.pushCaptured(v)
 			}
-			if !v.Reference || self.isUnsafe() {
+			if !v.AST.Reference || self.isUnsafe() {
 				break
 			}
 			for s.owner == nil && s.parent != nil {
@@ -596,7 +596,7 @@ impl eval {
 			// But closures performs risky memory handling for references. So catch them.
 			// Just one exception: deferred scope functions safe for references.
 			if s.owner != nil && !s.owner.Scope.Deferred && s.owner.Anon && v.Scope != s.owner.Scope {
-				self.pushErr(errorToken, "anonymous function cannot access reference @ of parent scope", conv::Quote(v.Name))
+				self.pushErr(errorToken, "anonymous function cannot access reference @ of parent scope", conv::Quote(v.AST.Name))
 			}
 		}
 
@@ -611,7 +611,7 @@ impl eval {
 		// Do not check if v.Used is true. It means it already analyzed.
 		// If variable is global, it should be have initialize expression.
 		// So, nil value means something may be wrong.
-		if !v.Checked && !v.Extern && v.Scope == nil && (v.ValueSym == nil || v.ValueSym.Value == nil) {
+		if !v.Checked && !v.AST.Extern && v.Scope == nil && (v.ValueSym == nil || v.ValueSym.Value == nil) {
 			// Save source file of global variable.
 			// Use it for evaluation and checking for correct analysis.
 			// Otherwise, evaluation problems may occur.
@@ -632,24 +632,23 @@ impl eval {
 		// kind should not be nil because each variable must have a valid type
 		// we also have to check the value for enum variables
 		v.Used = true
-		if v.TypeSym == nil || v.TypeSym.Type == nil ||
-			v.IsEnumField() && (v.ValueSym == nil || v.ValueSym.Value == nil) {
+		if v.Type == nil || v.IsEnumField() && (v.ValueSym == nil || v.ValueSym.Value == nil) {
 			return nil
 		}
 
 	data:
 		mut val := &Value{
-			Lvalue:    !v.Constant,
-			Mutable:   v.Mutable,
-			Reference: v.Reference,
-			Type:      v.TypeSym.Type,
+			Lvalue:    !v.AST.Const,
+			Mutable:   v.AST.Mutable,
+			Reference: v.AST.Reference,
+			Type:      v.Type,
 			Model:     v,
 		}
 		if v.ValueSym != nil && v.ValueSym.Value != nil {
-			if !v.Extern && v.IsInitialized() {
+			if !v.AST.Extern && v.IsInitialized() {
 				val.IsRune = v.ValueSym.Value.IsRune
 			}
-			if v.Constant && v.ValueSym.Value.Constant != nil {
+			if v.AST.Const && v.ValueSym.Value.Constant != nil {
 				val.Constant = new(constant::Const, *v.ValueSym.Value.Constant)
 				val.Model = val.Constant
 				if v.untypedConstant() {
@@ -663,15 +662,15 @@ impl eval {
 	}
 
 	fn evalTypeAlias(mut *self, mut ta: &TypeAlias, errorToken: &token::Token): &Value {
-		if !self.s.isAccessibleDefine(ta.Public, ta.Token) {
-			self.pushErr(errorToken, "define is private and could not be accessed: "+ta.Name)
+		if !self.s.isAccessibleDefine(ta.AST.Public, ta.AST.Token) {
+			self.pushErr(errorToken, "define is private and could not be accessed: "+ta.AST.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
 
 		ta.Used = true
 
-		mut kind := ta.TypeSym.Type.Kind
+		mut kind := ta.Type.Kind
 		let mut v: &Value = nil
 		match type kind {
 		| &StructIns:
@@ -717,7 +716,7 @@ impl eval {
 			v = &Value{
 				Decl: true,
 				Type: &Type{
-					Kind: ta.TypeSym.Type.Kind,
+					Kind: ta.Type.Kind,
 				},
 			}
 			v.Model = v.Type
@@ -750,7 +749,7 @@ impl eval {
 			return self.evalStruct(def.(&Struct), name)
 		| &Func:
 			mut f := def.(&Func)
-			if f.Name != jule::InitFunc {
+			if f.AST.Name != jule::InitFunc {
 				return self.evalFunc(f, name)
 			}
 		| &FuncIns:
@@ -1042,7 +1041,7 @@ impl eval {
 	}
 
 	fn indexStr(mut *self, mut v: &Value, mut index: &Value, mut i: &ast::IndexExpr) {
-		v.Type = findBuiltinTypeAlias("byte").TypeSym.Type
+		v.Type = findBuiltinTypeAlias("byte").Type
 		v.Mutable = false
 		v.Lvalue = true
 
@@ -1202,7 +1201,7 @@ impl eval {
 
 		mut genericsLen := 0
 		if f.Decl != nil {
-			genericsLen = len(f.Decl.Generics)
+			genericsLen = len(f.Decl.AST.Generics)
 		}
 		if !self.s.checkGenericQuantity(genericsLen, len(f.Generics), i.X.Token) {
 			*v = nil
@@ -1529,7 +1528,7 @@ impl eval {
 		v.untyped = false
 
 		if v.Type.Enum() != nil {
-			if v.Type.Enum().TypeSym.Type.Prim() == nil || !v.Type.Enum().TypeSym.Type.Prim().IsString() {
+			if v.Type.Enum().Type.Prim() == nil || !v.Type.Enum().Type.Prim().IsString() {
 				self.pushErr(errorToken, "type @ does not support casting to type @", v.Type.String(), t.String())
 				return
 			}
@@ -1596,7 +1595,7 @@ impl eval {
 	fn castStr(mut *self, mut t: &Type, mut v: &Value, errorToken: &token::Token) {
 		if v.Type.Enum() != nil {
 			mut e := v.Type.Enum()
-			if e.TypeSym.Type.Prim() != nil && e.TypeSym.Type.Prim().IsString() {
+			if e.Type.Prim() != nil && e.Type.Prim().IsString() {
 				return
 			}
 		}
@@ -1657,7 +1656,7 @@ impl eval {
 				return
 			}
 			mut e := v.Type.Enum()
-			if types::IsCmplx(e.TypeSym.Type.Prim().String()) {
+			if types::IsCmplx(e.Type.Prim().String()) {
 				return
 			}
 		}
@@ -1681,7 +1680,7 @@ impl eval {
 
 		if v.Type.Enum() != nil {
 			mut e := v.Type.Enum()
-			kind := e.TypeSym.Type.Prim().String()
+			kind := e.Type.Prim().String()
 			if types::IsInt(kind) || types::IsFloat(kind) {
 				return
 			}
@@ -1724,7 +1723,7 @@ impl eval {
 
 		if v.Type.Enum() != nil {
 			mut e := v.Type.Enum()
-			kind := e.TypeSym.Type.Prim().String()
+			kind := e.Type.Prim().String()
 			if types::IsInt(kind) || types::IsFloat(kind) {
 				return
 			}
@@ -1805,7 +1804,7 @@ impl eval {
 		// For more helpful error messages, check for the type generics.
 		// Type may be a generic but not instantiated yet.
 		s := t.SoftStruct()
-		if s != nil && !self.s.checkGenericQuantity(len(s.Decl.Generics), len(s.Generics), errorToken) {
+		if s != nil && !self.s.checkGenericQuantity(len(s.Decl.AST.Generics), len(s.Generics), errorToken) {
 			self.pushSuggestion("try to instantiate the generic type @ before casting", t.String())
 			return nil
 		}
@@ -1895,7 +1894,7 @@ impl eval {
 		// Even if the data is not mutable, set as mutable if the type is not mutable-type.
 		v.Mutable = v.Mutable || !v.Type.Mutable()
 
-		if !v.Decl && (v.Type.Enum() == nil || !v.Type.Enum().TypeSym.Type.Equal(t)) {
+		if !v.Decl && (v.Type.Enum() == nil || !v.Type.Enum().Type.Equal(t)) {
 			applyCastKind(self.s, v, t, errorToken, self.getOwnerRefers())
 			v.Model.(&CastingExpr).Token = errorToken
 		} else {
@@ -1918,7 +1917,7 @@ impl eval {
 			} else {
 				mut enm := t.Enum()
 				if enm != nil {
-					v.Constant.Kind = enm.TypeSym.Type.Prim().Kind
+					v.Constant.Kind = enm.Type.Prim().Kind
 				}
 			}
 		}
@@ -1982,14 +1981,14 @@ impl eval {
 	// Type t is the actual value type, it may be strict type alias or pure struct type.
 	fn evalStructLitExplicit(mut &self, mut s: &StructIns, mut t: &Type,
 		mut lit: &ast::BraceLit, mut errorToken: &token::Token): &Value {
-		ok := self.s.checkGenericQuantity(len(s.Decl.Generics), len(s.Generics), errorToken)
+		ok := self.s.checkGenericQuantity(len(s.Decl.AST.Generics), len(s.Generics), errorToken)
 		if !ok {
 			return nil
 		}
 		// NOTICE: Instance already checked (just fields) if generic quantity passes.
 
 		if self.field != nil && self.field.Decl.Owner == s.Decl {
-			self.pushErr(errorToken, "illegal cycle in declaration: @ refers to itself", s.Decl.Name)
+			self.pushErr(errorToken, "illegal cycle in declaration: @ refers to itself", s.Decl.AST.Name)
 		}
 
 		self.pushReference(s)
@@ -2061,14 +2060,14 @@ impl eval {
 		// Push reference to owner if global.
 		if self.owner != nil && self.owner.Scope == nil {
 			tc.referencer = &referencer{
-				name:  self.owner.Name,
+				name:  self.owner.AST.Name,
 				owner: self.owner,
 			}
 		}
 		// If field exist, push reference to struct.
 		if self.field != nil {
 			tc.referencer = &referencer{
-				name:  self.field.Owner.Decl.Name,
+				name:  self.field.Owner.Decl.AST.Name,
 				owner: self.field.Owner,
 			}
 		}
@@ -2141,7 +2140,7 @@ impl eval {
 					self.pushErr(errorToken, `concurrent calls with methods having a "self" receiver parameter are not allowed in safe Jule`)
 					self.pushSuggestion(`use "&self" receiver parameter instead, or unsafe Jule with "unsafe { ... }" to make concurrent calls`)
 				}
-			} else if p.Decl.Reference {
+			} else if p.Decl.AST.Reference {
 				self.pushErr(errorToken, "concurrent calls with functions with reference parameter(s) are not allowed in safe Jule")
 				self.pushSuggestion(`use unsafe Jule with "unsafe { ... }" to make concurrent calls`)
 				return
@@ -2189,13 +2188,13 @@ impl eval {
 			return
 		}
 
-		if !f.Decl.IsMethod() && hasDirective(f.Decl.Directives, directive::Test) {
+		if !f.Decl.IsMethod() && hasDirective(f.Decl.AST.Directives, directive::Test) {
 			self.pushErr(fc.Token, "cannot call test function")
 			*v = nil
 			return
 		}
 
-		if !(*v).Mutable && f.Decl.IsMethod() && !f.Decl.Static && f.Decl.Params[0].Mutable {
+		if !(*v).Mutable && f.Decl.IsMethod() && !f.Decl.AST.Static && f.Decl.Params[0].AST.Mutable {
 			if self.target.mutable {
 				self.pushErr(fc.Token, "cannot call method with mutable receiver on immutable memory")
 			} else {
@@ -2211,16 +2210,16 @@ impl eval {
 					checkMutRiskOfStructLit(self.s, lit)
 				}
 			}
-		} else if !self.isUnsafe() && f.Decl.Unsafe {
+		} else if !self.isUnsafe() && f.Decl.AST.Unsafe {
 			self.pushErr(fc.Token, "calling unsafe function cannot be done without Unsafe Jule")
 			self.pushSuggestion(`use unsafe Jule with "unsafe { ... }"`)
 		}
 
-		mut dynamicAnnotation := len(f.Decl.Generics) > 0 && len(f.Generics) == 0 && len(f.Params) > 0
+		mut dynamicAnnotation := len(f.Decl.AST.Generics) > 0 && len(f.Generics) == 0 && len(f.Params) > 0
 		if dynamicAnnotation {
-			f.Generics = make([]&InsGeneric, len(f.Decl.Generics))
-		} else if len(f.Generics) != len(f.Decl.Generics) {
-			_ = self.s.checkGenericQuantity(len(f.Decl.Generics), len(f.Generics), fc.Token)
+			f.Generics = make([]&InsGeneric, len(f.Decl.AST.Generics))
+		} else if len(f.Generics) != len(f.Decl.AST.Generics) {
+			_ = self.s.checkGenericQuantity(len(f.Decl.AST.Generics), len(f.Generics), fc.Token)
 			*v = nil
 			return
 		}
@@ -2325,7 +2324,7 @@ impl eval {
 		(*v).Mutable = true
 
 		// Check for async runtime measurements.
-		if f.Decl.Async {
+		if f.Decl.AST.Async {
 			if !fc.IsCo && !fc.Await {
 				self.s.pushErr(fc.Token, "`async` function call must be either concurrent or awaited")
 				self.s.pushSuggestion("use `co myFunc()` for concurrent execution or `myFunc().await` to wait for the result")
@@ -2342,7 +2341,7 @@ impl eval {
 			self.s.pushErr(fc.Token, "only `async` functions can be awaited")
 		}
 
-		if f.Decl.Fallible {
+		if f.Decl.AST.Fallible {
 			if fc.IsCo {
 				self.s.pushErr(fc.Token, "concurrent calls are not allowed to fallible functions")
 				self.s.pushSuggestion("handle the fallible function in a separate function or anonymous function")
@@ -2360,7 +2359,7 @@ impl eval {
 						self.s.pushErr(fc.Token, "function call forwards error in a deferred scope")
 					} else {
 						mut root := s.getRoot()
-						if root.owner.Decl.Fallible {
+						if root.owner.Decl.AST.Fallible {
 							// Build error variable. Declare in the current scope.
 							// Since there is no child scope analysis,
 							// current scope may will capture it for closure.
@@ -2421,7 +2420,7 @@ impl eval {
 	fn evalEnumStatic(mut *self, mut enm: &Enum, mut name: &token::Token): &Value {
 		mut item := enm.FindItem(name.Kind)
 		if item == nil {
-			self.pushErr(name, "type @ has no field or method: @", enm.Name, name.Kind)
+			self.pushErr(name, "type @ has no field or method: @", enm.AST.Name, name.Kind)
 			return nil
 		}
 		mut v := self.evalVar(item, name)
@@ -2436,7 +2435,7 @@ impl eval {
 		const Static = true
 		mut method := s.FindMethod(name.Kind, Static)
 		if method != nil {
-			if !self.s.isAccessibleDefine(method.Public, method.Token) {
+			if !self.s.isAccessibleDefine(method.AST.Public, method.AST.Token) {
 				self.pushErr(name, "define is private and could not be accessed: "+name.Kind)
 				self.pushSuggestion("make it public by starting with a capital letter")
 			}
@@ -2454,14 +2453,14 @@ impl eval {
 			}
 			return v
 		}
-		self.pushErr(name, "type @ has no field or method: @", s.Decl.Name, name.Kind)
+		self.pushErr(name, "type @ has no field or method: @", s.Decl.AST.Name, name.Kind)
 		return nil
 	}
 
 	fn evalTraitSelector(mut *self, mut v: &Value, mut trt: &Trait, mut name: &token::Token): &Value {
 		mut f := trt.FindMethod(name.Kind)
 		if f == nil {
-			self.pushErr(name, "type @ has no field or method: @", trt.Name, name.Kind)
+			self.pushErr(name, "type @ has no field or method: @", trt.AST.Name, name.Kind)
 			return nil
 		}
 		return &Value{
@@ -2490,7 +2489,7 @@ impl eval {
 		v.Model = model
 		v.Type = f.Type
 		v.Lvalue = true
-		if f.Decl.Mutable && !v.Mutable {
+		if f.Decl.AST.Mutable && !v.Mutable {
 			// Interior mutability.
 			match type self.lookup {
 			| &scopeChecker:
@@ -2507,8 +2506,8 @@ impl eval {
 	fn evalStructSelectorFieldOnly(mut *self, mut v: &Value, mut s: &StructIns, mut si: &ast::SelectorExpr): (&Value, found: bool) {
 		mut f := s.FindField(si.Name.Kind)
 		if f != nil {
-			if !self.s.isAccessibleDefine(f.Decl.Public, f.Decl.Token) {
-				self.pushErr(si.Name, "define is private and could not be accessed: "+f.Decl.Name)
+			if !self.s.isAccessibleDefine(f.Decl.AST.Public, f.Decl.AST.Token) {
+				self.pushErr(si.Name, "define is private and could not be accessed: "+f.Decl.AST.Name)
 				self.pushSuggestion("make it public by starting with a capital letter")
 			}
 			return self.evalStructSelectorField(v, s, si.Name, f), true
@@ -2554,11 +2553,11 @@ impl eval {
 		const Static = false
 		mut m := s.FindMethod(si.Name.Kind, Static)
 		if m == nil {
-			self.pushErr(si.Name, "type @ has no field or method: @", s.Decl.Name, si.Name.Kind)
+			self.pushErr(si.Name, "type @ has no field or method: @", s.Decl.AST.Name, si.Name.Kind)
 			return nil
 		}
-		if !self.s.isAccessibleDefine(m.Public, m.Token) {
-			self.pushErr(si.Name, "define is private and could not be accessed: "+m.Name)
+		if !self.s.isAccessibleDefine(m.AST.Public, m.AST.Token) {
+			self.pushErr(si.Name, "define is private and could not be accessed: "+m.AST.Name)
 			self.pushSuggestion("make it public by starting with a capital letter")
 		}
 
@@ -3175,19 +3174,19 @@ impl eval {
 			ins = f.Decl.instanceForce()
 			ins.Decl = buildFunc(decl)
 			ins.Decl.Result = f.Decl.Result
-			ins.Decl.Fallible = f.Decl.Fallible
+			ins.Decl.AST.Fallible = f.Decl.AST.Fallible
 			ins.Decl.sema = self.s
 			ins.Result = f.Result
 			for (i, mut param) in ins.Params {
 				param.Type = f.Params[i].Type
 				param.Decl = ins.Decl.Params[i]
-				param.Decl.TypeSym = f.Params[i].Decl.TypeSym
-				param.Decl.Reference = f.Params[i].Decl.Reference
-				param.Decl.Variadic = f.Params[i].Decl.Variadic
+				param.Decl.Type = f.Params[i].Decl.Type
+				param.Decl.AST.Reference = f.Params[i].Decl.AST.Reference
+				param.Decl.AST.Variadic = f.Params[i].Decl.AST.Variadic
 			}
 			// Function body is one-line.
-			if ins.Decl.Scope.Deferred {
-				ins.Decl.Scope.Deferred = false // Remove mark of the one-line block.
+			if ins.Decl.AST.Scope.Deferred {
+				ins.Decl.AST.Scope.Deferred = false // Remove mark of the one-line block.
 				ins.oneliner = true
 			}
 		} else {
@@ -3477,15 +3476,15 @@ impl eval {
 				self.s.pushErr(expr.Token, "built-in functions must be invoked")
 				break
 			}
-			required := len(f.Decl.Generics)
+			required := len(f.Decl.AST.Generics)
 			given := len(f.Generics)
 			if !self.s.checkGenericQuantity(required, given, expr.Token) {
 				return nil
 			}
-			if !f.Decl.Static && f.Decl.IsMethod() {
+			if !f.Decl.AST.Static && f.Decl.IsMethod() {
 				self.s.pushErr(expr.Token, "methods must be invoked")
-			} else if findDirective(f.Decl.Directives, directive::Export) != nil {
-				self.s.pushErr(expr.Token, "define @ is exported for backend and cannot used as anonymous", conv::Quote(f.Decl.Name))
+			} else if findDirective(f.Decl.AST.Directives, directive::Export) != nil {
+				self.s.pushErr(expr.Token, "define @ is exported for backend and cannot used as anonymous", conv::Quote(f.Decl.AST.Name))
 			} else {
 				f.AsAnon = true
 			}
@@ -3495,7 +3494,7 @@ impl eval {
 			if s == nil {
 				break
 			}
-			required := len(s.Decl.Generics)
+			required := len(s.Decl.AST.Generics)
 			given := len(s.Generics)
 			if !self.s.checkGenericQuantity(required, given, expr.Token) {
 				return nil
@@ -3518,7 +3517,7 @@ impl eval {
 		if v == nil {
 			return nil
 		}
-		if (self.owner == nil || !self.owner.Constant) && v.Type.comptime() {
+		if (self.owner == nil || !self.owner.AST.Const) && v.Type.comptime() {
 			self.s.pushErr(expr.Token, "comptime specific types cannot be used as runtime expressions")
 			return nil
 		}
@@ -3928,7 +3927,7 @@ impl unaryEval {
 			| canGetPtr(self.v):
 				// If the value is error, complain.
 				var, _ := self.v.Model.(&Var)
-				if var != nil && var.Name == "error" {
+				if var != nil && var.AST.Name == "error" {
 					self.e.pushErr(self.u.X.Token, "cannot take pointer of the error value")
 					self.e.pushSuggestion("use an intermediary variable: myerr := error; &myerr")
 					self.v.Decl = true
@@ -4158,10 +4157,10 @@ impl binaryEval {
 		| token::NEQ:
 			mut rkind := self.r.Type
 			if self.r.Type.Enum() != nil {
-				rkind = self.r.Type.Enum().TypeSym.Type
+				rkind = self.r.Type.Enum().Type
 			}
 			mut enm := self.l.Type.Enum()
-			if !self.e.s.checkTypeCompatibility(enm.TypeSym.Type, rkind, self.op, typeCompDefault) {
+			if !self.e.s.checkTypeCompatibility(enm.Type, rkind, self.op, typeCompDefault) {
 				return nil
 			}
 			return &Value{
@@ -5133,13 +5132,15 @@ fn makeStructLitAlloc(mut v: &Value, mut lit: &StructLitExpr) {
 
 fn buildErrorVar(mut s: &Scope, mut fc: &ast::CallExpr): &Var {
 	return &Var{
-		Used:      true,
-		Reference: false,
-		Mutable:   true,
-		Name:      "error",
-		Token:     fc.Token,
-		TypeSym:   findBuiltinTypeAlias(types::Any).TypeSym,
-		Scope:     s,
+		AST: &ast::Var{
+			Name:      "error",
+			Reference: false,
+			Mutable:   true,
+			Token:     fc.Token,
+		},
+		Used:  true,
+		Type:  primAny,
+		Scope: s,
 		ValueSym: &ValueSym{
 			Value: new(Value),
 		},
@@ -5194,7 +5195,7 @@ fn isOkForShifting(mut v: &Value): bool {
 }
 
 fn isInstancedStruct(s: &StructIns): bool {
-	return len(s.Decl.Generics) == len(s.Generics)
+	return len(s.Decl.AST.Generics) == len(s.Generics)
 }
 
 fn isPtrArithmeticCompatible(mut l: &Value, mut r: &Value): bool {
@@ -5337,7 +5338,7 @@ fn applyCastModelByEnum(mut s: &sema, mut v: &Value, mut e: &Enum,
 	if e == nil {
 		return
 	}
-	applyCastKindModel(s, v, e.TypeSym.Type, token, refers)
+	applyCastKindModel(s, v, e.Type, token, refers)
 }
 
 fn castConstByType(mut s: &sema, token: &token::Token, mut t: &Type, mut v: &Value): (ok: bool) {
@@ -5345,7 +5346,7 @@ fn castConstByType(mut s: &sema, token: &token::Token, mut t: &Type, mut v: &Val
 	if t.Prim() != nil {
 		kind = t.Prim().Kind
 	} else {
-		kind = t.Enum().TypeSym.Type.Prim().Kind
+		kind = t.Enum().Type.Prim().Kind
 	}
 	match {
 	| types::IsSigInt(kind):
@@ -5507,7 +5508,7 @@ fn findNamespace(mut lookup: Lookup, namespace: string): &ImportInfo {
 fn checkValue(mut v: &Value, mut s: &sema, mut token: &token::Token, flags: int): (ok: bool) {
 	if flags&evalFallible == 0 {
 		fc, (ok) := v.Model.(&FuncCallExpr)
-		if ok && fc.Func.Decl.Fallible {
+		if ok && fc.Func.Decl.AST.Fallible {
 			s.pushErr(token, "fallible functions must be used alone, not in binary expression or etc.")
 			s.pushSuggestion("consider assign result of fallible function to variable and then use it")
 			return false
@@ -5566,8 +5567,8 @@ fn getUntypedCmpScore(k: string): int {
 
 fn _isRef(mut v: &Value): (isRef: bool, mutable: bool) {
 	mut variable, _ := v.Model.(&Var)
-	if variable != nil && variable.Reference {
-		return true, variable.Mutable
+	if variable != nil && variable.AST.Reference {
+		return true, variable.AST.Mutable
 	}
 	return false, false
 }

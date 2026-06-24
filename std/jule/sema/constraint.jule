@@ -107,14 +107,14 @@ impl constraintChecker {
 
 	// Functions will be checked in their environment, because environment is not guaranteed.
 	fn readyFi(mut &self): bool {
-		self.genericsD = self.fi.Decl.Generics
+		self.genericsD = self.fi.Decl.AST.Generics
 		self.generics = self.fi.Generics
 		return !self.uniq || self.s.funcEnvironment(self.fi, self.readyFunc())
 	}
 
 	// Structure will be checked in current environment, because environment should be guaranteed.
 	fn readySi(mut &self): bool {
-		self.genericsD = self.si.Decl.Generics
+		self.genericsD = self.si.Decl.AST.Generics
 		self.generics = self.si.Generics
 		return !self.uniq || self.readyFunc()(self.s, self.genericsA)
 	}

@@ -14,15 +14,16 @@ struct OrderedDefines {
 fn isOrdered[T](t: &T, s: []&T, partial: bool): bool {
 lookup:
 	for _, d in t.Depends {
+		dAST := d.AST
 		const match type T {
 		| sema::Var:
-			if d.Constant || d.Extern {
+			if dAST.Const || dAST.Extern {
 				// Skip constant or external variables for dependency analysis.
 				// It is not cost for runtime, so it is not an real-memory dependency.
 				continue
 			}
-		| sema::StructIns:
-			if d.Decl != nil && d.Decl.Extern {
+		| sema::Struct:
+			if dAST.Extern {
 				// Skip external structures for dependency analysis.
 				// It is not cost for runtime, so it is not an real-memory dependency.
 				continue
@@ -30,9 +31,7 @@ lookup:
 		}
 
 		if partial {
-			// Dependency and referencer is not in the same package.
-			// Dependency should be ordered correctly, before this reference.
-			if d.Token.File.Dir() != t.Token.File.Dir() {
+			if dAST.Token.File.Dir() != t.AST.Token.File.Dir() {
 				continue
 			}
 		}

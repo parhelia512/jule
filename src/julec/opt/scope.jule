@@ -73,21 +73,21 @@ impl scopeOptimizer {
 	fn optimizeVar(mut &self, mut v: &sema::Var) {
 		if v.ValueSym != nil {
 			if self.data.nils != nil &&
-				isNilValidType(v.TypeSym.Type) &&
+				isNilValidType(v.Type) &&
 				isGuaranteedNonNilExpr(self.data.nils, v.ValueSym.Value.Model) {
 				const safe = true
 				self.data.nils.pushVar(getNilVar(v), safe)
 			}
 			if self.data.dynamic != nil {
 				mut kind := isTypeGuaranteedDynamicValue(
-					self.data.dynamic, v.TypeSym.Type, v.ValueSym.Value.Model)
+					self.data.dynamic, v.Type, v.ValueSym.Value.Model)
 				if kind != nil {
-					if isDynamicValidType(v.TypeSym.Type) {
+					if isDynamicValidType(v.Type) {
 						self.data.dynamic.pushVar(getDynamicVar(v), kind)
 					}
 				}
 			}
-			if self.data.boundary != nil && isBoundaryValidType(v.TypeSym.Type) {
+			if self.data.boundary != nil && isBoundaryValidType(v.Type) {
 				self.data.boundary.handleVarByExpr(uintptr(v), v.ValueSym.Value.Model)
 			}
 			exprOptimizer.optimizeValue(&v.ValueSym.Value.Model, self.data, self)
@@ -932,7 +932,7 @@ impl scopeOptimizer {
 			return
 		}
 		mut fc := r.Expr.(&sema::FuncCallExpr)
-		if !fc.Func.Decl.Fallible ||
+		if !fc.Func.Decl.AST.Fallible ||
 			fc.Handler == nil ||
 			len(fc.Handler.Stmts) != 1 ||
 			!obj::IsForwarded(fc.Handler) {

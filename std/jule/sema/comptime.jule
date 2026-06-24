@@ -94,21 +94,19 @@ impl Kind for comptimeStructFields {
 impl comptimeRangeKind for comptimeStructFields {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: &Type{
-					Kind: new(comptimeStructField),
-				},
+			keyB.Type = &Type{
+				Kind: new(comptimeStructField),
 			}
 		}
 	}
@@ -132,7 +130,7 @@ impl comptimeRangeKind for comptimeStructFields {
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.TypeSym.Type.comptimeStructField().field = self.fields[i]
+			keyB.Type.comptimeStructField().field = self.fields[i]
 		}
 	}
 
@@ -171,7 +169,7 @@ impl comptimeStatic {
 			e.pushSuggestion("call like; Type()")
 			return nil
 		}
-		return buildComptimeTypeInfoData(e.s, self.field.TypeSym.Type)
+		return buildComptimeTypeInfoData(e.s, self.field.Type)
 	}
 
 	fn subIdent(mut &self, name: string): &Value {
@@ -205,21 +203,19 @@ impl Kind for comptimeStatics {
 impl comptimeRangeKind for comptimeStatics {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: &Type{
-					Kind: new(comptimeStatic),
-				},
+			keyB.Type = &Type{
+				Kind: new(comptimeStatic),
 			}
 		}
 	}
@@ -243,7 +239,7 @@ impl comptimeRangeKind for comptimeStatics {
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.TypeSym.Type.comptimeStatic().field = self.fields[i]
+			keyB.Type.comptimeStatic().field = self.fields[i]
 		}
 	}
 
@@ -302,21 +298,19 @@ impl Kind for comptimeEnumFields {
 impl comptimeRangeKind for comptimeEnumFields {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: &Type{
-					Kind: new(comptimeEnumField),
-				},
+			keyB.Type = &Type{
+				Kind: new(comptimeEnumField),
 			}
 		}
 	}
@@ -340,7 +334,7 @@ impl comptimeRangeKind for comptimeEnumFields {
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.TypeSym.Type.comptimeEnumField().field = self.fields[i]
+			keyB.Type.comptimeEnumField().field = self.fields[i]
 		}
 	}
 
@@ -433,21 +427,19 @@ impl Kind for comptimeParams {
 impl comptimeRangeKind for comptimeParams {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: &Type{
-					Kind: new(comptimeParam),
-				},
+			keyB.Type = &Type{
+				Kind: new(comptimeParam),
 			}
 		}
 	}
@@ -471,7 +463,7 @@ impl comptimeRangeKind for comptimeParams {
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.TypeSym.Type.comptimeParam().param = self.params[i]
+			keyB.Type.comptimeParam().param = self.params[i]
 		}
 	}
 
@@ -493,21 +485,19 @@ impl Kind for comptimeTypeInfos {
 impl comptimeRangeKind for comptimeTypeInfos {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: &Type{
-					Kind: new(comptimeTypeInfo),
-				},
+			keyB.Type = &Type{
+				Kind: new(comptimeTypeInfo),
 			}
 		}
 	}
@@ -529,7 +519,7 @@ impl comptimeRangeKind for comptimeTypeInfos {
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.TypeSym.Type.Kind = self.types[i]
+			keyB.Type.Kind = self.types[i]
 		}
 	}
 
@@ -765,7 +755,7 @@ impl comptimeTypeInfo {
 		}
 		mut enm := self.base.Enum()
 		if enm != nil {
-			return buildComptimeTypeInfoData(e.s, enm.TypeSym.Type)
+			return buildComptimeTypeInfoData(e.s, enm.Type)
 		}
 		mut m := self.base.Map()
 		if m != nil {
@@ -1250,7 +1240,7 @@ impl comptimeValue {
 		name := v.Constant.ReadString()
 		mut f := s.FindField(name)
 		if f == nil {
-			e.pushErr(arg.Token, "type @ has no field or method: @", s.Decl.Name, name)
+			e.pushErr(arg.Token, "type @ has no field or method: @", s.Decl.AST.Name, name)
 			return nil
 		}
 		v = new(Value, *self.v)
@@ -1331,7 +1321,7 @@ impl comptimeValue {
 		const Static = false
 		mut m := s.FindMethod(name, Static)
 		if m == nil {
-			e.pushErr(arg.Token, "type @ has no field or method: @", s.Decl.Name, name)
+			e.pushErr(arg.Token, "type @ has no field or method: @", s.Decl.AST.Name, name)
 			return nil
 		}
 		v = new(Value, *self.v)
@@ -1403,21 +1393,19 @@ impl Kind for comptimeFiles {
 impl comptimeRangeKind for comptimeFiles {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: &Type{
-					Kind: new(comptimeFile),
-				},
+			keyB.Type = &Type{
+				Kind: new(comptimeFile),
 			}
 		}
 	}
@@ -1441,7 +1429,7 @@ impl comptimeRangeKind for comptimeFiles {
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.TypeSym.Type.Kind.(&comptimeFile).file = self.files[i]
+			keyB.Type.Kind.(&comptimeFile).file = self.files[i]
 		}
 	}
 
@@ -1542,21 +1530,19 @@ impl Kind for comptimeDecls {
 impl comptimeRangeKind for comptimeDecls {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: &Type{
-					Kind: new(comptimeDecl),
-				},
+			keyB.Type = &Type{
+				Kind: new(comptimeDecl),
 			}
 		}
 	}
@@ -1578,7 +1564,7 @@ impl comptimeRangeKind for comptimeDecls {
 		}
 		if keyB != nil {
 			// Kind should be assigned by caller.
-			keyB.TypeSym.Type.Kind.(&comptimeDecl).decl = self.decls[i].decl
+			keyB.Type.Kind.(&comptimeDecl).decl = self.decls[i].decl
 		}
 	}
 
@@ -1650,23 +1636,23 @@ impl comptimeDecl {
 		mut name := ""
 		match type self.decl {
 		| &Struct:
-			name = self.decl.(&Struct).Name
+			name = self.decl.(&Struct).AST.Name
 		| &Func:
-			name = self.decl.(&Func).Name
+			name = self.decl.(&Func).AST.Name
 		| &Enum:
-			name = self.decl.(&Enum).Name
+			name = self.decl.(&Enum).AST.Name
 		| &TypeEnum:
-			name = self.decl.(&TypeEnum).Name
+			name = self.decl.(&TypeEnum).AST.Name
 		| &Trait:
-			name = self.decl.(&Trait).Name
+			name = self.decl.(&Trait).AST.Name
 		| &Field:
-			name = self.decl.(&Field).Name
+			name = self.decl.(&Field).AST.Name
 		| &TypeAlias:
-			name = self.decl.(&TypeAlias).Name
+			name = self.decl.(&TypeAlias).AST.Name
 		| &Var:
-			name = self.decl.(&Var).Name
+			name = self.decl.(&Var).AST.Name
 		| &Param:
-			name = self.decl.(&Param).Name
+			name = self.decl.(&Param).AST.Name
 		|:
 			panic("sema: comptimeDecl.Name: unimplemented declaration kind")
 		}
@@ -1691,26 +1677,26 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Public", self.declAsStr())
 			return nil
 		| &Struct:
-			public = self.decl.(&Struct).Public
+			public = self.decl.(&Struct).AST.Public
 		| &Func:
-			public = self.decl.(&Func).Public
+			public = self.decl.(&Func).AST.Public
 		| &Enum:
-			public = self.decl.(&Enum).Public
+			public = self.decl.(&Enum).AST.Public
 		| &TypeEnum:
-			public = self.decl.(&TypeEnum).Public
+			public = self.decl.(&TypeEnum).AST.Public
 		| &Trait:
-			public = self.decl.(&Trait).Public
+			public = self.decl.(&Trait).AST.Public
 		| &Field:
-			public = self.decl.(&Field).Public
+			public = self.decl.(&Field).AST.Public
 		| &TypeAlias:
-			public = self.decl.(&TypeAlias).Public
+			public = self.decl.(&TypeAlias).AST.Public
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Public", self.declAsStr())
 				return nil
 			}
-			public = v.Public
+			public = v.AST.Public
 		|:
 			panic("sema: comptimeDecl.Public: unimplemented declaration kind")
 		}
@@ -1739,18 +1725,18 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Extern", self.declAsStr())
 			return nil
 		| &Struct:
-			_extern = self.decl.(&Struct).Extern
+			_extern = self.decl.(&Struct).AST.Extern
 		| &Func:
-			_extern = self.decl.(&Func).Extern
+			_extern = self.decl.(&Func).AST.Extern
 		| &TypeAlias:
-			_extern = self.decl.(&TypeAlias).Extern
+			_extern = self.decl.(&TypeAlias).AST.Extern
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Extern", self.declAsStr())
 				return nil
 			}
-			_extern = v.Extern
+			_extern = v.AST.Extern
 		|:
 			panic("sema: comptimeDecl.Extern: unimplemented declaration kind")
 		}
@@ -1777,7 +1763,7 @@ impl comptimeDecl {
 			return nil
 		}
 		mut f := self.decl.(&Func)
-		mut constant := constant::NewBool(f.Fallible)
+		mut constant := constant::NewBool(f.AST.Fallible)
 		return &Value{
 			untyped:  true,
 			Type:     primBool,
@@ -1803,16 +1789,16 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Mutable", self.declAsStr())
 			return nil
 		| &Param:
-			mutable = self.decl.(&Param).Mutable
+			mutable = self.decl.(&Param).AST.Mutable
 		| &Field:
-			mutable = self.decl.(&Field).Mutable
+			mutable = self.decl.(&Field).AST.Mutable
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Mutable", self.declAsStr())
 				return nil
 			}
-			mutable = v.Mutable
+			mutable = v.AST.Mutable
 		|:
 			panic("sema: comptimeDecl.Mutable: unimplemented declaration kind")
 		}
@@ -1844,7 +1830,7 @@ impl comptimeDecl {
 			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Variadic", self.declAsStr())
 			return nil
 		| &Param:
-			variadic = self.decl.(&Param).Variadic
+			variadic = self.decl.(&Param).AST.Variadic
 		|:
 			panic("sema: comptimeDecl.Variadic: unimplemented declaration kind")
 		}
@@ -1880,9 +1866,9 @@ impl comptimeDecl {
 				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Reference", self.declAsStr())
 				return nil
 			}
-			ref = v.Reference
+			ref = v.AST.Reference
 		| &Param:
-			ref = self.decl.(&Param).Reference
+			ref = self.decl.(&Param).AST.Reference
 		|:
 			panic("sema: comptimeDecl.Reference: unimplemented declaration kind")
 		}
@@ -2186,20 +2172,18 @@ struct comptimeSliceRange {
 impl comptimeRangeKind for comptimeSliceRange {
 	fn ready(mut *self, mut keyA: &Var, mut keyB: &Var) {
 		if keyA != nil {
-			keyA.Constant = true
+			keyA.AST.Const = true
 			keyA.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyA.TypeSym = findBuiltinTypeAlias(types::Int).TypeSym
+			keyA.Type = primInt
 		}
 		if keyB != nil {
-			keyB.Constant = true
+			keyB.AST.Const = true
 			keyB.ValueSym = &ValueSym{
 				Value: new(Value),
 			}
-			keyB.TypeSym = &TypeSym{
-				Type: self.s.ElemType,
-			}
+			keyB.Type = self.s.ElemType
 		}
 	}
 

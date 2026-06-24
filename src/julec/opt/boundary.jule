@@ -238,7 +238,7 @@ fn getBoundaryVar(mut m: sema::Expr): uintptr {
 	// Special case: if expression is reference pointer, return invalid address directly.
 	// Otherwise it might be dereferenced, investigate deeper.
 	mut v, _ := m.(&sema::Var)
-	if v != nil && v.Reference {
+	if v != nil && v.AST.Reference {
 		return invalidBoundary
 	}
 
@@ -246,7 +246,7 @@ fn getBoundaryVar(mut m: sema::Expr): uintptr {
 		match type m {
 		| &sema::Var:
 			v = m.(&sema::Var)
-			if !v.Reference || v.ValueSym == nil || v.ValueSym.Value == nil {
+			if !v.AST.Reference || v.ValueSym == nil || v.ValueSym.Value == nil {
 				// Variable is not reference (or points to unknown such as parameters), return address of it.
 				return uintptr(m.(&sema::Var))
 			}

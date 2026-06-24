@@ -225,7 +225,7 @@ impl ObjectCoder {
 		for (j, mut p) in f.Params {
 			self.coSpawnObj.WriteByte(indentKind)!
 			// If parameter is variadic, we handle it as slice.
-			if p.Decl.Variadic {
+			if p.Decl.AST.Variadic {
 				self.tc.asSlice(&self.coSpawnObj, p.Type)
 			} else {
 				self.tc.kind(&self.coSpawnObj, p.Type)
@@ -345,7 +345,7 @@ impl ObjectCoder {
 			self.anonObj.WriteString(anonFuncCtxSuffix + "{\n")!
 			for (_, mut v) in m.Captured {
 				self.anonObj.WriteByte(indentKind)! // 1x indent
-				self.tc.kind(&self.anonObj, v.TypeSym.Type)
+				self.tc.kind(&self.anonObj, v.Type)
 				self.anonObj.WriteByte(' ')!
 				self.ic.anonFuncVar(&self.anonObj, v)
 				self.anonObj.WriteString(";\n")!
@@ -647,11 +647,11 @@ impl ObjectCoder {
 	}
 
 	fn pushResult(mut &self, mut f: &sema::Func) {
-		if f.IsVoid() || len(f.Result.Names) <= 1 {
+		if f.IsVoid() || len(f.Result.AST.Names) <= 1 {
 			return
 		}
 		mut n := len(f.Instances)
-		if len(f.Generics) == 0 {
+		if len(f.AST.Generics) == 0 {
 			n = 1
 		}
 		for (_, mut ins) in f.Instances[:n] {
@@ -837,7 +837,7 @@ impl ObjectCoder {
 
 	fn structurePlainDecls(mut &self) {
 		for (_, mut s) in self.ir.Ordered.Structs {
-			if s.Token != nil {
+			if s.AST.Token != nil {
 				self.structurePlainDecl(s)
 			}
 		}
@@ -890,7 +890,7 @@ impl ObjectCoder {
 		for (_, mut f) in s.Fields {
 			// Skip external struct kinds.
 			strct := f.Type.Struct()
-			if strct != nil && strct.Decl != nil && strct.Decl.Extern {
+			if strct != nil && strct.Decl != nil && strct.Decl.AST.Extern {
 				continue
 			}
 			if written {
@@ -955,7 +955,7 @@ impl ObjectCoder {
 
 	fn structureDecls(mut &self) {
 		for (_, mut s) in self.ir.Ordered.Structs {
-			if s.Token != nil {
+			if s.AST.Token != nil {
 				self.structureDecl(s)
 				self.write("\n")
 			}
@@ -973,7 +973,7 @@ impl ObjectCoder {
 
 	fn structureMethodDecls(mut &self) {
 		for (_, mut s) in self.ir.Ordered.Structs {
-			if s.Token != nil {
+			if s.AST.Token != nil {
 				self.structureMethodDecls1(s)
 			}
 		}
@@ -986,8 +986,8 @@ impl ObjectCoder {
 		if !ptr && opt::Inline && !f.Decl.IsEntryPoint() {
 			buf.WriteString("inline ")!
 		}
-		if f.Decl.Async {
-			if f.Decl.IsVoid() && !f.Decl.Fallible {
+		if f.Decl.AST.Async {
+			if f.Decl.IsVoid() && !f.Decl.AST.Fallible {
 				buf.WriteString("__jule_VoidAsync")!
 			} else {
 				buf.WriteString("__jule_Async<")!
@@ -1038,7 +1038,7 @@ impl ObjectCoder {
 		obj::IterPackages(self.ir, fn|mut pkg| {
 			obj::IterFiles(pkg, fn|mut file| {
 				for (_, mut f) in file.Funcs {
-					if !f.Extern && f.Token != nil {
+					if !f.AST.Extern && f.AST.Token != nil {
 						self.pushResult(f)
 						self.funcDecl(f, false)
 					}
@@ -1051,8 +1051,8 @@ impl ObjectCoder {
 		for (_, mut m) in hash.methods {
 			mut ins := m.Instances[0]
 			for (i, mut ip) in ins.Params[1:] {
-				if jule::IsAnon(ip.Decl.Name) {
-					ip.Decl.Name = "_" + conv::Itoa(i)
+				if jule::IsAnon(ip.Decl.AST.Name) {
+					ip.Decl.AST.Name = "_" + conv::Itoa(i)
 				}
 			}
 			self.pushResult(m)
@@ -1118,11 +1118,11 @@ impl ObjectCoder {
 	}
 
 	fn varInitExpr(mut &self, mut v: &sema::Var, init: fn()) {
-		if v.Static {
+		if v.AST.Static {
 			self.write("static ")
 		}
 
-		self.tc.kind(&self.Buf, v.TypeSym.Type)
+		self.tc.kind(&self.Buf, v.Type)
 		self.write(" ")
 		self.ic.var(&self.Buf, v)
 		if init != nil {
@@ -1137,7 +1137,7 @@ impl ObjectCoder {
 		if fc != nil {
 			self.ec.handleFallibleCallWithData(fc, useExprMemory{
 				Loc:      v.ValueSym.Expr.Token,
-				DestType: v.TypeSym.Type,
+				DestType: v.Type,
 				Model:    v,
 				Type:     useExprPlain,
 				OpID:     token::ASSIGN,
@@ -1152,12 +1152,12 @@ impl ObjectCoder {
 	}
 
 	fn var(mut &self, mut v: &sema::Var) {
-		if jule::IsBlank(v.Name) {
+		if jule::IsBlank(v.AST.Name) {
 			return
 		}
 		if v.ValueSym != nil && v.ValueSym.Expr != nil {
 			if v.ValueSym.Value.Model != nil {
-				if v.Static {
+				if v.AST.Static {
 					self.varInitExpr(v, fn|| self.ec.possibleRefExpr(v.ValueSym.Value.Model))
 				} else {
 					self.varInitExpr(v, nil)
@@ -1169,8 +1169,8 @@ impl ObjectCoder {
 			self.varInitExpr(v, nil)
 			return
 		}
-		if shouldInitialized(v.TypeSym.Type) {
-			self.varInitExpr(v, fn|| self.ec.initExpr(v.TypeSym.Type))
+		if shouldInitialized(v.Type) {
+			self.varInitExpr(v, fn|| self.ec.initExpr(v.Type))
 			return
 		}
 		self.varInitExpr(v, nil)
@@ -1227,8 +1227,9 @@ impl ObjectCoder {
 	fn findTraitMetMap(mut &self, mut m: &sema::Func): (&sema::FuncIns, bool) {
 		mut mins := m.Instances[0]
 		for (mut f, _) in self.traitMetMap {
-			if f.Decl.Public == m.Public &&
-				f.Decl.Name == m.Name &&
+			fAST, mAST := f.Decl.AST, m.AST
+			if fAST.Public == mAST.Public &&
+				fAST.Name == mAST.Name &&
 				f.EqualFunc(mins, false) {
 				return f, true
 			}
@@ -1259,7 +1260,7 @@ impl ObjectCoder {
 				self.funcTrait(ins, mepf)
 
 				const Static = false
-				mut sm := ins.FindMethod(m.Name, Static)
+				mut sm := ins.FindMethod(m.AST.Name, Static)
 				if sm == nil || len(sm.Instances) == 0 {
 					return
 				}
@@ -1267,12 +1268,12 @@ impl ObjectCoder {
 				self.addIndent()
 				self.write("{\n")
 				self.indent()
-				if m.Async {
-					if !m.IsVoid() || m.Fallible {
+				if m.AST.Async {
+					if !m.IsVoid() || m.AST.Fallible {
 						self.write("__jule_AsyncReturn ")
 					}
 					self.write("__jule_AsyncAwait ")
-				} else if m.Fallible || !m.IsVoid() {
+				} else if m.AST.Fallible || !m.IsVoid() {
 					self.write("return ")
 				}
 				// Generate function identifier using the instance.
@@ -1454,10 +1455,10 @@ impl ObjectCoder {
 		for (_, mut v) in self.ir.Ordered.Globals {
 			// Skip blank identifiers, do not declare them.
 			// Initialization expressions will be executed when variables initializing.
-			if jule::IsBlank(v.Name) {
+			if jule::IsBlank(v.AST.Name) {
 				continue
 			}
-			self.tc.kind(&self.Buf, v.TypeSym.Type)
+			self.tc.kind(&self.Buf, v.Type)
 			self.write(" ")
 			self.ic.var(&self.Buf, v)
 			self.write(";\n")
@@ -1508,7 +1509,7 @@ impl ObjectCoder {
 
 	fn structures(mut &self) {
 		for (_, mut s) in self.ir.Ordered.Structs {
-			if s.Token != nil {
+			if s.AST.Token != nil {
 				self.structure(s)
 				self.write("\n\n")
 			}
@@ -1519,17 +1520,17 @@ impl ObjectCoder {
 		obj::IterPackages(self.ir, fn|mut pkg| {
 			obj::IterFiles(pkg, fn|mut file| {
 				for (_, mut f) in file.Funcs {
-					if !env::Test && obj::HasDirective(f.Directives, directive::Test) {
+					if !env::Test && obj::HasDirective(f.AST.Directives, directive::Test) {
 						continue
 					}
 					// skip special runtime functions
 					if unsafe { pkg == self.ir.Runtime.Package } {
-						match f.Name {
+						match f.AST.Name {
 						| "_RCAdd" | "_RCLoad" | "_RCDrop":
 							continue
 						}
 					}
-					if !f.Extern && f.Token != nil {
+					if !f.AST.Extern && f.AST.Token != nil {
 						self.func(f)
 						self.write("\n\n")
 					}
@@ -1541,7 +1542,7 @@ impl ObjectCoder {
 	fn pushInit(mut &self, mut pkg: &sema::Package) {
 		obj::IterFiles(pkg, fn|mut file| {
 			for (_, mut f) in file.Funcs {
-				if f.Name == jule::InitFunc {
+				if f.AST.Name == jule::InitFunc {
 					self.indent()
 					self.ic.func(&self.Buf, f)
 					self.write("();\n")
@@ -1595,7 +1596,7 @@ impl ObjectCoder {
 			}
 			self.Buf.WriteByte(indentKind)!
 			// If variable have blank identifier, just execute the initialization expression.
-			if jule::IsBlank(v.Name) {
+			if jule::IsBlank(v.AST.Name) {
 				self.ec.model(v.ValueSym.Value.Model)
 				self.write(";\n")
 				continue
@@ -1614,7 +1615,7 @@ impl ObjectCoder {
 	}
 
 	fn end(mut &self) {
-		asyncRuntime := env::Test || meta::Program.EntryPoint.Async
+		asyncRuntime := env::Test || meta::Program.EntryPoint.AST.Async
 		self.meta.concurrent = self.meta.concurrent || asyncRuntime
 
 		self.addIndent()
@@ -1749,7 +1750,7 @@ impl ObjectCoder {
 		obj::IterPackages(self.ir, fn|mut pkg| {
 			obj::IterFiles(pkg, fn|mut file| {
 				for (_, mut t) in file.Traits {
-					if t.Token != nil {
+					if t.AST.Token != nil {
 						self.buildTraitHash(t)
 					}
 				}

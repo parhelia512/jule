@@ -17,14 +17,14 @@ fn IsForwarded(s: &sema::Scope): bool {
 		return false
 	}
 	v, ok := t.Error.Model.(&sema::Var)
-	return ok && v.Name == "error"
+	return ok && v.AST.Name == "error"
 }
 
 // Reports whether expression comes from external define.
 fn IsExprComesFromExtern(v: &sema::Value): bool {
 	match type v.Model {
 	| &sema::Var:
-		return v.Model.(&sema::Var).Extern
+		return v.Model.(&sema::Var).AST.Extern
 	| &sema::StructSubIdentExpr:
 		return IsExternStruct(v.Model.(&sema::StructSubIdentExpr).Owner)
 	|:
@@ -48,7 +48,7 @@ fn IsClosure(m: &sema::AnonFuncExpr): bool { return len(m.Captured) > 0 }
 // Reports the f function of owner is implements a trait's method.
 fn IsTraitMethod(mut owner: &sema::StructIns, f: &sema::FuncIns): bool {
 	for (_, mut t) in owner.Decl.Implements {
-		if t.FindMethod(f.Decl.Name) != nil {
+		if t.FindMethod(f.Decl.AST.Name) != nil {
 			return true
 		}
 	}
@@ -76,7 +76,7 @@ fn IsImplicitImport(imp: &sema::ImportInfo): bool {
 // Reports whether structure is represents external type.
 // Assumes the source type is struct if exist.
 fn IsExternStruct(s: &sema::StructIns): bool {
-	if s.Decl.Extern {
+	if s.Decl.AST.Extern {
 		return true
 	}
 	if s.Source != nil {

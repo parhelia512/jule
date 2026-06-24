@@ -8,14 +8,10 @@ use "std/strings"
 
 // Field.
 struct Field {
-	Owner:   &Struct
-	Token:   &token::Token
-	Public:  bool
-	Mutable: bool // Interior mutability.
-	Name:    string
-	TypeSym: &TypeSym
-	Tag:     &token::Token     // Tag declaration.
-	Tags:    map[string]string // Tags in key:value format.
+	AST:   &ast::Field
+	Owner: &Struct
+	Type:  &Type
+	Tags:  map[string]string // Tags in key:value format.
 }
 
 impl Field {
@@ -31,6 +27,8 @@ struct Struct {
 	// Associated sema.
 	sema: &sema
 
+	AST: &ast::Struct
+
 	// This structure depended to these structures, except external ones.
 	// Only stores plain identifier references such as A, B, and MyStruct.
 	// Not includes non-plain identifier references such as *A, &B, and []MyStruct.
@@ -39,15 +37,9 @@ struct Struct {
 	// This collection applied for all instances.
 	Depends: []&Struct
 
-	Token:      &token::Token
 	FullName:   string // See developer reference (16).
-	Name:       string // See developer reference (16).
 	Fields:     []&Field
 	Methods:    []&Func
-	Public:     bool
-	Extern:     bool
-	Directives: []&ast::Directive
-	Generics:   []&ast::Generic
 	Implements: []&Trait
 
 	// Structure instances for each unique type combination of structure.
@@ -64,7 +56,7 @@ impl Struct {
 		if len(self.Instances) == 0 || len(self.Methods) == 0 {
 			return
 		}
-		if len(self.Generics) == 0 {
+		if len(self.AST.Generics) == 0 {
 			self.Instances[0].Methods = self.Methods
 			return
 		}
@@ -92,7 +84,7 @@ impl Struct {
 
 	fn instance(mut &self): &StructIns {
 		// Returns already created instance for just one unique combination.
-		if len(self.Generics) == 0 && len(self.Instances) == 1 {
+		if len(self.AST.Generics) == 0 && len(self.Instances) == 1 {
 			return self.Instances[0]
 		}
 
@@ -110,12 +102,12 @@ impl Struct {
 			mut f2 := f.instance()
 			f2.Owner = ins
 			ins.Fields = append(ins.Fields, f2)
-			if !f.Mutable && f.TypeSym.Type != nil && f.TypeSym.Type.Mutable() {
+			if !f.AST.Mutable && f.Type != nil && f.Type.Mutable() {
 				ins.Mutable = true
 			}
 		}
 
-		if len(self.Generics) == 0 {
+		if len(self.AST.Generics) == 0 {
 			ins.Methods = self.Methods
 		} else {
 			ins.Methods = make([]&Func, 0, len(self.Methods))
@@ -133,7 +125,7 @@ impl Struct {
 	// Returns already exist instance if given instance is not unique.
 	fn appendInstance(mut *self, mut ins: &StructIns): &StructIns {
 		// Skip already created instance for just one unique combination.
-		if len(self.Generics) == 0 && len(self.Instances) == 1 {
+		if len(self.AST.Generics) == 0 && len(self.Instances) == 1 {
 			return self.Instances[0]
 		}
 
@@ -151,7 +143,7 @@ impl Struct {
 	// Returns nil if not exist any method in this identifier.
 	fn FindMethod(mut *self, name: string, _static: bool): &Func {
 		for (_, mut f) in self.Methods {
-			if f.Static == _static && f.Name == name {
+			if f.AST.Static == _static && f.AST.Name == name {
 				return f
 			}
 		}
@@ -162,7 +154,7 @@ impl Struct {
 	// Returns nil if not exist any field in this identifier.
 	fn FindField(mut *self, name: string): &Field {
 		for (_, mut f) in self.Fields {
-			if f.Name == name {
+			if f.AST.Name == name {
 				return f
 			}
 		}
@@ -217,7 +209,7 @@ impl Kind for StructIns {
 	// Returns Struct's type kind as string.
 	fn String(*self): string {
 		mut kind := strings::Builder{}
-		if self.Decl.Extern {
+		if self.Decl.AST.Extern {
 			kind.WriteString("extern.")!
 		}
 		kind.WriteString(self.Decl.FullName)!
@@ -291,7 +283,7 @@ impl StructIns {
 	// Returns nil if not exist any method in this identifier.
 	fn FindMethod(mut *self, name: string, _static: bool): &Func {
 		for (_, mut f) in self.Methods {
-			if f.Static == _static && f.Name == name {
+			if f.AST.Static == _static && f.AST.Name == name {
 				return f
 			}
 		}
@@ -302,7 +294,7 @@ impl StructIns {
 	// Returns nil if not exist any field in this identifier.
 	fn FindField(mut *self, name: string): &FieldIns {
 		for (_, mut f) in self.Fields {
-			if f.Decl.Name == name {
+			if f.Decl.AST.Name == name {
 				return f
 			}
 		}
@@ -313,18 +305,20 @@ impl StructIns {
 		if self.env == nil {
 			self.env = new(environ)
 			self.env.sema = self.Decl.sema
-			if self.Decl != nil && self.Decl.Token != nil {
-				self.env.file = findFile(self.env.sema.files, self.Decl.Token.File)
+			if self.Decl != nil && self.Decl.AST.Token != nil {
+				self.env.file = findFile(self.env.sema.files, self.Decl.AST.Token.File)
 			}
 		}
 		if len(self.env.generics) == 0 && len(self.Generics) > 0 {
 			self.env.generics = make([]&TypeAlias, 0, len(self.Generics))
 			for (i, mut g) in self.Generics {
-				mut decl := self.Decl.Generics[i]
+				mut decl := self.Decl.AST.Generics[i]
 				self.env.generics = append(self.env.generics, &TypeAlias{
-					Name:    decl.Name,
-					Token:   decl.Token,
-					TypeSym: &TypeSym{Type: g.Type},
+					AST: &ast::TypeAlias{
+						Name:  decl.Name,
+						Token: decl.Token,
+					},
+					Type: g.Type,
 				})
 			}
 		}
