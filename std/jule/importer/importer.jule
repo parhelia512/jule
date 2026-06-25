@@ -124,12 +124,14 @@ impl sema::Importer for importer {
 				// No existing module found, this should be a new module.
 				// Parse and use it.
 				if self.mod == nil {
-					isStd := newModPath == build::ModStdlib().Path
-					mut newMod, mut errs := mod::ParseFile(newModPath, mod::ParseOptions{
-						AllowStd: isStd,
+					// Since the stdlib module is considered already registered,
+					// This branch will never be true for it.
+					const AllowStd = false
+					mut newMod, mut errors := mod::ParseFile(newModPath, mod::ParseOptions{
+						AllowStd: AllowStd,
 					})
-					if len(errs) != 0 {
-						return nil, errs
+					if len(errors) != 0 {
+						return nil, errors
 					}
 					newMod.ID = mod::InvalidID
 					self.mod = newMod
