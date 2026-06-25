@@ -111,12 +111,12 @@ impl sema::Importer for importer {
 			mut newModPath := imod::FindModuleFileDeep(path)
 			if len(newModPath) == 0 {
 				self.mod = nil
-			} else if self.mod == nil || newModPath != self.mod.Path {
+			} else if self.mod == nil || !strings::EqualFold(newModPath, self.mod.Path) {
 				self.mod = nil
 				// If path is already parsed and registered,
 				// use the existing module.
 				for (_, mut mod) in self.mods {
-					if mod.Path == newModPath {
+					if strings::EqualFold(mod.Path, newModPath) {
 						self.mod = mod
 						break
 					}
