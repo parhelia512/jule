@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/jule/ast"
 use "std/jule/token"
 use "std/testing"
 
@@ -65,9 +66,11 @@ let tagTests = []tagTest([
 #test
 fn testTags(t: &testing::T) {
 	mut f := &Field{
-		Tag: &token::Token{
-			File: &token::FileSet{
-				Path: "/jule/test",
+		AST: &ast::Field{
+			Tag: &token::Token{
+				File: &token::FileSet{
+					Path: "/jule/test",
+				},
 			},
 		},
 	}
@@ -76,7 +79,7 @@ fn testTags(t: &testing::T) {
 		f: f,
 	}
 	for i, test in tagTests {
-		f.Tag.Kind = test.lit
+		f.AST.Tag.Kind = test.lit
 		ok := tc.check()
 		if !ok {
 			t.Errorf("#{} checking failed", i)
