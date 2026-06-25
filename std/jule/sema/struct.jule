@@ -306,7 +306,7 @@ impl StructIns {
 			self.env = new(environ)
 			self.env.sema = self.Decl.sema
 			if self.Decl != nil && self.Decl.AST.Token != nil {
-				self.env.file = findFile(self.env.sema.files, self.Decl.AST.Token.File)
+				self.env.file = findFile(self.env.sema.files, self.Decl.AST.Token.FileSetID)
 			}
 		}
 		if len(self.env.generics) == 0 && len(self.Generics) > 0 {

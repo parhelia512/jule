@@ -16,6 +16,7 @@ struct directiveEval {
 	logs: []log::Log
 	d:    &ast::Directive
 	off:  int
+	file: &token::FileSet
 	tok:  &token::Token
 	tags: []string
 }
@@ -26,7 +27,7 @@ impl directiveEval {
 			Kind:   log::Error,
 			Row:    t.Row,
 			Column: t.Column,
-			Path:   t.File.Path,
+			Path:   self.file.Path,
 			Text:   log::Logf(fmt, args...),
 		})
 	}

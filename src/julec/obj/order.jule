@@ -12,7 +12,7 @@ struct OrderedDefines {
 }
 
 // Reports whether type in correct order by dependencies.
-fn isOrdered[T](t: &T, s: []&T, partial: bool): bool {
+fn isOrdered[T](mut importer: sema::Importer, t: &T, s: []&T, partial: bool): bool {
 lookup:
 	for _, d in t.Depends {
 		dAST := d.AST
@@ -32,7 +32,9 @@ lookup:
 		}
 
 		if partial {
-			if dAST.Token.File.Dir() != t.AST.Token.File.Dir() {
+			dASTFile := importer.GetFileSet(dAST.Token.FileSetID)
+			tASTFile := importer.GetFileSet(t.AST.Token.FileSetID)
+			if dASTFile.Dir() != tASTFile.Dir() {
 				continue
 			}
 		}
@@ -53,7 +55,7 @@ lookup:
 // All dependencies should came before the referencer after order.
 // If partial ordering enabled, it assumes the dependencies from other packages
 // should ordered correctly.
-fn order[T](mut s: []&T, partial: bool) {
+fn order[T](mut importer: sema::Importer, mut s: []&T, partial: bool) {
 	mut i := 0
 repeat:
 	mut j := i
@@ -66,7 +68,7 @@ iter:
 				continue iter
 			}
 		}
-		if isOrdered(t, s[:i], partial) {
+		if isOrdered(importer, t, s[:i], partial) {
 			if i != j {
 				s[i], s[j] = s[j], s[i]
 			}

@@ -56,11 +56,21 @@ struct importer {
 	mod:             &mod::Mod                 // Current module.
 	mods:            []&mod::Mod               // Registered modules.
 	pkgs:            []&sema::ImportInfo       // Registered packages.
+	filesets:        []&token::FileSet         // Registered FileSets.
 	tags:            []string                  // Build tags.
 	files:           map[string]resource::File // Included files.
 }
 
 impl sema::Importer for importer {
+	// Returns FileSet by ID.
+	// Returns nil if ID is not matched with any FileSet.
+	fn GetFileSet(mut *self, id: int): &token::FileSet {
+		if id == token::InvalidID || id < 0 || len(self.filesets) <= id {
+			return nil
+		}
+		return self.filesets[id]
+	}
+
 	fn HasTag(mut *self, tag: string): bool {
 		return findTag(self.tags, tag) != -1
 	}
@@ -142,7 +152,8 @@ impl sema::Importer for importer {
 		mut asts := make([]&ast::AST, 0, len(dirents))
 		for _, dirent in dirents {
 			// Skip directories, and non-jule files.
-			if !dirent.Stat.Mode().IsRegular() || !strings::HasSuffix(dirent.Name, jule::Ext) {
+			if !dirent.Stat.Mode().IsRegular() ||
+				!strings::HasSuffix(dirent.Name, jule::Ext) {
 				continue
 			}
 
@@ -153,6 +164,7 @@ impl sema::Importer for importer {
 
 			_path := filepath::Join(path, dirent.Name)
 			mut file := token::FileSet.New(_path)
+			file.ID = len(self.filesets)
 			unsafe { file.FillMut(readBuff(file.Path)) }
 			mut errors := token::ScanAll(file, token::Standard)
 			if len(errors) > 0 {
@@ -175,6 +187,7 @@ impl sema::Importer for importer {
 			}
 
 			asts = append(asts, finfo.AST)
+			self.filesets = append(self.filesets, file)
 		}
 
 		return asts, nil
@@ -243,6 +256,7 @@ impl importer {
 				continue
 			}
 			mut de := directiveEval{
+				file: file.File,
 				d:    td,
 				tags: self.tags,
 			}

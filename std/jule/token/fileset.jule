@@ -5,12 +5,17 @@
 use "std/os/filepath"
 use "std/unsafe"
 
+// The standard invalid FileSet ID.
+// All FileSet implementations must consider this special value as invalid.
+const InvalidID = -1
+
 // Fileset for the lexer.
 struct FileSet {
 	// Data should be private, because lexical analysis uses same allocation as much as possible.
 	// And mutating this field may cause mutations of string copies.
 	data: []byte
 
+	ID:     int // Unique identity of the FileSet.
 	Path:   string
 	Tokens: []&Token
 }
@@ -19,6 +24,7 @@ impl FileSet {
 	// Returns new FileSet with path.
 	fn New(path: string): &FileSet {
 		return &FileSet{
+			ID:   InvalidID,
 			Path: path,
 		}
 	}

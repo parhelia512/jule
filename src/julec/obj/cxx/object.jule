@@ -729,7 +729,8 @@ impl ObjectCoder {
 	// Writes location information of token as cstr bytes.
 	// Returns count of written bytes.
 	fn locInfo(mut &self, t: &token::Token): (n: int) {
-		loc := t.File.Path
+		file := self.ir.Importer.GetFileSet(t.FileSetID)
+		loc := file.Path
 
 		// Normalize path if production compilation enabled.
 		if env::Production {

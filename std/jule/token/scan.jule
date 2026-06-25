@@ -549,7 +549,7 @@ impl Scanner {
 			return nil, true
 		}
 		token = new(Token)
-		token.File = self.f
+		token.FileSetID = self.f.ID
 		token.ID = ILLEGAL
 		token.Row = self.row
 		token.Column = self.col

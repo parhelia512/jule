@@ -107,11 +107,11 @@ const (
 
 // Token.
 struct Token {
-	ID:     int      // Identity of token.
-	File:   &FileSet // Associated FileSet where token appear.
-	Row:    int      // Row position of token.
-	Column: int      // Column position of token.
-	Kind:   string   // Token kind as string.
+	ID:        int    // Identity of token.
+	FileSetID: int    // ID of the associated FileSet where token appear.
+	Row:       int    // Row position of token.
+	Column:    int    // Column position of token.
+	Kind:      string // Token kind as string.
 }
 
 // A set of constants for precedence-based expression parsing.

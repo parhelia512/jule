@@ -83,42 +83,6 @@ fn rangeLast(mut tokens: []&token::Token): (rest: []&token::Token, cut: []&token
 	return tokens, nil
 }
 
-// Returns parts separated by given token identifier.
-// It's skips parentheses ranges.
-// Logs missing_expr if exprMust == true and not exist any expression for part.
-//
-// Special case is;
-//	parts(tokens) = nil if len(tokens) == 0
-fn parts(mut tokens: []&token::Token, id: int, exprMust: bool, errmsg: string): (parts: [][]&token::Token, errors: []log::Log) {
-	if len(tokens) == 0 {
-		return nil, nil
-	}
-	mut rangeN := 0
-	mut last := 0
-	for i, token in tokens {
-		match token.ID {
-		| token::LBRACE | token::LBRACK | token::LPAREN:
-			rangeN++
-		| token::RBRACE | token::RBRACK | token::RPAREN:
-			rangeN--
-		| id:
-			if rangeN > 0 {
-				continue
-			}
-			if exprMust && i-last <= 0 || i+1 >= len(tokens) {
-				err := compilerErr(token, errmsg)
-				errors = append(errors, err)
-			}
-			parts = append(parts, tokens[last:i])
-			last = i + 1
-		}
-	}
-	if last < len(tokens) {
-		parts = append(parts, tokens[last:])
-	}
-	return
-}
-
 fn isTupleExpr(mut tokens: []&token::Token): bool {
 	if len(tokens) == 0 {
 		return false
@@ -153,14 +117,14 @@ fn getCloseOfBrace(left: int): int {
 	}
 }
 
-fn compilerErr(token: &token::Token, fmt: string, args: ...any): log::Log {
+fn compilerErr(file: &token::FileSet, token: &token::Token, fmt: string, args: ...any): log::Log {
 	return log::Log{
 		Kind:   log::Error,
 		Row:    token.Row,
 		Column: token.Column,
-		Path:   token.File.Path,
+		Path:   file.Path,
 		Text:   log::Logf(fmt, args...),
-		Line:   token.File.GetRow(token.Row),
+		Line:   file.GetRow(token.Row),
 	}
 }
 
@@ -186,7 +150,7 @@ impl parser {
 
 	// Appends error by specified token, key and args.
 	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
-		self.errors = append(self.errors, compilerErr(token, fmt, args...))
+		self.errors = append(self.errors, compilerErr(self.ast.File, token, fmt, args...))
 	}
 
 	// Push suggestion to last log.
@@ -199,6 +163,42 @@ impl parser {
 	fn isIdent(mut *self, tok: &token::Token): bool {
 		return tok.ID == token::NAME ||
 			self.mode&allowKeywordIdentifiers != 0 && token::IsKeyword(tok.Kind)
+	}
+
+	// Returns parts separated by given token identifier.
+	// It's skips parentheses ranges.
+	// Logs missing_expr if exprMust == true and not exist any expression for part.
+	//
+	// Special case is;
+	//	parts(tokens) = nil if len(tokens) == 0
+	fn parts(mut *self, mut tokens: []&token::Token, id: int, exprMust: bool, errmsg: string): (parts: [][]&token::Token, errors: []log::Log) {
+		if len(tokens) == 0 {
+			return nil, nil
+		}
+		mut rangeN := 0
+		mut last := 0
+		for i, token in tokens {
+			match token.ID {
+			| token::LBRACE | token::LBRACK | token::LPAREN:
+				rangeN++
+			| token::RBRACE | token::RBRACK | token::RPAREN:
+				rangeN--
+			| id:
+				if rangeN > 0 {
+					continue
+				}
+				if exprMust && i-last <= 0 || i+1 >= len(tokens) {
+					err := compilerErr(self.ast.File, token, errmsg)
+					errors = append(errors, err)
+				}
+				parts = append(parts, tokens[last:i])
+				last = i + 1
+			}
+		}
+		if last < len(tokens) {
+			parts = append(parts, tokens[last:])
+		}
+		return
 	}
 
 	fn getExprBuilder(mut &self): exprBuilder {
@@ -477,7 +477,7 @@ impl parser {
 				return nil
 			}
 			mut constraintTokens := tokens[2:]
-			mut parts, errors := parts(constraintTokens, token::OR, true, "expected constraint after |")
+			mut parts, errors := self.parts(constraintTokens, token::OR, true, "expected constraint after |")
 			if len(errors) > 0 {
 				self.errors = append(self.errors, errors...)
 				return nil
@@ -510,7 +510,7 @@ impl parser {
 			return nil
 		}
 
-		mut parts, errors := parts(tokens, token::COMMA, true, "expected generic after ,")
+		mut parts, errors := self.parts(tokens, token::COMMA, true, "expected generic after ,")
 		if len(errors) > 0 {
 			self.errors = append(self.errors, errors...)
 			return nil
@@ -686,7 +686,7 @@ impl parser {
 	}
 
 	fn buildParams(mut &self, mut tokens: []&token::Token, method: bool): []&ast::Param {
-		mut parts, errs := parts(tokens, token::COMMA, true, "expected parameter declaration after ,")
+		mut parts, errs := self.parts(tokens, token::COMMA, true, "expected parameter declaration after ,")
 		self.errors = append(self.errors, errs...)
 		if len(parts) == 0 {
 			return nil
@@ -724,7 +724,7 @@ impl parser {
 		lparen := tokens[*i]
 		mut rangeTokens := range(i, token::LPAREN, token::RPAREN, tokens)
 
-		mut parts, errs := parts(rangeTokens, token::COMMA, true, "expected type after ,")
+		mut parts, errs := self.parts(rangeTokens, token::COMMA, true, "expected type after ,")
 		self.errors = append(self.errors, errs...)
 		// Empty range.
 		if len(parts) == 0 {
@@ -944,8 +944,8 @@ impl parser {
 		}
 
 		if *i >= len(tokens) {
-			self.stop()
 			self.pushErr(f.Token, "missing function body")
+			self.stop()
 			return nil
 		}
 		mut blockTokens := range(i, token::LBRACE, token::RBRACE, tokens)
@@ -956,8 +956,8 @@ impl parser {
 				self.pushErr(tokens[*i], "invalid syntax")
 			}
 		} else {
-			self.stop()
 			self.pushErr(tokens[*i], "missing function body")
+			self.stop()
 			return nil
 		}
 		return f
@@ -1080,8 +1080,8 @@ impl parser {
 		i += 3 // Skip "identifier: type" tokens.
 		mut itemTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if itemTokens == nil {
-			self.stop()
 			self.pushErr(e.Token, "missing type-enum body")
+			self.stop()
 			return e
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
@@ -1185,8 +1185,8 @@ impl parser {
 			}
 			e.Type, _ = self.buildType(tokens, &i, true)
 			if i >= len(tokens) {
-				self.stop()
 				self.pushErr(e.Token, "missing enum body")
+				self.stop()
 				return e
 			}
 		} else {
@@ -1194,8 +1194,8 @@ impl parser {
 		}
 		mut itemTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if itemTokens == nil {
-			self.stop()
 			self.pushErr(e.Token, "missing enum body")
+			self.stop()
 			return e
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
@@ -1310,8 +1310,8 @@ impl parser {
 
 		mut bodyTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if bodyTokens == nil {
-			self.stop()
 			self.pushErr(s.Token, "missing struct body")
+			self.stop()
 			return s
 		}
 		if i < len(tokens) {
@@ -1392,8 +1392,8 @@ impl parser {
 		mut i := 2
 		mut bodyTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if bodyTokens == nil {
-			self.stop()
 			self.pushErr(t.Token, "missing trait body")
+			self.stop()
 			return nil
 		}
 		if i < len(tokens) {
@@ -1580,14 +1580,14 @@ impl parser {
 				ipl.Base, ipl.Dest = ipl.Dest, ipl.Base
 				goto body
 			}
-			self.stop()
 			self.pushErr(token, "missing impl body")
+			self.stop()
 			return nil
 		}
 		i++
 		if i >= len(tokens) {
-			self.stop()
 			self.pushErr(token, "missing impl body")
+			self.stop()
 			return nil
 		}
 
@@ -1596,16 +1596,16 @@ impl parser {
 			return nil
 		}
 		if i >= len(tokens) {
-			self.stop()
 			self.pushErr(token, "missing impl body")
+			self.stop()
 			return nil
 		}
 
 	body:
 		mut bodyTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if bodyTokens == nil {
-			self.stop()
 			self.pushErr(token, "missing impl body")
+			self.stop()
 			return nil
 		}
 		if i < len(tokens) {

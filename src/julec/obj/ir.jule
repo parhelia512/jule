@@ -182,14 +182,14 @@ impl IR {
 			if !u.Extern {
 				self.appendGlobals(u.Package, &buffer)
 				if orderDefs {
-					order(buffer[n:], true)
+					order(self.Importer, buffer[n:], true)
 				}
 				n = len(buffer)
 			}
 		}
 		self.appendGlobals(self.Main, &buffer)
 		if orderDefs {
-			order(buffer[n:], true)
+			order(self.Importer, buffer[n:], true)
 		}
 		return buffer
 	}
@@ -208,7 +208,7 @@ impl IR {
 		// may refer to any define of the program, without dependency. So,
 		// import all and order them for correct ordering.
 		self.Ordered.Structs = self.GetAllStructures()
-		order(self.Ordered.Structs, false)
+		order(nil, self.Ordered.Structs, false)
 	}
 }
 

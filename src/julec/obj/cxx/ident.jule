@@ -22,7 +22,7 @@ const initCallerIdent = "__jule_call_initializers"
 const identSelf = "_self_"
 
 struct identCoder {
-	oc: &ObjectCoder
+	mut oc: &ObjectCoder
 }
 
 // Identifier coder.
@@ -132,7 +132,8 @@ impl identCoder {
 			identCoder.export(buf, export)
 			return
 		}
-		name := self.needCacheHit(f.AST.Token.File.Path)
+		file := self.oc.ir.Importer.GetFileSet(f.AST.Token.FileSetID)
+		name := self.needCacheHit(file.Path)
 		buf.WriteString(name)!
 		buf.WriteByte('_')!
 		self.writeIdentTo(buf, f.AST.Name)
@@ -164,7 +165,8 @@ impl identCoder {
 	}
 
 	fn traitDecl(*self, mut &buf: *strings::Builder, t: &sema::Trait) {
-		name := self.needCacheHit(t.AST.Token.File.Path)
+		file := self.oc.ir.Importer.GetFileSet(t.AST.Token.FileSetID)
+		name := self.needCacheHit(file.Path)
 		buf.WriteString(name)!
 		buf.WriteByte('_')!
 		self.writeIdentTo(buf, t.AST.Name)
@@ -193,7 +195,8 @@ impl identCoder {
 			buf.WriteString(s.AST.Name)!
 			return
 		}
-		name := self.needCacheHit(s.AST.Token.File.Path)
+		file := self.oc.ir.Importer.GetFileSet(s.AST.Token.FileSetID)
+		name := self.needCacheHit(file.Path)
 		buf.WriteString(name)!
 		buf.WriteByte('_')!
 		self.writeIdentTo(buf, s.AST.Name)
@@ -293,7 +296,8 @@ impl identCoder {
 				identCoder.export(buf, export)
 				return
 			}
-			name := self.needCacheHit(v.AST.Token.File.Path)
+			file := self.oc.ir.Importer.GetFileSet(v.AST.Token.FileSetID)
+			name := self.needCacheHit(file.Path)
 			buf.WriteString(name)!
 			buf.WriteByte('_')!
 			self.writeIdentTo(buf, v.AST.Name)

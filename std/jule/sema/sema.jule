@@ -62,16 +62,16 @@ fn isValidModelForRef(mut m: Expr): bool {
 	}
 }
 
-fn compilerErr(token: &token::Token, line: bool, fmt: string, args: ...any): log::Log {
+fn compilerErr(file: &token::FileSet, token: &token::Token, line: bool, fmt: string, args: ...any): log::Log {
 	mut log := log::Log{
 		Kind:   log::Error,
 		Row:    token.Row,
 		Column: token.Column,
-		Path:   token.File.Path,
+		Path:   file.Path,
 		Text:   log::Logf(fmt, args...),
 	}
 	if line {
-		log.Line = token.File.GetRow(token.Row)
+		log.Line = file.GetRow(token.Row)
 	}
 	return log
 }
@@ -239,9 +239,12 @@ fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 	}
 }
 
-fn findFile(mut files: []&SymTab, handler: &token::FileSet): &SymTab {
+fn findFile(mut files: []&SymTab, id: int): &SymTab {
+	if id == token::InvalidID {
+		return nil
+	}
 	for (_, mut fl) in files {
-		if fl.File == handler {
+		if fl.File.ID == id {
 			return fl
 		}
 	}
@@ -441,17 +444,19 @@ impl sema {
 	fn setCurrentFile(mut *self, mut f: &SymTab) { self.file = f }
 
 	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
-		self.errors = append(self.errors, compilerErr(token, true, fmt, args...))
+		self.errors = append(self.errors,
+			compilerErr(self.importer.GetFileSet(token.FileSetID), token, true, fmt, args...))
 	}
 
 	fn pushErrorFromLitError(mut *self, t: &token::Token, err: lit::Error) {
+		file := self.importer.GetFileSet(t.FileSetID)
 		self.errors = append(self.errors, log::Log{
 			Kind:   log::Error,
 			Row:    t.Row,
 			Column: t.Column + err.Offset,
-			Path:   t.File.Path,
+			Path:   file.Path,
 			Text:   err.Text,
-			Line:   t.File.GetRow(t.Row),
+			Line:   file.GetRow(t.Row),
 		})
 	}
 
@@ -468,13 +473,14 @@ impl sema {
 
 	// Reports whether define is accessible in the current package.
 	// The public and token parameters belongs to define which is accessed.
-	fn isAccessibleDefine(*self, public: bool, token: &token::Token): bool {
-		if public || token.File == nil {
+	fn isAccessibleDefine(mut *self, public: bool, token: &token::Token): bool {
+		if public || token.FileSetID == token::InvalidID {
 			// public or built-in
 			return true
 		}
 		selfDir := self.file.File.Dir()
-		tokenDir := token.File.Dir()
+		file := self.importer.GetFileSet(token.FileSetID)
+		tokenDir := file.Dir()
 		if selfDir == tokenDir {
 			// define is in the same package
 			return true
@@ -1176,7 +1182,7 @@ impl sema {
 	// It will not check mutability risk of the internal mutable data or etc.
 	// It will check interior mutability risk of the new copy.
 	// Assumes the assigned memory is mutable.
-	fn isMutRiskyStruct(*self, s: &StructIns): bool {
+	fn isMutRiskyStruct(mut *self, s: &StructIns): bool {
 		for _, f in s.Fields {
 			// Inerior mutability enables to copy internal mutable data with safety.
 			// If field is interior mutable and their kind is mutable,
@@ -1241,7 +1247,7 @@ impl sema {
 		mut old := self.file
 		defer { self.setCurrentFile(old) }
 		if ta.AST.Token != nil {
-			mut file := findFile(self.files, ta.AST.Token.File)
+			mut file := findFile(self.files, ta.AST.Token.FileSetID)
 			if file != nil {
 				self.setCurrentFile(file)
 			}
@@ -1344,7 +1350,7 @@ impl sema {
 		mut old := self.file
 		defer { self.setCurrentFile(old) }
 		if e.AST.Token != nil {
-			mut file := findFile(self.files, e.AST.Token.File)
+			mut file := findFile(self.files, e.AST.Token.FileSetID)
 			if file != nil {
 				self.setCurrentFile(file)
 			}
@@ -1891,8 +1897,9 @@ impl sema {
 		}
 
 		mut dest := destS.Decl
+		destFile := self.importer.GetFileSet(dest.AST.Token.FileSetID)
 
-		if dest.AST.Token.File.Dir() != self.file.File.Dir() {
+		if destFile.Dir() != self.file.File.Dir() {
 			self.pushErr(decl.AST.Dest.Token, "illegal implementation to structure comes from different package")
 			return
 		}
@@ -1919,7 +1926,8 @@ impl sema {
 		}
 
 		mut dest := destS.Decl
-		if dest.AST.Token.File.Dir() != self.file.File.Dir() {
+		destFile := self.importer.GetFileSet(dest.AST.Token.FileSetID)
+		if destFile.Dir() != self.file.File.Dir() {
 			self.pushErr(decl.AST.Dest.Token, "illegal implementation to structure comes from different package")
 			return
 		}
@@ -2847,8 +2855,11 @@ impl sema {
 		}
 
 		s, ok := sptr.Value.Kind.(&StructIns)
-		if ok && s.Source == nil && isStdPackage(s.Decl.AST.Token.File.Path, "testing") {
-			return
+		if ok && s.Source == nil {
+			file := self.importer.GetFileSet(s.Decl.AST.Token.FileSetID)
+			if isStdPackage(file.Path, "testing") {
+				return
+			}
 		}
 		self.pushErr(f.Decl.AST.Token, "wrong test function declaration")
 		self.pushSuggestion("proper declaration; fn myTest(t: &testing::T)")

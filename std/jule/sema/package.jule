@@ -16,6 +16,10 @@ use "std/strings"
 // The default importer implementation is highly recommended.
 // 3rd-party importer implementations may cause unpredictable issues.
 trait Importer {
+	// Returns FileSet by ID.
+	// Returns nil if ID is not matched with any FileSet.
+	fn GetFileSet(mut *self, id: int): &token::FileSet
+
 	// Reports whether the build tag is defined.
 	fn HasTag(mut *self, tag: string): bool
 

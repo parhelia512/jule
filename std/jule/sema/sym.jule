@@ -235,11 +235,11 @@ impl symBuilder {
 	}
 
 	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
-		self.errors = append(self.errors, compilerErr(token, true, fmt, args...))
+		self.errors = append(self.errors, compilerErr(self.ast.File, token, true, fmt, args...))
 	}
 
 	fn pushErrText(mut *self, token: &token::Token, fmt: string, args: ...any) {
-		self.errors = append(self.errors, compilerErr(token, false, fmt, args...))
+		self.errors = append(self.errors, compilerErr(self.ast.File, token, false, fmt, args...))
 	}
 
 	// Push suggestion to last log.
@@ -598,7 +598,8 @@ impl symBuilder {
 		// Get the main package path.
 		mainPackagePath := self.importer.GetMainPackagePath()
 		// Get the package path of the AST name's owner declaration.
-		packageDir := token.File.Dir()
+		file := self.importer.GetFileSet(token.FileSetID)
+		packageDir := file.Dir()
 		// If declaration is declared in the main package,
 		// do not use a package name.
 		// Return AST name instead.
