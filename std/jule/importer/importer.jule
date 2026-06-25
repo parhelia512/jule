@@ -146,6 +146,11 @@ impl sema::Importer for importer {
 				continue
 			}
 
+			// Skip this source file if file annotation is failed.
+			if !self.isPassFileAnnotation(dirent.Name) {
+				continue
+			}
+
 			_path := filepath::Join(path, dirent.Name)
 			mut file := token::FileSet.New(_path)
 			unsafe { file.FillMut(readBuff(file.Path)) }
@@ -157,11 +162,6 @@ impl sema::Importer for importer {
 			mut finfo := parser::ParseFile(file)
 			if len(finfo.Errors) > 0 {
 				return nil, finfo.Errors
-			}
-
-			// Skip this source file if file annotation is failed.
-			if !self.isPassFileAnnotation(dirent.Name) {
-				continue
 			}
 
 			r, mut logs := self.isPassBuildDirectives(finfo.AST)
