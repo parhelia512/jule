@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD 3-Clause
 // license that can be found in the LICENSE file.
 
+use "std/strings"
+
 // A module identity.
 type ID: int
 
@@ -23,6 +25,6 @@ impl Mod {
 		if self == nil || other == nil {
 			return self == other
 		}
-		return self.Path == other.Path
+		return strings::EqualFold(self.Path, other.Path)
 	}
 }
