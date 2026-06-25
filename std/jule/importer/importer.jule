@@ -80,10 +80,6 @@ impl sema::Importer for importer {
 		return self.mods[id]
 	}
 
-	fn Mods(mut *self): []&mod::Mod {
-		return self.mods
-	}
-
 	fn RegisterMod(mut *self) {
 		self.registerMod(nil)
 	}
@@ -116,21 +112,28 @@ impl sema::Importer for importer {
 			if len(newModPath) == 0 {
 				self.mod = nil
 			} else if self.mod == nil || newModPath != self.mod.Path {
-				isStd := newModPath == build::ModStdlib().Path
-				mut newMod, mut errs := mod::ParseFile(newModPath, mod::ParseOptions{
-					AllowStd: isStd,
-				})
-				if len(errs) != 0 {
-					return nil, errs
-				}
-				newMod.ID = mod::InvalidID
+				self.mod = nil
+				// If path is already parsed and registered,
+				// use the existing module.
 				for (_, mut mod) in self.mods {
-					if newMod.Equal(mod) {
-						newMod = mod
+					if mod.Path == newModPath {
+						self.mod = mod
 						break
 					}
 				}
-				self.mod = newMod
+				// No existing module found, this should be a new module.
+				// Parse and use it.
+				if self.mod == nil {
+					isStd := newModPath == build::ModStdlib().Path
+					mut newMod, mut errs := mod::ParseFile(newModPath, mod::ParseOptions{
+						AllowStd: isStd,
+					})
+					if len(errs) != 0 {
+						return nil, errs
+					}
+					newMod.ID = mod::InvalidID
+					self.mod = newMod
+				}
 			}
 		}
 
@@ -213,22 +216,21 @@ impl sema::Importer for importer {
 impl importer {
 	// Internal implementation of [Importer.RegisterMod].
 	fn registerMod(mut *self, mut imp: &sema::ImportInfo) {
+		// If module is nil, nothing to do.
 		if self.mod == nil {
 			return
 		}
-		for (i, mut mod) in self.mods {
-			if self.mod == mod || self.mod.Equal(mod) {
-				self.mod.ID = mod.ID
-				if imp != nil {
-					imp.ModID = mod::ID(i)
-				}
-				return
+		defer {
+			if imp != nil {
+				imp.ModID = self.mod.ID
 			}
 		}
-		self.mod.ID = mod::ID(len(self.mods))
-		if imp != nil {
-			imp.ModID = self.mod.ID
+		// If moudle ID is valid, it should be registered already.
+		if self.mod.ID != mod::InvalidID {
+			return
 		}
+		// This is a new module, register it.
+		self.mod.ID = mod::ID(len(self.mods))
 		self.mods = append(self.mods, self.mod)
 	}
 

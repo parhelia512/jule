@@ -48,26 +48,28 @@ fn collectImplicitImports(mut s: &sema, mut file: &SymTab) {
 	}
 }
 
+// Constraints:
+//	- len(files) > 0
 fn analyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (&Package, []log::Log) {
-	// Get module, if exist.
-	let mut mod: &mod::Mod
-	if importer != nil {
-		mod = importer.GetMod()
-	}
+	// Select import path for the main package.
+	// If there is no importer, use fileset path as import path.
+	// If we have importer, use the main package path as import path.
+	mut importPath := ""
 
-	// Select import path for the root package.
-	// If there is no module, use "." as import path.
-	// If we have module, use the module root name as import path.
-	mut importPath := "."
-
-	// Select module ID for the root package.
-	// If there is no module, use invalid ID as module ID.
-	// If we have module, use the module ID.
+	// Select module ID for the main package.
+	// If there is no module, use invalid ID as module path.
+	// If we have a module, use the module path.
 	mut modID := mod::InvalidID
 
-	if mod != nil {
-		modID = mod.ID
-		importPath = mod.Path
+	if importer != nil {
+		mod := importer.GetMod()
+		if mod != nil {
+			modID = mod.ID
+		}
+		importPath = importer.GetMainPackagePath()
+	}
+	if importPath == "" {
+		importPath = files[0].File.Dir()
 	}
 
 	// Build symbol tables of files.
@@ -126,6 +128,7 @@ fn analyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (
 //	std-path:          uses standard library path provided by build
 //
 // Constraints:
+//	- importer's main package path should be set.
 //	- importer's module must be point to the package's module, if exist.
 //
 // Risks:
@@ -138,26 +141,7 @@ fn AnalyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (
 	return analyzePackage(files, importer, flags)
 }
 
-// Builds symbol table of AST.
-// Returns nil if f is nil.
-// Returns nil if pwd is empty.
-// Returns nil if pstd is empty.
-// Accepts current working directory is pwd.
-//
-// Parameters:
-//	f:        file's abstract syntax tree
-//	importer: importer that used for use declarations
-//
-// Dependent Parameters:
-//	working-directory: uses working directory path provided by build
-//	std-path:          uses standard library path provided by build
-//
-// Constraints:
-//	- importer's module must be point to the package's module, if exist.
-//
-// Risks:
-//	You can pass nil to importer, but panics if importer is nil and
-//	semantic analyzer used nil importer.
+// Same as [AnalyzePackage], but it takes a singe file.
 fn AnalyzeFile(mut f: &ast::AST, mut importer: Importer, flags: int): (&SymTab, []log::Log) {
 	let mut files: [1]&ast::AST = [f]
 	mut _files := unsafe::Slice(&files[0], len(files), len(files))

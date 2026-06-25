@@ -27,12 +27,8 @@ trait Importer {
 	// Returns nil if module is not exist.
 	fn GetMod(mut *self): &mod::Mod
 
-	// Returns module path by identity.
+	// Returns module by ID.
 	fn ModByID(mut *self, id: mod::ID): &mod::Mod
-
-	// Returns all modules.
-	// The return value may be mutable reference to the internal buffer.
-	fn Mods(mut *self): []&mod::Mod
 
 	// Registers the current module.
 	// Sets the module identity to a valid ID and
@@ -223,7 +219,7 @@ struct ImportInfo {
 	// Nil if package is external header.
 	Package: &Package
 
-	// Module identity.
+	// Module ID.
 	ModID: mod::ID
 }
 
