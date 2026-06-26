@@ -899,7 +899,8 @@ fn stripCR(b: []byte, comment: bool): []byte {
 }
 
 // Scans all tokens into FileSet f and returns error logs.
-fn ScanAll(mut f: &FileSet, opt: int): []log::Log {
+fn ScanAll(mut f: &FileSet, opt: int): ([]&Token, []log::Log) {
+	let mut buf: []&Token
 	mut scan := Scanner.New(f, opt)
 	mut i := 0
 Loop:
@@ -907,7 +908,7 @@ Loop:
 		i++
 		mut token, EOF := scan.Scan()
 		if token != nil {
-			f.Tokens = append(f.Tokens, token)
+			buf = append(buf, token)
 		}
 		match {
 		| EOF:
@@ -917,5 +918,5 @@ Loop:
 			continue
 		}
 	}
-	return scan.Logs
+	return buf, scan.Logs
 }

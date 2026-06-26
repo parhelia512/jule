@@ -18,26 +18,26 @@ struct PackageInfo {
 	Files: []&FileInfo
 }
 
-// Parses FileSet's tokens and builds AST.
+// Parses FileSet's tokens and builds AST with scan options.
 // Returns nil if f is not real.
 // FileSet should not contain comment tokens.
-fn ParseFile(mut f: &token::FileSet): &FileInfo {
+fn ParseFile(mut f: &token::FileSet, opt: int): &FileInfo {
 	if f == nil {
 		return nil
 	}
 	mut finf := new(FileInfo)
-	finf.AST, finf.Errors = parseFileSet(f)
+	finf.AST, finf.Errors = parseFileSet(f, opt)
 	if len(finf.Errors) > 0 {
 		finf.AST = nil
 	}
 	return finf
 }
 
-// Parses FileSet's tokens and builds AST.
+// Parses FileSet's tokens and builds AST with scan options.
 // Returns nil if filesets is nil.
 // Skips FileSet if nil.
 // FileSets should not contain comment tokens.
-fn ParsePackage(mut filesets: []&token::FileSet): &PackageInfo {
+fn ParsePackage(mut filesets: []&token::FileSet, opt: int): &PackageInfo {
 	if filesets == nil {
 		return nil
 	}
@@ -47,14 +47,14 @@ fn ParsePackage(mut filesets: []&token::FileSet): &PackageInfo {
 		if f == nil {
 			continue
 		}
-		mut finfo := ParseFile(f)
+		mut finfo := ParseFile(f, opt)
 		pinf.Files = append(pinf.Files, finfo)
 	}
 	return pinf
 }
 
-fn parseFileSet(mut f: &token::FileSet): (&ast::AST, []log::Log) {
+fn parseFileSet(mut f: &token::FileSet, opt: int): (&ast::AST, []log::Log) {
 	mut p := new(parser)
-	p.parse(f)
+	p.parse(f, opt)
 	return p.ast, p.errors
 }

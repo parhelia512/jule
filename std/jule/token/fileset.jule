@@ -15,9 +15,8 @@ struct FileSet {
 	// And mutating this field may cause mutations of string copies.
 	data: []byte
 
-	ID:     int // Unique identity of the FileSet.
-	Path:   string
-	Tokens: []&Token
+	ID:   int // Unique identity of the FileSet.
+	Path: string
 }
 
 impl FileSet {
