@@ -32,7 +32,7 @@ fn prevIsIncompleteExpr(tokens: []&token::Token, &i: *int): bool {
 	}
 }
 
-// Reports position of the next statement if exist, len(toks) if not.
+// Reports position of the next statement if exist, len(tokens) if not.
 fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
 	mut braceN := 0
 	mut i := start
@@ -129,11 +129,18 @@ fn splitStmts(mut tokens: []&token::Token): []&stmt {
 	return stmts
 }
 
+// scopeParser flags.
+const (
+	SPF_SKIPREAD = 1 << iota // Skips next call for once and reports true.
+)
+
 struct scopeParser {
-	p:     &parser
-	s:     &ast::Scope
-	stmts: []&stmt
-	pos:   int
+	p:      &parser
+	s:      &ast::Scope
+	tokens: []&token::Token
+	stmt:   stmt
+	flags:  int
+	pos:    int
 }
 
 impl scopeParser {
@@ -143,14 +150,6 @@ impl scopeParser {
 
 	fn stopped(*self): bool {
 		return self.pos == -1
-	}
-
-	fn finished(*self): bool {
-		return self.pos >= len(self.stmts)
-	}
-
-	fn isLastStmt(*self): bool {
-		return self.pos+1 >= len(self.stmts)
 	}
 
 	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
@@ -163,12 +162,23 @@ impl scopeParser {
 	}
 
 	fn insertAsNext(mut *self, mut tokens: []&token::Token) {
-		self.stmts = slices::Insert(self.stmts, self.pos+1, &stmt{tokens: tokens})
+		self.stmt.tokens = tokens
+		self.stmt.terminated = false
+		self.flags |= SPF_SKIPREAD
 	}
 
-	fn next(mut *self): &stmt {
-		self.pos++
-		return self.stmts[self.pos]
+	fn next(mut *self): bool {
+		if self.flags&SPF_SKIPREAD != 0 {
+			self.flags &= ^SPF_SKIPREAD
+			return true
+		}
+		if self.pos >= len(self.tokens) {
+			return false
+		}
+		mut tokens, terminated := skipStmt(&self.pos, self.tokens)
+		self.stmt.tokens = tokens
+		self.stmt.terminated = terminated
+		return true
 	}
 
 	fn buildScope(mut *self, mut tokens: []&token::Token, mut end: &token::Token): &ast::Scope {
@@ -201,11 +211,11 @@ impl scopeParser {
 		return st
 	}
 
-	fn buildWhileNextIter(mut *self, mut s: &stmt): &ast::Iter {
+	fn buildWhileNextIter(mut *self, mut &stmt: *stmt): &ast::Iter {
 		mut it := &ast::Iter{
-			Token: s.tokens[0],
+			Token: stmt.tokens[0],
 		}
-		mut tokens := s.tokens[1:] // Skip "iter" keyword.
+		mut tokens := stmt.tokens[1:] // Skip "iter" keyword.
 		mut kind := new(ast::WhileKind)
 
 		if len(tokens) > 0 {
@@ -220,23 +230,23 @@ impl scopeParser {
 			}
 		}
 
-		if self.isLastStmt() {
+		if !self.next() {
 			self.pushErr(it.Token, "invalid syntax")
 			return nil
 		}
 
-		tokens = self.next().tokens
-		mut stTokens := getBlockExpr(tokens)
-		if len(stTokens) > 0 {
-			mut stmt := &stmt{
-				terminated: s.terminated,
-				tokens:     stTokens,
+		tokens = self.stmt.tokens
+		mut stmtTokens := getBlockExpr(tokens)
+		if len(stmtTokens) > 0 {
+			mut stmt2 := stmt{
+				tokens:     stmtTokens,
+				terminated: stmt.terminated,
 			}
-			kind.NextToken = stTokens[0]
-			kind.Next = self.buildStmt(stmt)
+			kind.NextToken = stmtTokens[0]
+			kind.Next = self.buildStmt(&stmt2)
 		}
 
-		mut i := len(stTokens)
+		mut i := len(stmtTokens)
 		mut blockTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if blockTokens == nil {
 			self.stop()
@@ -412,7 +422,7 @@ impl scopeParser {
 		return it
 	}
 
-	fn buildIterStmt(mut *self, mut stmt: &stmt): &ast::Iter {
+	fn buildIterStmt(mut *self, mut &stmt: *stmt): &ast::Iter {
 		if stmt.terminated {
 			return self.buildWhileNextIter(stmt)
 		}
@@ -1050,11 +1060,11 @@ impl scopeParser {
 				// The setter token is not a postfix operator.
 				// Probably the following statement is the expression.
 				// We must try to handle next statement as expression.
-				if self.isLastStmt() {
+				if !self.next() {
 					self.pushErr(info.setter, "expected expression")
 					break
 				}
-				info.r = self.next().tokens
+				info.r = self.stmt.tokens
 				break
 			}
 			info.r = tokens[i+1:]
@@ -1250,11 +1260,11 @@ impl scopeParser {
 			if assign.Op.ID != token::ASSIGN {
 				self.pushErr(assign.Op, "assignment operation @ requires single-valued expressions", assign.Op.Kind)
 			}
-			if self.isLastStmt() {
+			if !self.next() {
 				self.pushErr(assign.Op, "expected expression")
 				return nil, false
 			}
-			mut exprTokens := self.next().tokens
+			mut exprTokens := self.stmt.tokens
 			assign.Y = self.p.buildExpr(exprTokens)
 		}
 
@@ -1288,7 +1298,7 @@ impl scopeParser {
 		return ue
 	}
 
-	fn buildConstStmt(mut *self, mut stmt: &stmt): ast::StmtData {
+	fn buildConstStmt(mut *self, mut &stmt: *stmt): ast::StmtData {
 		if len(stmt.tokens) == 1 {
 			self.pushErr(stmt.tokens[0], "invalid syntax")
 			return nil
@@ -1313,7 +1323,7 @@ impl scopeParser {
 		}
 	}
 
-	fn buildStmt(mut *self, mut stmt: &stmt): ast::StmtData {
+	fn buildStmt(mut *self, mut &stmt: *stmt): ast::StmtData {
 		if len(stmt.tokens) == 0 {
 			// Empty statement, skip immediately.
 			// Typically caused by empty statements explicitly terminated by semicolon.
@@ -1395,11 +1405,10 @@ impl scopeParser {
 		if s == nil {
 			return
 		}
-		self.stmts = splitStmts(tokens)
-		self.pos = -1 // self.next() must be called first to increase position properly
 		self.s = s
-		for !self.isLastStmt() && !self.finished() {
-			mut stmt := self.next()
+		self.tokens = tokens
+		for !self.stopped() && self.next() {
+			mut &stmt := &self.stmt
 			mut data := self.buildStmt(stmt)
 			if data != nil {
 				self.s.Stmts = append(self.s.Stmts, ast::Stmt{
@@ -1407,9 +1416,6 @@ impl scopeParser {
 					End:   stmt.tokens[len(stmt.tokens)-1],
 					Data:  data,
 				})
-			}
-			if self.stopped() {
-				break
 			}
 		}
 	}
