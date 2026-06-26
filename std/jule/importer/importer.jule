@@ -167,7 +167,7 @@ impl sema::Importer for importer {
 			file.ID = len(self.filesets)
 			unsafe { file.FillMut(readBuff(file.Path)) }
 
-			mut finfo := parser::ParseFile(file, token::Standard)
+			mut finfo := parser::ParseFile(file)
 			if len(finfo.Errors) > 0 {
 				return nil, finfo.Errors
 			}

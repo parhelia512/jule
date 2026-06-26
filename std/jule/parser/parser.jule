@@ -1829,8 +1829,8 @@ impl parser {
 		}
 	}
 
-	fn parse(mut &self, mut f: &token::FileSet, opt: int) {
-		mut tokens, (self.errors) := token::ScanAll(f, opt)
+	fn parse(mut &self, mut f: &token::FileSet) {
+		mut tokens, (self.errors) := token::ScanAll(f, token::Standard)
 		if len(self.errors) > 0 {
 			return
 		}

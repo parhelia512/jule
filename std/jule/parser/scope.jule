@@ -515,16 +515,17 @@ impl scopeParser {
 	}
 
 	fn buildCaseScope(mut *self, mut &tokens: *[]&token::Token): &ast::Scope {
+		let mut scan: scanner
+		let mut next: stmt
 		mut n := 0
 		for {
-			mut i := 0
-			mut next, _ := skipStmt(&i, (*tokens)[n:])
-			if len(next) == 0 {
+			scan.init((*tokens)[n:])
+			if !scan.next(&next) || len(next.tokens) == 0 {
 				break
 			}
-			tok := next[0]
-			if tok.ID != token::OR {
-				n += i
+			token := next.tokens[0]
+			if token.ID != token::OR {
+				n += scan.pos
 				continue
 			}
 			mut scopeTokens := (*tokens)[:n]
