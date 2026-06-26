@@ -28,7 +28,7 @@ fn prevIsIncompleteExpr(tokens: []&token::Token, &i: *int): bool {
 
 // Reports position of the next statement if exist, len(tokens) if not.
 #disable nilptr boundary
-fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
+fn nextStmtPos(tokens: []&token::Token, start: int): (int, bool) {
 	mut braceN := 0
 	mut i := start
 	for i < len(tokens); i++ {
@@ -53,13 +53,6 @@ fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
 		| token::RBRACK
 		| token::RPAREN:
 			braceN--
-			if braceN == 0 && i+1 < len(tokens) {
-				ok, terminated = isStmt(tokens[i+1], tok)
-				if ok {
-					i++
-					goto ret
-				}
-			}
 			continue
 		}
 
@@ -94,7 +87,7 @@ fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
 fn skipStmt(mut &i: *int, mut tokens: []&token::Token): ([]&token::Token, bool) {
 	start := *i
 	mut terminated := false
-	*i, terminated = nextStPos(tokens, start)
+	*i, terminated = nextStmtPos(tokens, start)
 	mut stmtTokens := tokens[start:*i]
 	if terminated {
 		if len(stmtTokens) == 1 {
