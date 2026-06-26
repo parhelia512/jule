@@ -1,0 +1,160 @@
+// Copyright 2026 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+use "std/jule/token"
+
+// Reports whether token is statement finish point.
+#disable nilptr
+fn isStmt(current: &token::Token, prev: &token::Token): (ok: bool, terminated: bool) {
+	ok = current.ID == token::SEMICOLON || prev.Row < current.Row
+	terminated = current.ID == token::SEMICOLON
+	return
+}
+
+#disable nilptr boundary
+fn prevIsIncompleteExpr(tokens: []&token::Token, &i: *int): bool {
+	// Ignore namespaces.
+	if *i > 1 && tokens[*i-2].ID == token::SEP {
+		return false
+	}
+	unsafe {
+		prev := tokens[*i-1]
+		return prev.ID == token::PERIOD ||
+			prev.ID == token::COMMA ||
+			(prev.Precedence() > token::LowestPrec && prev.Row < tokens[*i].Row)
+	}
+}
+
+// Reports position of the next statement if exist, len(tokens) if not.
+#disable nilptr boundary
+fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
+	mut braceN := 0
+	mut i := start
+	for i < len(tokens); i++ {
+		mut ok := false
+		mut terminated := false
+		tok := tokens[i]
+		match tok.ID {
+		| token::LBRACE
+		| token::LBRACK
+		| token::LPAREN:
+			if braceN == 0 && i > start {
+				if !prevIsIncompleteExpr(tokens, &i) {
+					ok, terminated = isStmt(tok, tokens[i-1])
+					if ok {
+						goto ret
+					}
+				}
+			}
+			braceN++
+			continue
+		| token::RBRACE
+		| token::RBRACK
+		| token::RPAREN:
+			braceN--
+			if braceN == 0 && i+1 < len(tokens) {
+				ok, terminated = isStmt(tokens[i+1], tok)
+				if ok {
+					i++
+					goto ret
+				}
+			}
+			continue
+		}
+
+		if braceN != 0 {
+			continue
+		}
+
+		if i > start {
+			if prevIsIncompleteExpr(tokens, &i) {
+				continue
+			}
+			ok, terminated = isStmt(tok, tokens[i-1])
+		} else {
+			ok, terminated = isStmt(tok, tok)
+		}
+		if !ok {
+			continue
+		}
+
+	ret:
+		if terminated {
+			i++
+		}
+		return i, terminated
+	}
+	return i, false
+}
+
+// Returns current statement tokens.
+// Starts selection at i.
+#disable nilptr boundary
+fn skipStmt(mut &i: *int, mut tokens: []&token::Token): ([]&token::Token, bool) {
+	start := *i
+	mut terminated := false
+	*i, terminated = nextStPos(tokens, start)
+	mut stmtTokens := tokens[start:*i]
+	if terminated {
+		if len(stmtTokens) == 1 {
+			return skipStmt(i, tokens)
+		}
+		// -1 for eliminate the statement terminator.
+		stmtTokens = stmtTokens[:len(stmtTokens)-1]
+	}
+	return stmtTokens, terminated
+}
+
+struct stmt {
+	tokens:     []&token::Token
+	terminated: bool
+}
+
+// Scanner flags.
+const (
+	SF_STOP     = 1 << iota // Stops scanning.
+	SF_SKIPREAD             // Skips next call for once and reports true.
+)
+
+// Statement scanner.
+struct scanner {
+	tokens: []&token::Token
+	pos:    int
+	flags:  int
+}
+
+impl scanner {
+	#disable nilptr
+	fn init(mut *self, mut tokens: []&token::Token) {
+		self.tokens = tokens
+		self.pos = 0
+		self.flags = 0
+	}
+
+	#disable nilptr
+	fn stop(mut *self) { self.flags |= SF_STOP }
+
+	#disable nilptr
+	fn stopped(*self): bool { return self.flags&SF_STOP != 0 }
+
+	#disable nilptr
+	fn insertAsNext(mut *self, mut &stmt: *stmt, mut tokens: []&token::Token) {
+		stmt.tokens = tokens
+		stmt.terminated = false
+		self.flags |= SF_SKIPREAD
+	}
+
+	#disable nilptr
+	fn next(mut *self, mut &stmt: *stmt): bool {
+		if self.flags&SF_SKIPREAD != 0 {
+			self.flags &= ^SF_SKIPREAD
+			return true
+		}
+		if self.pos >= len(self.tokens) {
+			return false
+		}
+		stmt.tokens, stmt.terminated = skipStmt(&self.pos, self.tokens)
+		return true
+	}
+}

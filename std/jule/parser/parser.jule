@@ -138,16 +138,15 @@ const (
 )
 
 struct parser {
-	mode:       int
-	ast:        &ast::AST
 	directives: []&ast::Directive
 	errors:     []log::Log
+	ast:        &ast::AST
+	scan:       scanner
+	stmt:       stmt
+	mode:       int
 }
 
 impl parser {
-	fn stop(mut *self) { self.ast = nil }
-	fn stopped(*self): bool { return self.ast == nil }
-
 	// Appends error by specified token, key and args.
 	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.errors = append(self.errors, compilerErr(self.ast.File, token, fmt, args...))
@@ -327,13 +326,16 @@ impl parser {
 		if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
 		}
-		mut stmts := splitStmts(rangeTokens)
-		if len(stmts) == 0 {
+		let mut scan: scanner
+		let mut stmt: stmt
+		scan.init(rangeTokens)
+		mut next := scan.next(&stmt)
+		if !next {
 			self.pushErr(tokens[0], "variable group cannot be empty")
 			return nil
 		}
-		mut group := make([]&ast::Var, 0, len(stmts))
-		for (_, mut stmt) in stmts {
+		mut group := make([]&ast::Var, 0, 1)
+		for next; next = scan.next(&stmt) {
 			mut v := &ast::Var{
 				Token: tokens[0],
 				Flags: ast::F_CONST,
@@ -928,9 +930,12 @@ impl parser {
 
 	// Parses function define.
 	// Prototype and body.
-	// If prototype is true, it only parses declaration, body and following tokens considired illegal.
+	// If prototype is true, it only parses declaration,
+	// body and following tokens considired illegal.
 	// It advances i by token, it will be point to the last handled legal token.
-	fn buildFunc(mut &self, mut &i: *int, mut tokens: []&token::Token, method: bool, prototype: bool): &ast::Func {
+	fn buildFunc(mut &self,
+		mut &i: *int, mut tokens: []&token::Token,
+		method: bool, prototype: bool): &ast::Func {
 		const ExprMode = false
 		mut f := self.buildFuncPrototype(tokens, i, ExprMode, method)
 		if f == nil {
@@ -945,7 +950,7 @@ impl parser {
 
 		if *i >= len(tokens) {
 			self.pushErr(f.Token, "missing function body")
-			self.stop()
+			self.scan.stop()
 			return nil
 		}
 		mut blockTokens := range(i, token::LBRACE, token::RBRACE, tokens)
@@ -957,7 +962,7 @@ impl parser {
 			}
 		} else {
 			self.pushErr(tokens[*i], "missing function body")
-			self.stop()
+			self.scan.stop()
 			return nil
 		}
 		return f
@@ -1081,7 +1086,7 @@ impl parser {
 		mut itemTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if itemTokens == nil {
 			self.pushErr(e.Token, "missing type-enum body")
-			self.stop()
+			self.scan.stop()
 			return e
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
@@ -1186,7 +1191,7 @@ impl parser {
 			e.Type, _ = self.buildType(tokens, &i, true)
 			if i >= len(tokens) {
 				self.pushErr(e.Token, "missing enum body")
-				self.stop()
+				self.scan.stop()
 				return e
 			}
 		} else {
@@ -1195,7 +1200,7 @@ impl parser {
 		mut itemTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if itemTokens == nil {
 			self.pushErr(e.Token, "missing enum body")
-			self.stop()
+			self.scan.stop()
 			return e
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
@@ -1267,9 +1272,11 @@ impl parser {
 	}
 
 	fn buildStructDeclFields(mut &self, mut tokens: []&token::Token): []&ast::Field {
+		let mut scan: scanner
+		let mut stmt: stmt
+		scan.init(tokens)
 		let mut fields: []&ast::Field = nil
-		mut stmts := splitStmts(tokens)
-		for (_, mut stmt) in stmts {
+		for scan.next(&stmt) {
 			tokens = stmt.tokens
 			mut f := self.buildField(tokens)
 			fields = append(fields, f)
@@ -1311,7 +1318,7 @@ impl parser {
 		mut bodyTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if bodyTokens == nil {
 			self.pushErr(s.Token, "missing struct body")
-			self.stop()
+			self.scan.stop()
 			return s
 		}
 		if i < len(tokens) {
@@ -1343,8 +1350,10 @@ impl parser {
 	}
 
 	fn buildTraitBody(mut &self, mut t: &ast::Trait, mut tokens: []&token::Token) {
-		mut stmts := splitStmts(tokens)
-		for (_, mut stmt) in stmts {
+		let mut scan: scanner
+		let mut stmt: stmt
+		scan.init(tokens)
+		for scan.next(&stmt) {
 			tokens = stmt.tokens
 			if len(tokens) == 0 {
 				continue
@@ -1393,7 +1402,7 @@ impl parser {
 		mut bodyTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if bodyTokens == nil {
 			self.pushErr(t.Token, "missing trait body")
-			self.stop()
+			self.scan.stop()
 			return nil
 		}
 		if i < len(tokens) {
@@ -1522,8 +1531,10 @@ impl parser {
 	}
 
 	fn parseImplBody(mut &self, mut ipl: &ast::Impl, mut tokens: []&token::Token) {
-		mut stmts := splitStmts(tokens)
-		for (_, mut stmt) in stmts {
+		let mut scan: scanner
+		let mut stmt: stmt
+		scan.init(tokens)
+		for scan.next(&stmt) {
 			tokens = stmt.tokens
 			mut token := tokens[0]
 			match token.ID {
@@ -1581,13 +1592,13 @@ impl parser {
 				goto body
 			}
 			self.pushErr(token, "missing impl body")
-			self.stop()
+			self.scan.stop()
 			return nil
 		}
 		i++
 		if i >= len(tokens) {
 			self.pushErr(token, "missing impl body")
-			self.stop()
+			self.scan.stop()
 			return nil
 		}
 
@@ -1597,7 +1608,7 @@ impl parser {
 		}
 		if i >= len(tokens) {
 			self.pushErr(token, "missing impl body")
-			self.stop()
+			self.scan.stop()
 			return nil
 		}
 
@@ -1605,7 +1616,7 @@ impl parser {
 		mut bodyTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if bodyTokens == nil {
 			self.pushErr(token, "missing impl body")
-			self.stop()
+			self.scan.stop()
 			return nil
 		}
 		if i < len(tokens) {
@@ -1741,7 +1752,7 @@ impl parser {
 			return
 		}
 		mut node := self.parseNode(stmt)
-		if node.Data != nil && !self.stopped() {
+		if node.Data != nil && !self.scan.stopped() {
 			self.ast.Nodes = append(self.ast.Nodes, node)
 		}
 	}
@@ -1819,6 +1830,7 @@ impl parser {
 	}
 
 	fn parse(mut &self, mut f: &token::FileSet) {
+		self.scan.init(f.Tokens)
 		self.ast = &ast::AST{
 			File: f,
 		}
@@ -1828,30 +1840,36 @@ impl parser {
 			return
 		}
 
-		mut stmts := splitStmts(f.Tokens)
+		mut &stmt := &self.stmt
 
 		// Get top directives.
-		mut i := 0
-		for i < len(stmts); i++ {
-			mut stmt := stmts[i]
-			if len(stmt.tokens) < 2 {
+		mut next := self.scan.next(stmt)
+		for next; next = self.scan.next(stmt) {
+			if len(self.stmt.tokens) < 2 {
 				break
 			}
-			if stmt.tokens[0].ID != token::HASH {
+			if self.stmt.tokens[0].ID != token::HASH {
 				break
 			}
-			if !directive::IsTop(stmt.tokens[1].Kind) {
+			if !directive::IsTop(self.stmt.tokens[1].Kind) {
 				break
 			}
-			self.ast.TopDirectives = append(self.ast.TopDirectives, self.buildDirective(stmt.tokens))
+			self.ast.TopDirectives = append(
+				self.ast.TopDirectives,
+				self.buildDirective(self.stmt.tokens))
+			if self.scan.stopped() {
+				break
+			}
 		}
 
 		// Remove all errors.
 		self.errors = nil
 
-		for i < len(stmts) && !self.stopped(); i++ {
-			mut stmt := stmts[i]
-			self.appendNode(stmt.tokens)
+		for next; next = self.scan.next(stmt) {
+			self.appendNode(self.stmt.tokens)
+			if self.scan.stopped() {
+				break
+			}
 		}
 
 		if len(self.directives) != 0 {

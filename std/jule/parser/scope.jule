@@ -12,146 +12,14 @@ fn newScope(): &ast::Scope {
 	return new(ast::Scope)
 }
 
-// Reports whether token is statement finish point.
-fn isStmt(current: &token::Token, prev: &token::Token): (ok: bool, terminated: bool) {
-	ok = current.ID == token::SEMICOLON || prev.Row < current.Row
-	terminated = current.ID == token::SEMICOLON
-	return
-}
-
-fn prevIsIncompleteExpr(tokens: []&token::Token, &i: *int): bool {
-	// Ignore namespaces.
-	if *i > 1 && tokens[*i-2].ID == token::SEP {
-		return false
-	}
-	unsafe {
-		prev := tokens[*i-1]
-		return prev.ID == token::PERIOD ||
-			prev.ID == token::COMMA ||
-			(prev.Precedence() > token::LowestPrec && prev.Row < tokens[*i].Row)
-	}
-}
-
-// Reports position of the next statement if exist, len(tokens) if not.
-fn nextStPos(tokens: []&token::Token, start: int): (int, bool) {
-	mut braceN := 0
-	mut i := start
-	for i < len(tokens); i++ {
-		mut ok := false
-		mut terminated := false
-		tok := tokens[i]
-		match tok.ID {
-		| token::LBRACE
-		| token::LBRACK
-		| token::LPAREN:
-			if braceN == 0 && i > start {
-				if !prevIsIncompleteExpr(tokens, &i) {
-					ok, terminated = isStmt(tok, tokens[i-1])
-					if ok {
-						goto ret
-					}
-				}
-			}
-			braceN++
-			continue
-		| token::RBRACE
-		| token::RBRACK
-		| token::RPAREN:
-			braceN--
-			if braceN == 0 && i+1 < len(tokens) {
-				ok, terminated = isStmt(tokens[i+1], tok)
-				if ok {
-					i++
-					goto ret
-				}
-			}
-			continue
-		}
-
-		if braceN != 0 {
-			continue
-		}
-
-		if i > start {
-			if prevIsIncompleteExpr(tokens, &i) {
-				continue
-			}
-			ok, terminated = isStmt(tok, tokens[i-1])
-		} else {
-			ok, terminated = isStmt(tok, tok)
-		}
-		if !ok {
-			continue
-		}
-
-	ret:
-		if terminated {
-			i++
-		}
-		return i, terminated
-	}
-	return i, false
-}
-
-// Returns current statement tokens.
-// Starts selection at i.
-fn skipStmt(mut &i: *int, mut tokens: []&token::Token): ([]&token::Token, bool) {
-	start := *i
-	mut terminated := false
-	*i, terminated = nextStPos(tokens, start)
-	mut stTokens := tokens[start:*i]
-	if terminated {
-		if len(stTokens) == 1 {
-			return skipStmt(i, tokens)
-		}
-		// -1 for eliminate the statement terminator.
-		stTokens = stTokens[:len(stTokens)-1]
-	}
-	return stTokens, terminated
-}
-
-struct stmt {
-	tokens:     []&token::Token
-	terminated: bool
-}
-
-// Splits all statements.
-fn splitStmts(mut tokens: []&token::Token): []&stmt {
-	mut stmts := make([]&stmt, 0, 20)
-	mut pos := 0
-	for pos < len(tokens) {
-		mut stmt, terminated := skipStmt(&pos, tokens)
-		stmts = append(stmts, &stmt{
-			tokens:     stmt,
-			terminated: terminated,
-		})
-	}
-	return stmts
-}
-
-// scopeParser flags.
-const (
-	SPF_SKIPREAD = 1 << iota // Skips next call for once and reports true.
-)
-
 struct scopeParser {
-	p:      &parser
-	s:      &ast::Scope
-	tokens: []&token::Token
-	stmt:   stmt
-	flags:  int
-	pos:    int
+	p:    &parser
+	s:    &ast::Scope
+	scan: scanner
+	stmt: stmt
 }
 
 impl scopeParser {
-	fn stop(mut *self) {
-		self.pos = -1
-	}
-
-	fn stopped(*self): bool {
-		return self.pos == -1
-	}
-
 	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
 		self.p.pushErr(token, fmt, args...)
 	}
@@ -159,26 +27,6 @@ impl scopeParser {
 	// Push suggestion to last log.
 	fn pushSuggestion(mut *self, fmt: string, args: ...any) {
 		self.p.pushSuggestion(fmt, args...)
-	}
-
-	fn insertAsNext(mut *self, mut tokens: []&token::Token) {
-		self.stmt.tokens = tokens
-		self.stmt.terminated = false
-		self.flags |= SPF_SKIPREAD
-	}
-
-	fn next(mut *self): bool {
-		if self.flags&SPF_SKIPREAD != 0 {
-			self.flags &= ^SPF_SKIPREAD
-			return true
-		}
-		if self.pos >= len(self.tokens) {
-			return false
-		}
-		mut tokens, terminated := skipStmt(&self.pos, self.tokens)
-		self.stmt.tokens = tokens
-		self.stmt.terminated = terminated
-		return true
 	}
 
 	fn buildScope(mut *self, mut tokens: []&token::Token, mut end: &token::Token): &ast::Scope {
@@ -230,7 +78,7 @@ impl scopeParser {
 			}
 		}
 
-		if !self.next() {
+		if !self.scan.next(&self.stmt) {
 			self.pushErr(it.Token, "invalid syntax")
 			return nil
 		}
@@ -249,8 +97,8 @@ impl scopeParser {
 		mut i := len(stmtTokens)
 		mut blockTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if blockTokens == nil {
-			self.stop()
 			self.pushErr(it.Token, "missing iteration body")
+			self.scan.stop()
 			return nil
 		}
 		if i < len(tokens) {
@@ -400,8 +248,8 @@ impl scopeParser {
 		}
 		tokens = tokens[1:] // Skip "iter" keyword.
 		if len(tokens) == 0 {
-			self.stop()
 			self.pushErr(it.Token, "missing iteration body")
+			self.scan.stop()
 			return nil
 		}
 		mut exprTokens := getBlockExpr(tokens)
@@ -411,8 +259,8 @@ impl scopeParser {
 		mut i := len(exprTokens)
 		mut scopeTokens := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if scopeTokens == nil {
-			self.stop()
 			self.pushErr(it.Token, "missing iteration body")
+			self.scan.stop()
 			return nil
 		}
 		if i < len(tokens) {
@@ -479,8 +327,8 @@ impl scopeParser {
 		}
 		mut scopeTokens := range(&i, token::LBRACE, token::RBRACE, *tokens)
 		if scopeTokens == nil {
-			self.stop()
 			self.pushErr(model.Token, "missing if statement body")
+			self.scan.stop()
 			return nil
 		}
 		mut end := (*tokens)[i-1]
@@ -508,8 +356,8 @@ impl scopeParser {
 			if i < len(*tokens) {
 				self.pushErr(els.Token, "else statement cannot have expression")
 			} else {
-				self.stop()
 				self.pushErr(els.Token, "missing else statement body")
+				self.scan.stop()
 			}
 			return nil
 		}
@@ -774,8 +622,8 @@ impl scopeParser {
 		mut i := len(exprTokens)
 		mut blockToks := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if blockToks == nil {
-			self.stop()
 			self.pushErr(m.Token, "missing type-match statement body")
+			self.scan.stop()
 			return nil
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
@@ -922,8 +770,8 @@ impl scopeParser {
 		mut i := 1 // Start at 1 to skip the "select" keyword.
 		mut blockToks := range(&i, token::LBRACE, token::RBRACE, tokens)
 		if blockToks == nil {
-			self.stop()
 			self.pushErr(m.Token, "missing select statement body")
+			self.scan.stop()
 			return nil
 		} else if i < len(tokens) {
 			self.pushErr(tokens[i], "invalid syntax")
@@ -1000,7 +848,7 @@ impl scopeParser {
 		// Save followed statement
 		if len(tokens) > 2 {
 			tokens = tokens[2:] // Remove label identifier and colon.
-			self.insertAsNext(tokens)
+			self.scan.insertAsNext(&self.stmt, tokens)
 		}
 
 		return lbl
@@ -1060,7 +908,7 @@ impl scopeParser {
 				// The setter token is not a postfix operator.
 				// Probably the following statement is the expression.
 				// We must try to handle next statement as expression.
-				if !self.next() {
+				if !self.scan.next(&self.stmt) {
 					self.pushErr(info.setter, "expected expression")
 					break
 				}
@@ -1260,7 +1108,7 @@ impl scopeParser {
 			if assign.Op.ID != token::ASSIGN {
 				self.pushErr(assign.Op, "assignment operation @ requires single-valued expressions", assign.Op.Kind)
 			}
-			if !self.next() {
+			if !self.scan.next(&self.stmt) {
 				self.pushErr(assign.Op, "expected expression")
 				return nil, false
 			}
@@ -1406,9 +1254,9 @@ impl scopeParser {
 			return
 		}
 		self.s = s
-		self.tokens = tokens
-		for !self.stopped() && self.next() {
-			mut &stmt := &self.stmt
+		self.scan.init(tokens)
+		mut &stmt := &self.stmt
+		for !self.scan.stopped() && self.scan.next(stmt) {
 			mut data := self.buildStmt(stmt)
 			if data != nil {
 				self.s.Stmts = append(self.s.Stmts, ast::Stmt{
