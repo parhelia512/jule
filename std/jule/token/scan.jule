@@ -180,7 +180,7 @@ impl Scanner {
 		for {
 			self.next()
 			if self.r == eof || self.r == '\n' {
-				token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
+				token.Kind = unsafe::StringFromBytes(self.buf.GetData()[offs:self.offset])
 				return
 			}
 		}
@@ -198,7 +198,7 @@ impl Scanner {
 				if self.r != eof && self.r == '/' {
 					self.next()
 					token.ID = COMMENT
-					token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
+					token.Kind = unsafe::StringFromBytes(self.buf.GetData()[offs:self.offset])
 					return
 				}
 			}
@@ -256,7 +256,7 @@ impl Scanner {
 
 	exit:
 		token.ID = NAME
-		token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
+		token.Kind = unsafe::StringFromBytes(self.buf.GetData()[offs:self.offset])
 		return true
 	}
 
@@ -366,7 +366,7 @@ impl Scanner {
 			self.next()
 		}
 
-		lit := unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
+		lit := unsafe::StringFromBytes(self.buf.GetData()[offs:self.offset])
 		if tok == INT && invalid >= 0 {
 			self.pushErr(invalid, "invalid digit {} in {}", lit[invalid-offs], litname(prefix))
 		}
@@ -476,7 +476,7 @@ impl Scanner {
 				self.pushErr(self.col, "illegal rune literal")
 			}
 			token.ID = RUNE
-			token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
+			token.Kind = unsafe::StringFromBytes(self.buf.GetData()[offs:self.offset])
 		}
 	}
 
@@ -504,7 +504,7 @@ impl Scanner {
 
 		if valid {
 			token.ID = STRING
-			token.Kind = unsafe::StringFromBytes(self.buf.Slice2(offs, self.offset))
+			token.Kind = unsafe::StringFromBytes(self.buf.GetData()[offs:self.offset])
 		}
 	}
 
@@ -532,7 +532,7 @@ impl Scanner {
 		}
 
 		if valid {
-			mut lit := self.buf.Slice2(offs, self.offset)
+			mut lit := self.buf.GetData()[offs:self.offset]
 			if hasCR {
 				lit = stripCR(lit, false)
 			}
