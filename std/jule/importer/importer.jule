@@ -278,7 +278,7 @@ impl importer {
 // Returns new default Jule package importer by the compile information.
 fn New(mut info: CompileInfo): sema::Importer {
 	mut imp := new(importer)
-	imp.parser.Init()
+	imp.parser.Init(true)
 	imp.tags = info.Tags
 	imp.files = make(map[string]resource::File)
 	imp.mods = [build::ModStdlib()]

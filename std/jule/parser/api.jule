@@ -21,10 +21,14 @@ struct Parser {
 
 impl Parser {
 	// Initializes the Parser.
-	fn Init(*self) {
+	// If reuse is true, it handles the internal token buffer properly for reuse.
+	// Otherwise, tokens may be invalidated or changed.
+	// The resulting AST will be inconsistent.
+	fn Init(*self, reuse: bool) {
 		if self.parser == nil {
 			self.parser = new(parser)
 		}
+		self.parser.mode |= reuseProtection
 	}
 
 	// Resets internal state of the parser.
@@ -39,8 +43,16 @@ impl Parser {
 	// It should be called before [Parse].
 	// Returns logs, if any.
 	fn ScanTokens(*self, mut f: &token::FileSet): []log::Log {
+		_, mut logs := self.ScanCustomTokens(f, token::Standard)
+		return logs
+	}
+
+	// Same as [ScanToken] but customly scans tokens of the FileSet f into
+	// internal buffer with a custom token scanner options.
+	// Returns the internal buffer nad logs, if any.
+	fn ScanCustomTokens(*self, mut f: &token::FileSet, scanOptions: int): ([]&token::Token, []log::Log) {
 		mut &tokens := &self.parser.scan.tokens
-		mut scan := token::Scanner.New(f, token::Standard)
+		mut scan := token::Scanner.New(f, scanOptions)
 		mut i := 0
 	Loop:
 		for {
@@ -57,7 +69,14 @@ impl Parser {
 				continue
 			}
 		}
-		return scan.Logs
+		return *tokens, scan.Logs
+	}
+
+	// Sets tokens of the internal parser state.
+	// It invalidates the internal buffer,
+	// the internal buffer will be tokens.
+	fn SetTokens(*self, mut tokens: []&token::Token) {
+		self.parser.scan.tokens = tokens
 	}
 
 	// Parses the FileSet f and writes status to info.
@@ -90,7 +109,7 @@ fn ParseFile(mut f: &token::FileSet): &FileInfo {
 	}
 	mut finf := new(FileInfo)
 	let mut parser: Parser
-	parser.Init()
+	parser.Init(false)
 	mut logs := parser.ScanTokens(f)
 	if len(logs) > 0 {
 		finf.Errors = logs
@@ -112,7 +131,7 @@ fn ParsePackage(mut filesets: []&token::FileSet): &PackageInfo {
 		return nil
 	}
 	let mut parser: Parser
-	parser.Init()
+	parser.Init(true)
 	mut pinf := new(PackageInfo)
 	pinf.Files = make([]&FileInfo, 0, len(filesets))
 	for (_, mut f) in filesets {
