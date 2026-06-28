@@ -7,6 +7,69 @@ use "std/jule/build"
 use "std/jule/log"
 use "std/jule/token"
 
+// A Parser is a wrapper for internal parser implementation.
+// It is intended for low-level interaction with parser,
+// especially for performance critical software.
+//
+// It holds a mutable internal parser implementation.
+// A Parser instance should not be copied after first use.
+//
+// Most software should use [ParseFile] and [ParsePackage] APIs.
+struct Parser {
+	mut parser: &parser
+}
+
+impl Parser {
+	// Initializes the Parser.
+	fn Init(*self) {
+		if self.parser == nil {
+			self.parser = new(parser)
+		}
+	}
+
+	// Resets internal state of the parser.
+	// Makes parser ready to parse the next FileSet.
+	// It should be called before call parse when
+	// performing repetitive parse calls.
+	fn Reset(*self) {
+		self.parser.scan.init(self.parser.scan.tokens[:0])
+	}
+
+	// Scans tokens of the FileSet f into internal buffer.
+	// It should be called before [Parse].
+	// Returns logs, if any.
+	fn ScanTokens(*self, mut f: &token::FileSet): []log::Log {
+		mut &tokens := &self.parser.scan.tokens
+		mut scan := token::Scanner.New(f, token::Standard)
+		mut i := 0
+	Loop:
+		for {
+			i++
+			mut token, EOF := scan.Scan()
+			if token != nil {
+				*tokens = append(*tokens, token)
+			}
+			match {
+			| EOF:
+				break Loop
+			| token == nil:
+				// An error appeared, continue to scan.
+				continue
+			}
+		}
+		return scan.Logs
+	}
+
+	// Parses the FileSet f and writes status to info.
+	// It will not scan tokens of the FileSet f,
+	// tokens must be scanned with [ScanTokens].
+	fn Parse(*self, mut f: &token::FileSet, mut &info: *FileInfo) {
+		self.parser.parse(f)
+		info.AST = self.parser.ast
+		info.Errors = self.parser.errors
+	}
+}
+
 // Stores information about file parsing.
 struct FileInfo {
 	AST:    &ast::AST
@@ -26,7 +89,14 @@ fn ParseFile(mut f: &token::FileSet): &FileInfo {
 		return nil
 	}
 	mut finf := new(FileInfo)
-	finf.AST, finf.Errors = parseFileSet(f)
+	let mut parser: Parser
+	parser.Init()
+	mut logs := parser.ScanTokens(f)
+	if len(logs) > 0 {
+		finf.Errors = logs
+		return finf
+	}
+	parser.Parse(f, &*finf)
 	if len(finf.Errors) > 0 {
 		finf.AST = nil
 	}
@@ -41,20 +111,27 @@ fn ParsePackage(mut filesets: []&token::FileSet): &PackageInfo {
 	if filesets == nil {
 		return nil
 	}
+	let mut parser: Parser
+	parser.Init()
 	mut pinf := new(PackageInfo)
 	pinf.Files = make([]&FileInfo, 0, len(filesets))
 	for (_, mut f) in filesets {
 		if f == nil {
 			continue
 		}
-		mut finfo := ParseFile(f)
+		defer { parser.Reset() }
+		mut finfo := new(FileInfo)
+		mut logs := parser.ScanTokens(f)
+		if len(logs) > 0 {
+			finfo.Errors = logs
+			pinf.Files = append(pinf.Files, finfo)
+			continue
+		}
+		parser.Parse(f, &*finfo)
+		if len(finfo.Errors) > 0 {
+			finfo.AST = nil
+		}
 		pinf.Files = append(pinf.Files, finfo)
 	}
 	return pinf
-}
-
-fn parseFileSet(mut f: &token::FileSet): (&ast::AST, []log::Log) {
-	mut p := new(parser)
-	p.parse(f)
-	return p.ast, p.errors
 }

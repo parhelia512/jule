@@ -1830,17 +1830,11 @@ impl parser {
 	}
 
 	fn parse(mut &self, mut f: &token::FileSet) {
-		mut tokens, (self.errors) := token::ScanAll(f, token::Standard)
-		if len(self.errors) > 0 {
-			return
-		}
-
-		self.scan.init(tokens)
 		self.ast = &ast::AST{
 			File: f,
 		}
 
-		self.checkRanges(tokens)
+		self.checkRanges(self.scan.tokens)
 		if len(self.errors) > 0 {
 			return
 		}

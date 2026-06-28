@@ -897,26 +897,3 @@ fn stripCR(b: []byte, comment: bool): []byte {
 	// Therefore avoid making allocation zero-reference and deallocation.
 	return c.GetData()[:i]
 }
-
-// Scans all tokens into FileSet f and returns error logs.
-fn ScanAll(mut f: &FileSet, opt: int): ([]&Token, []log::Log) {
-	let mut buf: []&Token
-	mut scan := Scanner.New(f, opt)
-	mut i := 0
-Loop:
-	for {
-		i++
-		mut token, EOF := scan.Scan()
-		if token != nil {
-			buf = append(buf, token)
-		}
-		match {
-		| EOF:
-			break Loop
-		| token == nil:
-			// An error appeared, continue to scan.
-			continue
-		}
-	}
-	return buf, scan.Logs
-}
