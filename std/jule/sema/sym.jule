@@ -625,7 +625,7 @@ impl symBuilder {
 			buf.WriteString(mod.Name)!
 		} else {
 			// Get package name.
-			_, packageName := filepath::Split(packageDir)
+			packageName := filepath::Base(packageDir)
 			// Allocate the string memory once with the exact required size.
 			buf.Grow(len(packageName) + len(astName) + 2)
 			// Write package name.
