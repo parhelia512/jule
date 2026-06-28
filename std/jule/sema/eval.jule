@@ -596,7 +596,7 @@ impl eval {
 		}
 
 		// Push reference to global variable.
-		if v.Scope == nil {
+		if v.AST.Flags&ast::F_CONST == 0 && v.Scope == nil {
 			self.pushReference(v)
 		}
 

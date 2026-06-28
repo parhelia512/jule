@@ -630,9 +630,20 @@ impl scopeChecker {
 		if !v.IsTypeInferred() && (v.AST.Type == nil || v.Type == nil) {
 			return
 		}
+
 		// We should imitate the [sema.checkVar].
 		// Instruction order must remain the same.
 		v.Checked = true
+
+		// Variable v is a scope variable and scope variables will not collect
+		// references for themselves. So, if any reference exist for v,
+		// push the references to scope owner's referencer.
+		if v.AST.Flags&ast::F_CONST != 0 {
+			mut refers := self.getOwnerRefers()
+			v.Refers = refers
+		}
+		defer { v.Refers = nil }
+
 		self.s.evalVarValue(v, self)
 		if !v.IsInitialized() || v.Value == nil {
 			// Skip checks if error occurs when evaluated expression,
@@ -641,16 +652,6 @@ impl scopeChecker {
 		}
 		self.removeInteriorMutRisk(v.Value)
 		self.s.checkVarValue(v)
-		// Variable v is a scope variable and scope variables will not collect
-		// referencer for themselves. So, if any reference exist for v,
-		// push the references to scope owner's referencer and clear from v.
-		if v.Refers.Len() > 0 {
-			mut refers := self.getOwnerRefers()
-			if refers != nil {
-				refers.buffer = append(refers.buffer, v.Refers.buffer...)
-				v.Refers.clear()
-			}
-		}
 	}
 
 	fn checkVarDecl(mut &self, mut decl: &ast::Var, mut &out: *&Var) {

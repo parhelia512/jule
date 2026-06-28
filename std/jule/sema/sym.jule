@@ -23,7 +23,7 @@ use "std/unicode/utf8"
 //	- &FuncIns
 //	- &StructIns
 //	- &Trait
-//	- &Var -> Only global ones.
+//	- &Var -> Only global and non-constant ones.
 struct ReferenceStack {
 	buffer: []any
 }
@@ -199,10 +199,14 @@ fn buildTypeEnum(mut decl: &ast::TypeEnum): &TypeEnum {
 }
 
 fn buildVar(mut decl: &ast::Var): &Var {
-	return &Var{
-		AST:    decl,
-		Refers: ReferenceStack.new(),
+	mut v := &Var{
+		AST: decl,
 	}
+	// Initialize referencer for globla variables.
+	if v.AST.Scope == nil {
+		v.Refers = ReferenceStack.new()
+	}
+	return v
 }
 
 fn buildImpl(mut decl: &ast::Impl): &Impl {
