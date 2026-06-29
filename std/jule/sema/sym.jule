@@ -202,7 +202,7 @@ fn buildVar(mut decl: &ast::Var): &Var {
 	mut v := &Var{
 		AST: decl,
 	}
-	// Initialize referencer for globla variables.
+	// Initialize referencer for global variables.
 	if v.AST.Scope == nil {
 		v.Refers = ReferenceStack.new()
 	}

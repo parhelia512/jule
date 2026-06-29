@@ -135,7 +135,6 @@ unsafe fn pushSuggestion(mut log: *log::Log, fmt: string, args: ...any) {
 // Parser modes.
 const (
 	allowKeywordIdentifiers = 1 << iota // supported by: functions, structs, and type aliases
-	reuseProtection                     // get immutable copy of the internal buffer for proper resue cases.
 )
 
 struct parser {
@@ -218,13 +217,10 @@ impl parser {
 			self.pushErr(tokens[0], "invalid syntax")
 			return nil
 		}
-		mut args := tokens[2:] // Start 2 to skip '#', and tag tokens.
-		if self.mode&reuseProtection != 0 {
-			args = cloneTokens(args)
-		}
+
 		return &ast::Directive{
 			Tag:  tokens[1],
-			Args: args,
+			Args: tokens[2:], // Start 2 to skip '#', and tag tokens.
 		}
 	}
 
@@ -1834,11 +1830,12 @@ impl parser {
 		}
 	}
 
-	fn parse(mut &self, mut f: &token::FileSet) {
+	fn parse(mut &self, mut f: &token::FileSet, mut tokens: []&token::Token) {
 		self.ast = &ast::AST{
 			File: f,
 		}
 
+		self.scan.tokens = tokens
 		self.checkRanges(self.scan.tokens)
 		if len(self.errors) > 0 {
 			return

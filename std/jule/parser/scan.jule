@@ -151,9 +151,3 @@ impl scanner {
 		return true
 	}
 }
-
-fn cloneTokens(mut tokens: []&token::Token): []&token::Token {
-	mut buf := make([]&token::Token, len(tokens))
-	copy(buf, tokens)
-	return buf
-}

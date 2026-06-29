@@ -52,7 +52,6 @@ impl resource::File for file {
 
 // Default importer for the reference Jule compiler.
 struct importer {
-	parser:          parser::Parser            // Internal parser instance.
 	mainPackagePath: string                    // Path of the main package.
 	mod:             &mod::Mod                 // Current module.
 	mods:            []&mod::Mod               // Registered modules.
@@ -168,13 +167,12 @@ impl sema::Importer for importer {
 			file.ID = len(self.filesets)
 			unsafe { file.FillMut(readBuff(file.Path)) }
 
-			defer { self.parser.Reset() }
-			mut logs := self.parser.ScanTokens(file)
+			mut tokens, mut logs := token::ScanAll(file, parser::TokenOptions)
 			if len(logs) > 0 {
 				return nil, logs
 			}
-			let mut finfo: parser::FileInfo
-			self.parser.Parse(file, &finfo)
+
+			mut finfo := parser::ParseFile(file, tokens)
 			if len(finfo.Errors) > 0 {
 				return nil, finfo.Errors
 			}
@@ -243,7 +241,7 @@ impl importer {
 				imp.ModID = self.mod.ID
 			}
 		}
-		// If moudle ID is valid, it should be registered already.
+		// If module ID is valid, it should be registered already.
 		if self.mod.ID != mod::InvalidID {
 			return
 		}
@@ -278,7 +276,6 @@ impl importer {
 // Returns new default Jule package importer by the compile information.
 fn New(mut info: CompileInfo): sema::Importer {
 	mut imp := new(importer)
-	imp.parser.Init(true)
 	imp.tags = info.Tags
 	imp.files = make(map[string]resource::File)
 	imp.mods = [build::ModStdlib()]
