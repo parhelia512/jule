@@ -53,6 +53,21 @@ fn nextStmtPos(tokens: []&token::Token, start: int): (int, bool) {
 		| token::RBRACK
 		| token::RPAREN:
 			braceN--
+			// This condition is same as next iteration.
+			// Since "i>start" is true, this branch will be executed.
+			// So this branch may seems duplicated.
+			// But we do not need to check for previous incomple expressions.
+			// We can check statement token right now and avoid to perform
+			// unnecessary check for previous incomple expressions.
+			// This optimization gives a reasonable performance improvement,
+			// according to the brief tests.
+			if braceN == 0 && i+1 < len(tokens) {
+				ok, terminated = isStmt(tokens[i+1], tok)
+				if ok {
+					i++
+					goto ret
+				}
+			}
 			continue
 		}
 
