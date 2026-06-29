@@ -3,6 +3,9 @@
 // license that can be found in the LICENSE file.
 
 use "std/jule/ast"
+use "std/jule/log"
+use "std/jule/mod"
+use "std/jule/resource"
 use "std/jule/token"
 use "std/testing"
 
@@ -68,14 +71,18 @@ fn testTags(t: &testing::T) {
 	mut f := &Field{
 		AST: &ast::Field{
 			Tag: &token::Token{
-				File: &token::FileSet{
-					Path: "/jule/test",
-				},
+				FileSetID: 0,
 			},
 		},
 	}
+	mut fs := token::FileSet.New("/jule/sema/test")
+	fs.ID = 0
 	mut tc := &tagChecker{
-		s: new(sema),
+		s: &sema{
+			importer: &testImporter{
+				filesets: [fs],
+			},
+		},
 		f: f,
 	}
 	for i, test in tagTests {
@@ -96,5 +103,74 @@ fn testTags(t: &testing::T) {
 				break
 			}
 		}
+	}
+}
+
+struct testImporter {
+	filesets: []&token::FileSet
+}
+
+impl Importer for testImporter {
+	fn GetFileSet(mut *self, id: int): &token::FileSet {
+		if id == token::InvalidID || id < 0 || len(self.filesets) <= id {
+			return nil
+		}
+		return self.filesets[id]
+	}
+
+	fn HasTag(mut *self, tag: string): bool {
+		panic("unimplemented")
+	}
+
+	fn SetMod(mut *self, mut mod: &mod::Mod) {
+		panic("unimplemented")
+	}
+
+	fn GetMod(mut *self): &mod::Mod {
+		return nil
+	}
+
+	fn ModByID(mut *self, id: mod::ID): &mod::Mod {
+		panic("unimplemented")
+	}
+
+	fn RegisterMod(mut *self) {
+		panic("unimplemented")
+	}
+
+	fn SetMainPackagePath(mut *self, path: string) {
+		panic("unimplemented")
+	}
+
+	fn GetMainPackagePath(mut *self): string {
+		return "/jule/sema/test"
+	}
+
+	fn GetImport(mut *self, path: string): &ImportInfo {
+		panic("unimplemented")
+	}
+
+	fn ImportPackage(mut *self, path: string, updateMod: bool): ([]&ast::AST, []log::Log) {
+		panic("unimplemented")
+	}
+
+	fn Imported(mut *self, mut imp: &ImportInfo) {
+		panic("unimplemented")
+	}
+
+	fn AllPackages(mut *self): []&ImportInfo {
+		return nil
+	}
+
+	fn GetFile(mut *self, path: string): resource::File {
+		panic("unimplemented")
+	}
+
+	fn IncludeFile(mut *self, path: string): resource::File {
+		panic("unimplemented")
+	}
+
+	fn IncludedFile(mut *self, mut file: resource::File) {
+		panic("unimplemented")
 	}
 }

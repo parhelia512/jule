@@ -7,17 +7,17 @@ use "std/jule/token"
 use "std/testing"
 
 fn checkSema(data: string): (err: bool) {
-	mut fs := token::FileSet.New("sema/test")
+	mut fs := token::FileSet.New("/jule/sema/test")
+	fs.ID = 0
 	fs.Fill([]byte(data))
-	mut logs := token::ScanAll(fs, token::Standard)
-	if len(logs) > 0 {
-		panic("sema: lexer issue")
-	}
 	mut fi := parser::ParseFile(fs)
 	if len(fi.Errors) > 0 {
 		panic("sema: parser issue")
 	}
-	_, logs := AnalyzeFile(fi.AST, nil, Default)
+	mut importer := &testImporter{
+		filesets: [fs],
+	}
+	_, logs := AnalyzeFile(fi.AST, importer, Default)
 	return len(logs) > 0
 }
 
