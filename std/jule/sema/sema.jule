@@ -79,6 +79,7 @@ fn compilerErr(file: &token::FileSet, token: &token::Token, line: bool, fmt: str
 // Appends return variables to dest.
 // If variable is exist, updates it.
 // Assumes return variable part of dest is dest[i:].
+#disable nilptr boundary
 fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 	if f.Decl.IsVoid() || f.Result == nil || len(f.Decl.Result.AST.Names) == 0 {
 		return
@@ -88,6 +89,11 @@ fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 	if len(f.Decl.Result.AST.Names) > 1 {
 		rst = RetState.Tuple
 	}
+
+	// We do not append variables for anonymous or blank identifiers,
+	// but this kind of names are rare. So we can grow by length.
+	*dest = slices::Grow(*dest, len(f.Decl.Result.AST.Names))
+
 	mut types := f.Types()
 	for (j, mut name) in f.Decl.Result.AST.Names {
 		if jule::IsBlank(name.Kind) || jule::IsAnon(name.Kind) {
@@ -121,10 +127,15 @@ fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 // Appends parameter variables to dest.
 // If parameter is exist, updates it.
 // Returns count of parameter variables.
+#disable nilptr boundary
 fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 	if len(f.Params) == 0 {
 		return
 	}
+
+	// We do not append variables for anonymous or blank identifiers,
+	// but this kind of names are rare. So we can grow by length.
+	*dest = slices::Grow(*dest, len(f.Params))
 
 	for (i, mut p) in f.Params {
 		if jule::IsBlank(p.Decl.AST.Name) || jule::IsAnon(p.Decl.AST.Name) {
@@ -195,6 +206,7 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 
 // Builds type aliases for generic types of scope.
 // See developer reference (1), and (2).
+#disable nilptr boundary
 fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 	mut size := len(f.Generics)
 	if f.Owner != nil {
@@ -204,6 +216,9 @@ fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 	if size == 0 {
 		return
 	}
+
+	// Grow dest slice by size.
+	*dest = slices::Grow(*dest, size)
 
 	for (i, mut g) in f.Generics {
 		if g == nil {

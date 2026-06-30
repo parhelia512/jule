@@ -1189,7 +1189,7 @@ impl typeChecker {
 				// Otherwise, we have to analysis gstruct collection,
 				// even with the new possible items for different main instance analysis.
 				mut collectedGstructs := self.s.meta.gstructs
-				self.s.meta.gstructs = nil
+				self.s.meta.gstructs = self.s.meta.gstructs[:0]
 				self.s.meta.flags &= ^semametaGstruct
 
 				// Before the checking main structure, check gstructs, if any.

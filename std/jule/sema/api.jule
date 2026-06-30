@@ -82,10 +82,15 @@ fn analyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (
 		tables = append(tables, table)
 	}
 
+	// Allocate meta on stack to avoid heap allocation.
+	// It also drops allocation references when scope ends.
+	// sema instances will not use meta after this function ends.
+	let mut meta: commonSemaMeta
+
 	mut sema := &sema{
 		files:    tables,
 		flags:    flags,
-		meta:     new(commonSemaMeta),
+		meta:     unsafe { (&commonSemaMeta)(&meta) },
 		importer: importer,
 	}
 

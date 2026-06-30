@@ -2294,7 +2294,7 @@ impl eval {
 			// Because algorithm will not re-cache if cache is not empty.
 			// As a result, generic type aliases may be missing during analysis.
 			// To avoid this, clear the cache of generic type aliases.
-			f.env.generics = nil
+			f.env.generics = f.env.generics[:0]
 			ok, _ = self.checkGenericFunc(&f, fc.Token, &(*v).Model, recheckNeed)
 			if !ok {
 				*v = nil
