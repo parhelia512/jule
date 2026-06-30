@@ -218,9 +218,14 @@ impl parser {
 			return nil
 		}
 
+		mut args := tokens[2:] // Start 2 to skip '#tag' tokens.
+		// Clone argument tokens with a new slice allocation.
+		// This reduces memory usage because drops reference of the large
+		// token slice of the file, so large allocation can be deallocated.
+		args = cloneTokens(args)
 		return &ast::Directive{
 			Tag:  tokens[1],
-			Args: tokens[2:], // Start 2 to skip '#', and tag tokens.
+			Args: args,
 		}
 	}
 
