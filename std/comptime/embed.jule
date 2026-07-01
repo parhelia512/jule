@@ -12,4 +12,4 @@
 // The file path is resolved relative to the file path of the package in which
 // the function is called. In other words, the file is searched for in the
 // directory of the package that contains the source file calling the function.
-// fn IncludeStr(path: string): string
+// fn IncludeString(path: string): string
