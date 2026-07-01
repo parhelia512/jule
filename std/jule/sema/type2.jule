@@ -673,7 +673,10 @@ impl dynamicTypeAnnotation {
 		self.f.Generics[i] = &InsGeneric{Type: k}
 		mut gd := self.f.Decl.AST.Generics[i]
 		for (_, mut ignored) in self.ignored {
-			if gd.Name == ignored.String() {
+			// Ignored generics are stored as &Prim types.
+			// So not convert type to String, because it will cost too much.
+			ignoredPrim, ok := ignored.Kind.(&Prim)
+			if ok && gd.Name == ignoredPrim.Kind {
 				ignored.Kind = k.Kind
 			}
 		}

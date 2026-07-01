@@ -530,7 +530,10 @@ impl sema {
 		dc.check()
 	}
 
-	fn checkGenericQuantity(mut *self, required: int, given: int, token: &token::Token): (ok: bool) {
+	fn checkGenericQuantity(mut *self,
+		required: int,
+		given: int,
+		token: &token::Token): (ok: bool) {
 		match {
 		| required == 0 && given > 0:
 			self.pushErr(token, "type has no generics but instantiated with generics")
@@ -702,7 +705,9 @@ impl sema {
 		}
 	}
 
-	fn typeChecker(mut &self, mut l: Lookup, mut generics: []&TypeAlias,
+	fn typeChecker(mut &self,
+		mut l: Lookup,
+		mut generics: []&TypeAlias,
 		mut referencer: &referencer): typeChecker {
 		mut tc := typeChecker{
 			s:           self,
@@ -720,8 +725,12 @@ impl sema {
 	}
 
 	// Builds type, builds result as kind and collects referred type aliases.
-	fn buildTypeWithRefers(mut &self, mut t: &ast::Expr, mut l: Lookup,
-		mut generics: []&TypeAlias, mut referencer: &referencer, mut refers: &ReferenceStack): &Type {
+	fn buildTypeWithRefers(mut &self,
+		mut t: &ast::Expr,
+		mut l: Lookup,
+		mut generics: []&TypeAlias,
+		mut referencer: &referencer,
+		mut refers: &ReferenceStack): &Type {
 		mut tc := self.typeChecker(l, generics, referencer)
 		tc.refers = refers
 		return tc.checkDecl(t)
@@ -730,7 +739,12 @@ impl sema {
 	// Checks TypeSYm, builds result as Type and collects referred type aliases.
 	// Skips already checked types.
 	// See also developer reference (9).
-	fn checkTypeSymWithRefers(mut &self, mut ast: &ast::Expr, mut &t: *&Type, mut l: Lookup, mut generics: []&TypeAlias, mut referencer: &referencer): (ok: bool) {
+	fn checkTypeSymWithRefers(mut &self,
+		mut ast: &ast::Expr,
+		mut &t: *&Type,
+		mut l: Lookup,
+		mut generics: []&TypeAlias,
+		mut referencer: &referencer): (ok: bool) {
 		mut ta := false // Referencer owner is type alias.
 		let mut refers: &ReferenceStack
 		if *t != nil {
@@ -761,12 +775,18 @@ impl sema {
 
 	// Checks type and builds result as Type.
 	// Skips already checked types.
-	fn checkTypeSym(mut &self, mut ast: &ast::Expr, mut &t: *&Type, mut l: Lookup): bool {
+	fn checkTypeSym(mut &self,
+		mut ast: &ast::Expr,
+		mut &t: *&Type,
+		mut l: Lookup): bool {
 		return self.checkTypeSymWithRefers(ast, t, l, nil, nil)
 	}
 
 	// Same as the checkTypeSym but takes referencer.
-	fn checkTypeSymRefers(mut &self, mut t: &ast::Expr, mut l: Lookup, mut refers: &ReferenceStack): &Type {
+	fn checkTypeSymRefers(mut &self,
+		mut t: &ast::Expr,
+		mut l: Lookup,
+		mut refers: &ReferenceStack): &Type {
 		mut tc := &typeChecker{
 			s:          self,
 			rootLookup: l,
@@ -833,8 +853,13 @@ impl sema {
 	}
 
 	// Do not checks mutability.
-	fn checkAssignType(mut &self, destIsRef: bool, firstAssignToDest: bool, mut dest: &Type,
-		mut v: &Value, mut errorToken: &token::Token, mut refers: &ReferenceStack): bool {
+	fn checkAssignType(mut &self,
+		destIsRef: bool,
+		firstAssignToDest: bool,
+		mut dest: &Type,
+		mut v: &Value,
+		mut errorToken: &token::Token,
+		mut refers: &ReferenceStack): bool {
 		if v.Decl {
 			self.pushErr(errorToken, "invalid expression")
 			return false
@@ -885,8 +910,11 @@ impl sema {
 		return true
 	}
 
-	fn _checkTypeCompatibility(mut &self, mut dest: &Type, mut src: &Type,
-		mut errorToken: &token::Token, flags: int): bool {
+	fn _checkTypeCompatibility(mut &self,
+		mut dest: &Type,
+		mut src: &Type,
+		mut errorToken: &token::Token,
+		flags: int): bool {
 		if src == nil {
 			return false
 		}
@@ -904,8 +932,11 @@ impl sema {
 		return tcc.check()
 	}
 
-	fn checkTypeCompatibility(mut &self, mut dest: &Type,
-		mut src: &Type, mut errorToken: &token::Token, flags: int): bool {
+	fn checkTypeCompatibility(mut &self,
+		mut dest: &Type,
+		mut src: &Type,
+		mut errorToken: &token::Token,
+		flags: int): bool {
 		if self._checkTypeCompatibility(dest, src, errorToken, flags) {
 			return true
 		}
@@ -913,7 +944,9 @@ impl sema {
 		return false
 	}
 
-	fn pushCompatibilityError(mut *self, mut dest: &Type, mut src: &Value,
+	fn pushCompatibilityError(mut *self,
+		mut dest: &Type,
+		mut src: &Value,
 		mut errorToken: &token::Token) {
 		if src.untyped && src.IsConst() {
 			match {
@@ -928,8 +961,11 @@ impl sema {
 		self.pushErr(errorToken, "mismatched types: @ and @", dest.String(), src.Type.String())
 	}
 
-	fn checkTypeCompatibility1(mut &self, mut dest: &Type, mut src: &Value,
-		mut errorToken: &token::Token, flags: int): bool {
+	fn checkTypeCompatibility1(mut &self,
+		mut dest: &Type,
+		mut src: &Value,
+		mut errorToken: &token::Token,
+		flags: int): bool {
 		if self._checkTypeCompatibility(dest, src.Type, errorToken, flags) {
 			return true
 		}
@@ -943,8 +979,12 @@ impl sema {
 	// Useful:
 	//	- For non-generic type parsed string type kinds.
 	//	- For checking non-generic types.
-	fn buildNonGenericType(mut &self, mut ast: &ast::Expr,
-		mut useGenerics: []&TypeAlias, mut ignoreGenerics: []&ast::Generic, mut &ignored: *[]&Type, mut &recheckNeed: *[]recheckableType): &Type {
+	fn buildNonGenericType(mut &self,
+		mut ast: &ast::Expr,
+		mut useGenerics: []&TypeAlias,
+		mut ignoreGenerics: []&ast::Generic,
+		mut &ignored: *[]&Type,
+		mut &recheckNeed: *[]recheckableType): &Type {
 		mut tc := &typeChecker{
 			s:               self,
 			rootLookup:      self,
@@ -957,21 +997,34 @@ impl sema {
 		return tc.checkDecl(ast)
 	}
 
-	fn buildFuncNonGenericTypes(mut &self, mut f: &FuncIns, mut &ignored: *[]&Type, mut &recheckNeed: *[]recheckableType): (ok: bool) {
+	fn buildFuncNonGenericTypes(mut &self,
+		mut f: &FuncIns,
+		mut &ignored: *[]&Type,
+		mut &recheckNeed: *[]recheckableType): (ok: bool) {
 		n := len(self.errors)
 		// Check with funcEnvironment, we need to generics of owner, if any.
-		// If owner generics are ignored, we cannot resolve them with type inference.
+		// If owner generics ignored, we cannot resolve them with type inference.
 		// Resolve owner generics in time, only ignore generics of the function.
 		ok = self.funcEnvironment(f, fn|mut sema, mut generics| {
 			ok = true
 			for (_, mut p) in f.Params {
 				if !p.Decl.IsSelf() {
-					p.Type = sema.buildNonGenericType(p.Decl.AST.Type, generics, f.Decl.AST.Generics, unsafe { ignored }, unsafe { recheckNeed })
+					p.Type = sema.buildNonGenericType(
+						p.Decl.AST.Type,
+						generics,
+						f.Decl.AST.Generics,
+						unsafe { ignored },
+						unsafe { recheckNeed })
 					ok = ok && p.Type != nil
 				}
 			}
 			if !f.Decl.IsVoid() {
-				f.Result = sema.buildNonGenericType(f.Decl.Result.AST.Type, generics, f.Decl.AST.Generics, unsafe { ignored }, unsafe { recheckNeed })
+				f.Result = sema.buildNonGenericType(
+					f.Decl.Result.AST.Type,
+					generics,
+					f.Decl.AST.Generics,
+					unsafe { ignored },
+					unsafe { recheckNeed })
 				ok = ok && f.Result != nil
 			}
 			return ok
@@ -1008,7 +1061,10 @@ impl sema {
 		return ins
 	}
 
-	fn checkConstraintsFunc(mut &self, mut f: &FuncIns, mut et: &token::Token, mut exist: &FuncIns): bool {
+	fn checkConstraintsFunc(mut &self,
+		mut f: &FuncIns,
+		mut et: &token::Token,
+		mut exist: &FuncIns): bool {
 		mut cc := self.constraintChecker()
 		cc.et = et
 		cc.fi = f
@@ -1022,7 +1078,10 @@ impl sema {
 		return cc.check()
 	}
 
-	fn checkConstraintsStruct(mut &self, mut s: &StructIns, mut et: &token::Token, mut exist: &StructIns): bool {
+	fn checkConstraintsStruct(mut &self,
+		mut s: &StructIns,
+		mut et: &token::Token,
+		mut exist: &StructIns): bool {
 		mut cc := self.constraintChecker()
 		cc.et = et
 		cc.si = s
@@ -1039,7 +1098,9 @@ impl sema {
 	// Calls algo in the function's native environment.
 	// Errors will be handled.
 	// Returns result of algo.
-	fn basicFuncEnvironment(mut &self, mut f: &FuncIns, algo: fn(mut sema: &sema): bool): (ok: bool) {
+	fn basicFuncEnvironment(mut &self,
+		mut f: &FuncIns,
+		algo: fn(mut sema: &sema): bool): (ok: bool) {
 		f.fillEnviron(false)
 
 		if f.env.file != nil {
@@ -1060,15 +1121,20 @@ impl sema {
 	}
 
 	// Calls basicFuncEnvironment internally but handles generics.
-	fn funcEnvironment(mut &self, mut f: &FuncIns, algo: fn(mut sema: &sema, mut generics: []&TypeAlias): bool): bool {
+	fn funcEnvironment(mut &self,
+		mut f: &FuncIns,
+		algo: fn(mut sema: &sema, mut generics: []&TypeAlias): bool): bool {
 		// Needs to f.environ(), but the basicFuncEnviron will handle it.
-		return self.basicFuncEnvironment(f, fn|mut sema| algo(f.env.sema, f.env.generics))
+		return self.basicFuncEnvironment(f,
+			fn|mut sema| algo(f.env.sema, f.env.generics))
 	}
 
 	// Calls algo in the struct's native environment.
 	// Errors will be handled.
 	// Returns result of algo.
-	fn basicStructEnvironment(mut &self, mut s: &StructIns, algo: fn(mut sema: &sema): bool): (ok: bool) {
+	fn basicStructEnvironment(mut &self,
+		mut s: &StructIns,
+		algo: fn(mut sema: &sema): bool): (ok: bool) {
 		s.fillEnviron()
 
 		if s.env.file != nil {
@@ -1160,7 +1226,10 @@ impl sema {
 		return ok && n == len(self.errors)
 	}
 
-	fn checkRefValidityForInitExpr(mut &self, leftMut: bool, mut v: &Value, mut errorToken: &token::Token): bool {
+	fn checkRefValidityForInitExpr(mut &self,
+		leftMut: bool,
+		mut v: &Value,
+		mut errorToken: &token::Token): bool {
 		// If value is nil-literal, there is nothing to do.
 		// Report true, passed nil pointer to the reference.
 		if v.IsNil() {
@@ -1224,8 +1293,12 @@ impl sema {
 		return false
 	}
 
-	fn checkValidityForInitExpr(mut &self, leftMut: bool, leftRef: bool,
-		leftKind: &Type, mut v: &Value, mut errorToken: &token::Token): bool {
+	fn checkValidityForInitExpr(mut &self,
+		leftMut: bool,
+		leftRef: bool,
+		leftKind: &Type,
+		mut v: &Value,
+		mut errorToken: &token::Token): bool {
 		// Check value for reference pointers if value will be assigned to a reference pointer.
 		// The checkRefValidityForInitExpr will update mutability of the value, if necessary.
 		// See documentation of the checkRefValidityForInitExpr function.
@@ -1258,7 +1331,11 @@ impl sema {
 		return atc.checkValidity()
 	}
 
-	fn checkTypeAliasDeclKind(mut &self, mut ta: &TypeAlias, mut generics: []&TypeAlias, mut prev: &referencer, mut l: Lookup): (ok: bool) {
+	fn checkTypeAliasDeclKind(mut &self,
+		mut ta: &TypeAlias,
+		mut generics: []&TypeAlias,
+		mut prev: &referencer,
+		mut l: Lookup): (ok: bool) {
 		mut old := self.file
 		defer { self.setCurrentFile(old) }
 		if ta.AST.Token != nil {
@@ -1287,7 +1364,10 @@ impl sema {
 		return
 	}
 
-	fn checkTypeAliasDecl(mut &self, mut ta: &TypeAlias, mut prev: &referencer, mut l: Lookup): (ok: bool) {
+	fn checkTypeAliasDecl(mut &self,
+		mut ta: &TypeAlias,
+		mut prev: &referencer,
+		mut l: Lookup): (ok: bool) {
 		if jule::IsBlank(ta.AST.Name) {
 			self.pushErr(ta.AST.Token, "blank identifier cannot be used as an identifier for this declaration")
 		}
