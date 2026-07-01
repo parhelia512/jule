@@ -1316,7 +1316,7 @@ fn builtinCallerStdComptimeIncludeBytes(mut e: &eval, mut fc: &ast::CallExpr, _:
 	for _, b in data {
 		mut bc := constant::NewU64(u64(b))
 		bytes.Elems = append(bytes.Elems, &Value{
-			Type:     &Type{Kind: primU8},
+			Type:     primU8,
 			Constant: bc,
 			Model:    bc,
 		})
