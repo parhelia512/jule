@@ -4794,6 +4794,11 @@ impl binaryEval {
 			fall
 		| self.l.Type.IsNil():
 			return self.evalNil()
+		| self.r.Type.Trait() != nil:
+			self.l, self.r = self.r, self.l
+			fall
+		| self.l.Type.Trait() != nil:
+			return self.evalTrait()
 		| self.r.Type.Prim() != nil && self.r.Type.Prim().IsAny():
 			self.l, self.r = self.r, self.l
 			fall
@@ -4826,11 +4831,6 @@ impl binaryEval {
 			return self.evalPtr()
 		| self.l.Type.Array() != nil:
 			return self.evalArray()
-		| self.r.Type.Trait() != nil:
-			self.l, self.r = self.r, self.l
-			fall
-		| self.l.Type.Trait() != nil:
-			return self.evalTrait()
 		| self.l.Type.Prim() != nil:
 			return self.evalPrim()
 		| self.l.Type.Struct() != nil:

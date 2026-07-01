@@ -2027,9 +2027,7 @@ impl sema {
 			return
 		}
 
-		match {
-		| !self.implToStruct(dest, decl):
-		}
+		_ = self.implToStruct(dest, decl)
 	}
 
 	// Implement implementation.
