@@ -975,7 +975,7 @@ impl exprCoder {
 	}
 
 	fn pushCallInf(mut &self, m: &sema::FuncCallExpr) {
-		if !m.Func.Anon {
+		if m.Func.Flags&sema::F_ANON == 0 {
 			self.oc.write("(")
 			return
 		}
@@ -1057,7 +1057,9 @@ impl exprCoder {
 			}
 		}
 		self.pushCallInf(m)
-		if m.Func.AsAnon && !m.Func.Anon && m.Expr == m.Func {
+		if m.Func.Flags&sema::F_AS_ANON != 0 &&
+			m.Func.Flags&sema::F_ANON == 0 &&
+			m.Expr == m.Func {
 			// Function used as anonymous.
 			// So pass nullptr to ctx parameter.
 			// Do not pass nullptr if function is anonymous,

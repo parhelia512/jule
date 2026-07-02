@@ -160,7 +160,7 @@ impl scopeDeadCode {
 		match type stmt {
 		| &sema::Scope:
 			mut scope := stmt.(&sema::Scope)
-			if scope.Deferred {
+			if scope.Traits&sema::ST_DEFER != 0 {
 				eliminateDeadCodeOfScope(scope)
 			} else {
 				self.optimizeChild(scope)

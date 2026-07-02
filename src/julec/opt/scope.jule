@@ -207,7 +207,7 @@ impl scopeOptimizer {
 
 	fn optimizeMatch(mut &self, mut m: &sema::Match) {
 		mut var := invalidDynamic
-		if Dynamic && m.TypeMatch {
+		if Dynamic && m.Flags&sema::F_TYPE != 0 {
 			var = getDynamicVar(m.Expr.Model)
 		}
 

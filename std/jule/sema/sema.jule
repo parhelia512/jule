@@ -111,7 +111,7 @@ fn updateRetVars(mut &dest: *[]&Var, mut f: &FuncIns, mut i: int) {
 					Token: name,
 					Flags: ast::F_MUTABLE,
 				},
-				Used:     true,
+				Flags:    F_USED,
 				Scope:    f.Scope,
 				Value:    new(Value),
 				RetState: rst,
@@ -156,9 +156,8 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 					Token: pAST.Token,
 					Flags: pAST.Flags & (ast::F_REFERENCE | ast::F_MUTABLE),
 				},
-				Checked: true,
-				Used:    true,
-				Scope:   f.Scope,
+				Flags: F_CHECKED | F_USED,
+				Scope: f.Scope,
 			}
 			*dest = append(*dest, v)
 		}
@@ -166,8 +165,7 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 		match {
 		| p.Decl.IsSelf():
 			v.Type = &Type{
-				Variadic: false,
-				Kind:     f.Owner,
+				Kind: f.Owner,
 			}
 			match {
 			| p.Decl.IsSmartptr():
@@ -189,8 +187,12 @@ fn updateParamVars(mut &dest: *[]&Var, mut f: &FuncIns): (n: int) {
 				panic("unreachable")
 			}
 		| p.Decl.AST.Flags&ast::F_VARIADIC != 0:
+			// Do not tag with the TF_VARIADIC,
+			// because type of this parameter will be used
+			// as expression type same time.
+			//
+			// Variadic analysis will be handled by type checker.
 			v.Type = &Type{
-				Variadic: false,
 				Kind: &Slice{
 					Value: &Type{
 						Kind: p.Type.Kind,
@@ -230,10 +232,9 @@ fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 				Name:  decl.Name,
 				Token: decl.Token,
 			},
-			Used:    true,
-			Generic: true,
-			Scope:   f.Decl.AST.Scope,
-			Type:    g.Type,
+			Flags: F_USED | F_GENERIC,
+			Scope: f.Decl.AST.Scope,
+			Type:  g.Type,
 		})
 	}
 
@@ -245,10 +246,9 @@ fn appendGenericTypeAliases(mut &dest: *[]&TypeAlias, mut f: &FuncIns) {
 					Name:  decl.Name,
 					Token: decl.Token,
 				},
-				Used:    true,
-				Generic: true,
-				Scope:   f.Decl.AST.Scope,
-				Type:    g.Type,
+				Flags: F_USED | F_GENERIC,
+				Scope: f.Decl.AST.Scope,
+				Type:  g.Type,
 			})
 		}
 	}
@@ -1315,7 +1315,7 @@ impl sema {
 			// will check the mutability.
 
 			// Check classical assignment mutability.
-			if !v.IsConst() && v.Type.Mutable() || v.Type.Variadic {
+			if !v.IsConst() && v.Type.Mutable() || v.Type.Flags&F_VARIADIC != 0 {
 				self.pushErr(errorToken, "immutable data cannot be assigned to a mutable memory because of type @, which is mutable", v.Type.String())
 				return false
 			}
@@ -1855,7 +1855,7 @@ impl sema {
 		self.checkFuncDeclPrototype(f)
 		mut ins := f.instance()
 		_ = self.reloadFuncInsTypes(ins)
-		ins.reloaded = true
+		ins.Flags |= F_RELOADED
 		f.appendInstance(ins)
 	}
 
@@ -2334,7 +2334,7 @@ impl sema {
 		| v.IsVoid():
 			self.pushErr(errToken, "value \"void\" cannot be type inferred")
 			return false
-		| v.Type.Variadic:
+		| v.Type.Flags&F_VARIADIC != 0:
 			self.pushErr(errToken, "variadic value cannot be type inferred")
 			return false
 		|:
@@ -2456,7 +2456,7 @@ impl sema {
 					return false
 				}
 				mut dv := v.Group[v.GroupIndex-1]
-				if !dv.Checked {
+				if dv.Flags&F_CHECKED == 0 {
 					self.checkVar(dv, l)
 				}
 				if dv.Value == nil {
@@ -2476,7 +2476,7 @@ impl sema {
 				} else {
 					v.Type = nil
 				}
-				if dv.Iota {
+				if dv.Flags&F_IOTA != 0 {
 					v.AST.X = new(ast::Expr, *dv.AST.X)
 					v.AST.X.Token = v.AST.Token
 					goto Eval
@@ -2501,8 +2501,8 @@ impl sema {
 			eval.varIota = buildIota(i64(v.GroupIndex))
 		}
 		defer {
-			if allowIota {
-				v.Iota = v.Iota || eval.varIota.Used
+			if allowIota && eval.varIota.Flags&F_USED != 0 {
+				v.Flags |= F_IOTA
 			}
 		}
 
@@ -2518,10 +2518,10 @@ impl sema {
 	// Evaluateds value of variable and checks.
 	// Assumes the variable is global.
 	fn checkVar(mut &self, mut v: &Var, mut l: Lookup) {
-		if v.Checked {
+		if v.Flags&F_USED != 0 {
 			return
 		}
-		v.Checked = true
+		v.Flags |= F_USED
 		valCheck := self.evalVarValue(v, l)
 		if !valCheck || v.IsInitialized() && v.Value == nil {
 			return // Skip checks if error occurs.
@@ -2534,7 +2534,7 @@ impl sema {
 		for (_, mut decl) in self.file.Vars {
 			// Skip if variable is external or already used.
 			// If it is already used, should already analyzed.
-			if decl.AST.Flags&ast::F_EXTERN != 0 || decl.Used {
+			if decl.AST.Flags&ast::F_EXTERN != 0 || decl.Flags&F_USED != 0 {
 				continue
 			}
 			self.checkVar(decl, self)
@@ -2551,7 +2551,7 @@ impl sema {
 		}
 		ins.Owner = s
 		f.appendInstance(ins)
-		ins.reloaded = true
+		ins.Flags |= F_RELOADED
 		if self.reloadFuncInsTypes(ins) {
 			return ins
 		}
@@ -2620,7 +2620,7 @@ impl sema {
 			return true, true
 		}
 		ok = self.reloadFuncInsTypes(*f)
-		(*f).reloaded = true
+		(*f).Flags |= F_RELOADED
 		if !ok {
 			return false, false
 		}
@@ -2684,7 +2684,11 @@ impl sema {
 			}
 
 			ok = true
-			s.Comparable = s.Decl.AST.Flags&ast::F_EXTERN == 0
+			s.Flags &= ^(F_MUTABLE | F_COMPARABLE)
+			if s.Decl.AST.Flags&ast::F_EXTERN == 0 {
+				// Start as comparable if struct is not external declaration.
+				s.Flags |= F_COMPARABLE
+			}
 			for (_, mut f) in s.Fields {
 				// Set instance for referencer if field declaration is not mutable.
 				// But field declared as mutable, do not set.
@@ -2709,9 +2713,13 @@ impl sema {
 				// Because type analysis is a simple precondition checker.
 				// For the actual type, we have to check.
 				// See developer reference (10.2.1).
-				s.Mutable = s.Mutable ||
-					(f.Decl.AST.Flags&ast::F_MUTABLE == 0 && f.Type.Mutable())
-				s.Comparable = s.Comparable && f.Type.Comparable()
+				if s.Flags&F_MUTABLE == 0 &&
+					f.Decl.AST.Flags&ast::F_MUTABLE == 0 && f.Type.Mutable() {
+					s.Flags |= F_MUTABLE
+				}
+				if s.Flags&F_COMPARABLE != 0 && !f.Type.Comparable() {
+					s.Flags &= ^F_COMPARABLE
+				}
 			}
 			return
 		}
@@ -2732,7 +2740,7 @@ impl sema {
 		// Return is source type is still pseudoSource of a strict type alias instance.
 		// Following analysis must be done with real source type.
 		if s.Source == pseudoSource {
-			s.checked = false
+			s.Flags &= ^F_CHECKED
 			return true
 		}
 		ok = self.checkStructEnv(s, prev, errorToken)
@@ -2741,7 +2749,7 @@ impl sema {
 			// If structure instance is comparable and have not custom compare method,
 			// compiler will use default compare method. If There is array field,
 			// push instance for runtime function.
-			if s.Comparable && self.meta.runtime != nil {
+			if s.Flags&F_COMPARABLE != 0 && self.meta.runtime != nil {
 				// We will not have to check whether field's array type is comparable.
 				// Structure is comparable, so all array types should be comparable.
 				mut decl := runtimeFindFunc(self.meta.runtime, "arrayCmp")
@@ -2775,7 +2783,7 @@ impl sema {
 			if len(f.AST.Generics) == 0 {
 				if self.readyToCheckFunc(s, f) == nil {
 					// Avoid checking body of the function instance and etc.
-					f.Instances[0].checked = true
+					f.Instances[0].Flags |= F_CHECKED
 					ok = false
 				}
 			}
@@ -2803,8 +2811,8 @@ impl sema {
 		// Precheck is instance is not checked already.
 		if len(s.AST.Generics) == 0 {
 			mut ins := s.Instances[0]
-			if !ins.checked {
-				ins.checked = true
+			if ins.Flags&F_CHECKED == 0 {
+				ins.Flags |= F_CHECKED
 				ok := self.precheckStructIns(ins, nil, nil)
 				if !ok {
 					return
@@ -2836,8 +2844,8 @@ impl sema {
 		// Precheck is instance is not checked already.
 		if len(s.AST.Generics) == 0 {
 			mut ins := s.Instances[0]
-			if !ins.checked {
-				ins.checked = true
+			if ins.Flags&F_CHECKED == 0 {
+				ins.Flags |= F_CHECKED
 				ok := self.precheckStructIns(ins, nil, nil)
 				if !ok {
 					return
@@ -2888,10 +2896,10 @@ impl sema {
 	}
 
 	fn checkFuncInsCaller(mut &self, mut f: &FuncIns, mut caller: &token::Token) {
-		if f.Decl.AST.Flags&ast::F_EXTERN != 0 || f.checked {
+		if f.Decl.AST.Flags&ast::F_EXTERN != 0 || f.Flags&F_CHECKED != 0 {
 			return
 		}
-		f.checked = true
+		f.Flags |= F_CHECKED
 
 		f.fillEnviron(true)
 
@@ -2966,7 +2974,7 @@ impl sema {
 			mut ins := f.instanceForce()
 			f.Instances = append(f.Instances, ins)
 			ok := self.reloadFuncInsTypes(ins)
-			ins.reloaded = true
+			ins.Flags |= F_RELOADED
 
 			if ok && hasDirective(f.AST.Directives, directive::Test) {
 				self.checkTestFunc(ins)
@@ -3108,8 +3116,8 @@ impl sema {
 				if ta.AST.Flags&ast::F_STRICT != 0 {
 					mut s := ta.Type.Kind.(&StructIns).Decl
 					for (_, mut ins) in s.Instances {
-						if !ins.checked {
-							ins.checked = true
+						if ins.Flags&F_CHECKED == 0 {
+							ins.Flags |= F_CHECKED
 							ok := self.precheckStructIns(ins, nil, nil)
 							if !ok {
 								return

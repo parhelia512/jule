@@ -249,7 +249,7 @@ impl typeCompatibilityChecker {
 	}
 
 	fn checkPrim(mut *self): (ok: bool) {
-		if !self.dest.Variadic {
+		if self.dest.Flags&F_VARIADIC == 0 {
 			prim := self.dest.Prim()
 			if prim != nil && prim.IsAny() {
 				return true
@@ -298,7 +298,7 @@ impl typeCompatibilityChecker {
 		}
 
 		prim := self.dest.Prim()
-		if prim != nil && !self.dest.Variadic && prim.IsAny() {
+		if prim != nil && self.dest.Flags&F_VARIADIC == 0 && prim.IsAny() {
 			return true
 		}
 		if prim != nil {
@@ -505,7 +505,7 @@ impl assignTypeChecker {
 
 	fn check(mut *self): bool {
 		ok := self.checkCompatibility()
-		if ok && !self.v.Type.Variadic {
+		if ok && self.v.Type.Flags&F_VARIADIC == 0 {
 			applyImplicitCast(self.s, self.dest, self.v, self.errorToken, self.refers)
 		}
 		return ok
@@ -1101,9 +1101,9 @@ impl fnCallArgChecker {
 		// The [p.Kind] used as prefix and base type.
 		mut oldKind := p.Type
 		p.Type = new(Type, *p.Type)
-		p.Type.Variadic = false
+		p.Type.Flags &= ^F_VARIADIC
 		defer {
-			p.Type.Variadic = false // Set actual type as non-variadic.
+			p.Type.Flags &= ^F_VARIADIC // Set actual type as non-variadic.
 			p.Type = oldKind
 		}
 
@@ -1127,11 +1127,11 @@ impl fnCallArgChecker {
 				continue
 			}
 
-			if v.Type.Variadic {
+			if v.Type.Flags&F_VARIADIC != 0 {
 				variadiced = true
-				p.Type.Variadic = true
+				p.Type.Flags |= F_VARIADIC
 				ok = ok && self.checkArg(p, v, arg.Token)
-				p.Type.Variadic = false
+				p.Type.Flags &= ^F_VARIADIC
 				match type v.Model {
 				| &SliceExpr:
 					model = v.Model.(&SliceExpr)
@@ -1579,7 +1579,7 @@ impl rangeChecker {
 
 	fn check(mut *self): bool {
 		match {
-		| self.v.Type.Variadic:
+		| self.v.Type.Flags&F_VARIADIC != 0:
 			// Fail.
 		| self.v.Type.Slice() != nil:
 			self.checkSlice()
@@ -1634,7 +1634,7 @@ impl retTypeChecker {
 		// But analysis requires types, actually.
 		// Types may be provided by the external source.
 		if self.f != nil {
-			if self.f.oneliner && len(self.f.Decl.AST.Generics) > 0 {
+			if self.f.Flags&F_ONELINER != 0 && len(self.f.Decl.AST.Generics) > 0 {
 				// If the function is one-line short literal and have generics,
 				// we will use type inference.
 				self.types = nil

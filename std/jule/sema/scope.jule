@@ -62,10 +62,16 @@ type ScopeTrait: int
 
 // Scope traits.
 const (
+	// Scope is deferred.
+	ST_DEFER: ScopeTrait = 1 << iota
+
+	// Scope is unsafe.
+	ST_UNSAFE
+
 	// Scope is an infinite scope.
 	// This passed when scope owner is exactly and infinite iteration,
 	// or while-next iteration with no condition.
-	ST_INFINITE: ScopeTrait = 1 << iota
+	ST_INFINITE
 
 	// Scope is an error handling scope.
 	ST_ERROR_HANDLER
@@ -73,12 +79,10 @@ const (
 
 // Scope.
 struct Scope {
-	Traits:   ScopeTrait
-	Owner:    uintptr // Memory address of the owner.
-	Parent:   &Scope
-	Unsafe:   bool
-	Deferred: bool
-	Stmts:    []Stmt
+	Traits: ScopeTrait
+	Owner:  uintptr // Memory address of the owner.
+	Parent: &Scope
+	Stmts:  []Stmt
 
 	// Data of the child scope starting from the root scope.
 	// For the root scope, counting starts from 0. So the root scope will be 0.
@@ -207,18 +211,23 @@ struct MultiAssign {
 
 // Match-Case.
 struct Match {
-	Scope:     &Scope // Owner scope. See developer reference (8).
-	Expr:      &Value
-	TypeMatch: bool
-	Comptime:  bool
-	Cases:     []&Case
-	Default:   &Case
+	Scope:   &Scope // Owner scope. See developer reference (8).
+	Expr:    &Value
+	Cases:   []&Case
+	Default: &Case
+
+	// Possible flags are:
+	//	F_TYPE: if it is a type match statement
+	//	F_CONST: if it is a comptime match statement
+	Flags: Flag
 }
 
 impl Match {
 	// Reports whether match is type-match for generic type.
 	fn IsGenericTypeMatch(*self): bool {
-		return self.TypeMatch && self.Expr != nil && self.Expr.Type.Generic
+		return self.Flags&F_TYPE != 0 &&
+			self.Expr != nil &&
+			self.Expr.Type.Flags&F_GENERIC != 0
 	}
 }
 
@@ -429,7 +438,7 @@ impl scopeChecker {
 		mut scope := self
 
 	iter:
-		if scope.scope.Unsafe {
+		if scope.scope.Traits&ST_UNSAFE != 0 {
 			return true
 		}
 
@@ -469,7 +478,7 @@ impl scopeChecker {
 		mut scope := self
 
 	iter:
-		if scope.scope.Deferred {
+		if scope.scope.Traits&ST_DEFER != 0 {
 			return true
 		}
 
@@ -633,7 +642,7 @@ impl scopeChecker {
 
 		// We should imitate the [sema.checkVar].
 		// Instruction order must remain the same.
-		v.Checked = true
+		v.Flags |= F_CHECKED
 
 		// Variable v is a scope variable and scope variables will not collect
 		// references for themselves. So, if any reference exist for v,
@@ -720,7 +729,7 @@ impl scopeChecker {
 
 	fn checkAnonScope(mut &self, mut tree: &ast::Scope) {
 		if tree.Flags&ast::F_DEFER != 0 {
-			self.getRoot().owner.Decl.HasDefer = true
+			self.getRoot().owner.Decl.Flags |= F_HAS_DEFER
 		}
 		mut s := self.checkChild(tree)
 		self.scope.Stmts = append(self.scope.Stmts, s)
@@ -1227,7 +1236,7 @@ impl scopeChecker {
 		// Owner is not structure or structure is mutable.
 		// If structure is mutable, it means there is risky mutable-typed
 		// fields even for internal members.
-		if root.owner.Owner != s || s.Mutable {
+		if root.owner.Owner != s || s.Flags&F_MUTABLE != 0 {
 			return
 		}
 		// Mark data as mutable.
@@ -1646,7 +1655,7 @@ impl scopeChecker {
 				continue
 			}
 
-			if m.TypeMatch {
+			if m.Flags&F_TYPE != 0 {
 				// Match types. There is not need to check whether v.Decl is true.
 				// Parser always tries to build type declarations for type-match cases.
 				// So, v is should be type declaration already.
@@ -1654,7 +1663,7 @@ impl scopeChecker {
 				if countMatchType(m, v.Type, 2) > 1 {
 					self.s.pushErr(e.Token, "type @ is already matched", v.Type.String())
 				}
-				if m.Comptime {
+				if m.Flags&F_CONST != 0 {
 					constMatched = constMatched || expr.Type.Equal(v.Type)
 				} else if expr.Type.TypeEnum() != nil || expr.Type.Trait() != nil {
 					// Check whether checked types are compatible for type-enum or trait.
@@ -1673,7 +1682,7 @@ impl scopeChecker {
 				continue
 			}
 
-			if m.Comptime {
+			if m.Flags&F_CONST != 0 {
 				if !v.IsConst() && v.Type.comptimeTypeInfo() == nil {
 					self.s.pushErr(e.Token, "expression must be constant")
 					self.s.pushSuggestion("comptime-matching requires constant expression")
@@ -1697,7 +1706,7 @@ impl scopeChecker {
 					self.s.pushErr(e.Token, "field @ is already matched", conv::Quote(name.Name))
 				}
 			}
-			if !m.Comptime ||
+			if m.Flags&F_CONST == 0 ||
 				expr.Type.comptimeTypeInfo() == nil ||
 				v.Type.comptimeTypeInfo() == nil {
 				mut checker := assignTypeChecker{
@@ -1710,7 +1719,7 @@ impl scopeChecker {
 				checker.check()
 			}
 		}
-		if !m.Comptime || constMatched {
+		if m.Flags&F_CONST == 0 || constMatched {
 			case.Scope = self.checkCaseScope(case, c.Scope)
 		}
 		return case
@@ -1778,7 +1787,7 @@ impl scopeChecker {
 		for (i, mut c) in tm.Cases {
 			if c.Scope != nil {
 				let mut token: &token::Token = nil
-				if !tm.TypeMatch && len(c.Scope.Stmts) > 0 {
+				if tm.Flags&F_TYPE == 0 && len(c.Scope.Stmts) > 0 {
 					token = m.Cases[i].Scope.Stmts[0].Token
 				}
 				self.checkComptimePanic(token, c.Scope)
@@ -1792,7 +1801,7 @@ impl scopeChecker {
 			tm.Default = self.checkDefault(tm, m.Default)
 			if tm.Default != nil {
 				let mut token: &token::Token = nil
-				if !tm.TypeMatch {
+				if tm.Flags&F_TYPE == 0 {
 					token = m.Default.Scope.Stmts[0].Token
 				}
 				self.checkComptimePanic(token, tm.Default.Scope)
@@ -1885,22 +1894,24 @@ impl scopeChecker {
 		}
 
 		mut tm := &Match{
-			Scope:     self.scope,
-			TypeMatch: true,
-			Expr:      v,
-			Comptime:  m.Flags&ast::F_CONST != 0,
+			Scope: self.scope,
+			Flags: F_TYPE,
+			Expr:  v,
+		}
+		if m.Flags&ast::F_CONST != 0 {
+			tm.Flags |= F_CONST
 		}
 
 		// Do not check default if comptime matching enabled.
 		// We do not know any case will be matched yet.
 		// The [self.processConstMatch] will check cases and if not exist
 		// any matching, will check default case if exist and handle it.
-		if !tm.Comptime && m.Default != nil {
+		if tm.Flags&F_CONST == 0 && m.Default != nil {
 			tm.Default = self.checkDefault(tm, m.Default)
 		}
 
 		self.checkCases(m, tm, v)
-		if tm.Comptime {
+		if tm.Flags&F_CONST != 0 {
 			self.processConstMatch(tm, m)
 		}
 
@@ -1963,9 +1974,11 @@ impl scopeChecker {
 		}
 
 		mut mc := &Match{
-			Scope:    self.scope,
-			Expr:     v,
-			Comptime: m.Flags&ast::F_CONST != 0,
+			Scope: self.scope,
+			Expr:  v,
+		}
+		if m.Flags&ast::F_CONST != 0 {
+			mc.Flags |= F_CONST
 		}
 
 		// Push into stmts here. Otherwise, labeled break statements and others
@@ -1980,11 +1993,11 @@ impl scopeChecker {
 		// We do not know any case will be matched yet.
 		// The [self.processConstMatch] will check cases and if not exist
 		// any matching, will check default case if exist and handle it.
-		if !mc.Comptime && m.Default != nil {
+		if mc.Flags&F_CONST == 0 && m.Default != nil {
 			mc.Default = self.checkDefault(mc, m.Default)
 		}
 		self.checkCases(m, mc, v)
-		if mc.Comptime {
+		if mc.Flags&F_CONST != 0 {
 			self.processConstMatch(mc, m)
 		}
 		// If there is no error for this match statement,
@@ -2135,7 +2148,7 @@ impl scopeChecker {
 		mut case := unsafe { (*Case)(self.cse) }
 		match type unsafe { case.Owner } {
 		| &Match:
-			if unsafe { case.Owner.(&Match).Comptime } {
+			if unsafe { case.Owner.(&Match).Flags&F_CONST != 0 } {
 				self.s.pushErr(f.Token, "fall statement is not allowed for comptime-matching")
 				return
 			}
@@ -2597,7 +2610,7 @@ impl scopeChecker {
 
 	fn checkVars(mut *self) {
 		for _, v in self.table.Vars {
-			if !v.Used && v.AST.Flags&ast::F_CONST == 0 &&
+			if v.Flags&F_USED == 0 && v.AST.Flags&ast::F_CONST == 0 &&
 				!jule::IsBlank(v.AST.Name) && !jule::IsAnon(v.AST.Name) {
 				self.s.pushErr(v.AST.Token, "declared but not used: "+conv::Quote(v.AST.Name))
 			}
@@ -2606,7 +2619,8 @@ impl scopeChecker {
 
 	fn checkAliases(mut *self) {
 		for _, a in self.table.TypeAliases {
-			if !a.Used && !jule::IsBlank(a.AST.Name) && !jule::IsAnon(a.AST.Name) {
+			if a.Flags&F_USED == 0 &&
+				!jule::IsBlank(a.AST.Name) && !jule::IsAnon(a.AST.Name) {
 				self.s.pushErr(a.AST.Token, "declared but not used: "+conv::Quote(a.AST.Name))
 			}
 		}
@@ -2614,8 +2628,12 @@ impl scopeChecker {
 
 	// Checks scope tree.
 	fn check(mut &self, mut tree: &ast::Scope, mut s: &Scope) {
-		s.Deferred = tree.Flags&ast::F_DEFER != 0
-		s.Unsafe = tree.Flags&ast::F_UNSAFE != 0
+		if tree.Flags&ast::F_DEFER != 0 {
+			s.Traits |= ST_DEFER
+		}
+		if tree.Flags&ast::F_UNSAFE != 0 {
+			s.Traits |= ST_UNSAFE
+		}
 
 		errors := len(self.s.errors)
 
@@ -2623,7 +2641,7 @@ impl scopeChecker {
 		self.scope = s
 
 		// Catch one-line return statement expressions without keyword.
-		if self.owner != nil && self.owner.oneliner && !self.owner.Decl.IsVoid() {
+		if self.owner != nil && self.owner.Flags&F_ONELINER != 0 && !self.owner.Decl.IsVoid() {
 			mut expr, isExpr := self.tree.Stmts[0].Data.(&ast::Expr)
 			if isExpr {
 				self.checkReturn2(expr.Token, expr)

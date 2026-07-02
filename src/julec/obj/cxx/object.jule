@@ -333,7 +333,8 @@ impl ObjectCoder {
 	}
 
 	fn pushAnonFunc(mut &self, mut m: &sema::AnonFuncExpr): (name: string) {
-		self.meta.concurrent = self.meta.concurrent || m.Func.CalledCo
+		self.meta.concurrent = self.meta.concurrent ||
+			m.Func.Flags&sema::F_CALLED_CO != 0
 
 		closure := obj::IsClosure(m)
 		if closure {
@@ -853,7 +854,7 @@ impl ObjectCoder {
 	}
 
 	fn structureOperatorEq(mut &self, name: string, mut s: &sema::StructIns, decl: bool) {
-		if !s.Comparable {
+		if s.Flags&sema::F_COMPARABLE == 0 {
 			return
 		}
 		self.write("\n")
@@ -1014,7 +1015,8 @@ impl ObjectCoder {
 	}
 
 	fn funcDeclIns(mut &self, mut f: &sema::FuncIns, ptr: bool) {
-		self.meta.concurrent = self.meta.concurrent || f.CalledCo
+		self.meta.concurrent = self.meta.concurrent ||
+			f.Flags&sema::F_CALLED_CO != 0
 		self.indent()
 		self.funcHead(&self.Buf, f, ptr, "")
 		self.paramsIns(&self.Buf, f)
@@ -1099,12 +1101,12 @@ impl ObjectCoder {
 	}
 
 	fn paramsIns(mut &self, mut &buf: *strings::Builder, mut f: &sema::FuncIns) {
-		if !f.AsAnon && len(f.Params) == 0 {
+		if f.Flags&sema::F_AS_ANON == 0 && len(f.Params) == 0 {
 			buf.WriteString("(void)")!
 			return
 		}
 		buf.WriteByte('(')!
-		if f.AsAnon {
+		if f.Flags&sema::F_AS_ANON != 0 {
 			buf.WriteString(ctxParamType + " " + ctxParamIdent)!
 			if len(f.Params) > 0 {
 				buf.WriteString(", ")!
@@ -1636,7 +1638,7 @@ impl ObjectCoder {
 			}
 			self.ic.func(&self.Buf, meta::Program.EntryPoint)
 			self.write("(")
-			if meta::Program.EntryPoint.Instances[0].AsAnon {
+			if meta::Program.EntryPoint.Instances[0].Flags&sema::F_AS_ANON != 0 {
 				// Pass nil pointer to anonymous context data.
 				self.write("nullptr")
 			}

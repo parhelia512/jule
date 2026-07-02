@@ -13,13 +13,11 @@ enum RetState {
 
 // Variable.
 struct Var {
-	AST:     &ast::Var
-	Scope:   &Scope
-	Used:    bool
-	Checked: bool
-	Type:    &Type
-	Value:   &Value
-	Refers:  &ReferenceStack
+	AST:    &ast::Var
+	Scope:  &Scope
+	Type:   &Type
+	Value:  &Value
+	Refers: &ReferenceStack
 
 	// Return variable state for this variable.
 	RetState: RetState
@@ -35,7 +33,11 @@ struct Var {
 	// See developer reference (13).
 	GroupIndex: int    // Index of variable in the group, if variable is grouped.
 	Group:      []&Var // All variables of group in define order, if variable is grouped.
-	Iota:       bool   // The enumerable iota variable used in the expression.
+
+	// Possible flags are:
+	//	F_USED: if variable is used in code
+	//	F_IOTA: if enumerable iota variable used in the expression
+	Flags: Flag
 }
 
 impl Var {

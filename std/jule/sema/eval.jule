@@ -563,7 +563,7 @@ impl eval {
 
 		if v.AST.Token == nil {
 			// Variable is built-in.
-			v.Used = true
+			v.Flags |= F_USED
 			goto data
 		}
 
@@ -586,7 +586,10 @@ impl eval {
 			// If scope owner is an anonymous function, it may be a closure.
 			// But closures performs risky memory handling for references. So catch them.
 			// Just one exception: deferred scope functions safe for references.
-			if s.owner != nil && !s.owner.Scope.Deferred && s.owner.Anon && v.Scope != s.owner.Scope {
+			if s.owner != nil &&
+				s.owner.Scope.Traits&ST_DEFER == 0 &&
+				s.owner.Flags&F_ANON != 0 &&
+				v.Scope != s.owner.Scope {
 				self.pushErr(errorToken, "anonymous function cannot access reference @ of parent scope", conv::Quote(v.AST.Name))
 			}
 		}
@@ -602,7 +605,7 @@ impl eval {
 		// Do not check if v.Used is true. It means it already analyzed.
 		// If variable is global, it should be have initialize expression.
 		// So, nil value means something may be wrong.
-		if !v.Checked && v.AST.Flags&ast::F_EXTERN == 0 &&
+		if v.Flags&F_CHECKED == 0 && v.AST.Flags&ast::F_EXTERN == 0 &&
 			v.Scope == nil && v.Value == nil {
 			// Save source file of global variable.
 			// Use it for evaluation and checking for correct analysis.
@@ -623,7 +626,7 @@ impl eval {
 		// any missing information means analysis failed
 		// kind should not be nil because each variable must have a valid type
 		// we also have to check the value for enum variables
-		v.Used = true
+		v.Flags |= F_USED
 		if v.Type == nil || v.IsEnumField() && v.Value == nil {
 			return nil
 		}
@@ -660,7 +663,7 @@ impl eval {
 			return nil
 		}
 
-		ta.Used = true
+		ta.Flags |= F_USED
 
 		mut kind := ta.Type.Kind
 		let mut v: &Value = nil
@@ -713,7 +716,7 @@ impl eval {
 			}
 			v.Model = v.Type
 		}
-		v.Type.Generic = ta.Generic
+		v.Type.Flags |= ta.Flags & F_GENERIC
 		v.Type.Provider = ta.FullName
 		return v
 	}
@@ -2259,9 +2262,9 @@ impl eval {
 		let mut recheckNeed: []recheckableType
 
 		if !dynamicAnnotation {
-			if !f.reloaded {
+			if f.Flags&F_RELOADED == 0 {
 				ok := self.s.reloadFuncInsTypes(f)
-				f.reloaded = true
+				f.Flags |= F_RELOADED
 				if !ok {
 					*v = nil
 					return
@@ -2397,8 +2400,7 @@ impl eval {
 		}
 
 		if model.IsCo {
-			model.Func.AsAnon = true
-			model.Func.CalledCo = true
+			model.Func.Flags |= F_AS_ANON | F_CALLED_CO
 			self.checkFuncOfConcurrentCall(model.Func, fc.Token)
 		}
 	}
@@ -3211,15 +3213,13 @@ impl eval {
 			// Function body is one-line.
 			if ins.Decl.AST.Scope.Flags&ast::F_DEFER != 0 {
 				ins.Decl.AST.Scope.Flags &= ^ast::F_DEFER // Remove mark of the one-line block.
-				ins.oneliner = true
+				ins.Flags |= F_ONELINER
 			}
 		} else {
 			ins = self.typeChecker().buildFunc(decl)
 		}
 		if ins != nil {
-			ins.Anon = true
-			ins.AsAnon = true
-			ins.reloaded = true
+			ins.Flags |= F_ANON | F_AS_ANON | F_RELOADED
 		}
 		return
 	}
@@ -3510,7 +3510,7 @@ impl eval {
 			} else if findDirective(f.Decl.AST.Directives, directive::Export) != nil {
 				self.s.pushErr(expr.Token, "define @ is exported for backend and cannot used as anonymous", conv::Quote(f.Decl.AST.Name))
 			} else {
-				f.AsAnon = true
+				f.Flags |= F_AS_ANON
 			}
 		| v.Decl:
 			// Check evaluated type declarations.
@@ -5161,7 +5161,7 @@ fn buildErrorVar(mut s: &Scope, mut fc: &ast::CallExpr): &Var {
 			Token: fc.Token,
 			Flags: ast::F_MUTABLE,
 		},
-		Used:  true,
+		Flags: F_USED,
 		Type:  primAny,
 		Scope: s,
 		Value: new(Value),
@@ -5493,9 +5493,8 @@ fn makeImplicitDeref(mut v: &Value, mut baseToken: &token::Token) {
 
 fn makeVariadic(mut &t: *&Type, mut elem: &Type) {
 	*t = &Type{
-		Variadic: true,
-		Generic:  elem.Generic,
-		Kind:     elem.Kind,
+		Flags: F_VARIADIC | (elem.Flags & F_GENERIC),
+		Kind:  elem.Kind,
 	}
 }
 

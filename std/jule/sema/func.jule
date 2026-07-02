@@ -53,12 +53,10 @@ enum FuncOwner: type {
 
 // Function.
 struct Func {
-	AST: &ast::Func
-
+	// Associated sema.
 	sema: &sema
 
-	// Whether function has at least one deferred scope.
-	HasDefer: bool
+	AST: &ast::Func
 
 	Result: &ReturnType
 	Params: []&Param
@@ -67,6 +65,10 @@ struct Func {
 	// Function instances for each unique type combination of function call.
 	// Nil if function is never used.
 	Instances: []&FuncIns
+
+	// Possible flags are:
+	//	F_HAS_DEFER: if function has at least one deferred scope.
+	Flags: Flag
 }
 
 impl Func {
@@ -215,15 +217,15 @@ struct FuncIns {
 	Result:   &Type // Result type of the instance, nil for void.
 	Scope:    &Scope
 	Refers:   &ReferenceStack
-	Anon:     bool // Whether this function instance is anonymous function literal.
-	AsAnon:   bool // Whether this function instance used as anonymous function.
-	CalledCo: bool // Whether this function instance used for concurrent call.
 
-	caller:   builtinCaller
-	reloaded: bool
-	checked:  bool
-	oneliner: bool // Whether this function body is one-line expression.
-	env:      &environ
+	// Possible flags are:
+	//	F_ANON: if function instance is an anonymous function literal
+	//	F_AS_ANON: if function instance used as anonymous function
+	//	F_CALLED_CO: if function instance used for concurrent call
+	Flags: Flag
+
+	caller: builtinCaller
+	env:    &environ
 }
 
 impl Kind for FuncIns {
@@ -360,7 +362,7 @@ impl FuncIns {
 
 	// Reports whether instance is anonymous function.
 	fn IsAnon(*self): bool {
-		return self.Anon ||
+		return self.Flags&F_ANON != 0 ||
 			self.Decl != nil && self.Decl.IsAnon()
 	}
 

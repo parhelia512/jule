@@ -562,17 +562,17 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 		// Element types should still be checked.
 		// Since the variadiced slice will not be mutated,
 		// just check mutability risk of elements.
-		e1.Type.Variadic = false
+		e1.Type.Flags &= ^F_VARIADIC
 
 		if e.s.checkValidityForInitExpr(mutable, reference, s.Value, e1, secondArg.Token) {
-			e1.Type.Variadic = true
+			e1.Type.Flags |= F_VARIADIC
 			// Check type if validity is good.
 			// Helps to reduce error logs and duplicated logs.
 			if !e.s.checkAssignType(reference, firstAssignToDest, s.Value, e1, secondArg.Token, e.getOwnerRefers()) {
 				return nil
 			}
 		} else {
-			e1.Type.Variadic = true
+			e1.Type.Flags |= F_VARIADIC
 			return nil
 		}
 
@@ -600,7 +600,7 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 		if e1 == nil {
 			return nil
 		}
-		if e1.Type.Variadic {
+		if e1.Type.Flags&F_VARIADIC != 0 {
 			e.pushErr(arg.Token, "variadic argument cannot be used with plain arguments")
 		}
 		if e.s.checkValidityForInitExpr(mutable, reference, s.Value, e1, arg.Token) {
@@ -1240,9 +1240,7 @@ fn builtinCallerStdComptimeTypeAlias(mut e: &eval, mut fc: &ast::CallExpr, _: &V
 			Token: name,
 			Name:  name.Kind,
 		},
-		Scope:   sc.tree,
-		Used:    false,
-		Generic: false,
+		Scope: sc.tree,
 	}
 	if mod::IsPub(name.Kind) {
 		alias.AST.Flags |= ast::F_PUBLIC
@@ -1550,8 +1548,8 @@ fn buildIota(i: i64): &Var {
 			Name:  "iota",
 			Flags: ast::F_PUBLIC | ast::F_MUTABLE | ast::F_CONST,
 		},
-		Checked: true,
-		Type:    primInt,
+		Flags: F_CHECKED,
+		Type:  primInt,
 		Value: &Value{
 			Constant: constant::NewI64(i),
 			untyped:  true,

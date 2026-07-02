@@ -95,15 +95,15 @@ impl Struct {
 		}
 
 		// See developer reference (10).
-		ins.Mutable = false
-		ins.Comparable = true
+		ins.Flags &= ^F_MUTABLE
+		ins.Flags |= F_COMPARABLE
 
 		for (_, mut f) in self.Fields {
 			mut f2 := f.instance()
 			f2.Owner = ins
 			ins.Fields = append(ins.Fields, f2)
 			if f.AST.Flags&ast::F_MUTABLE == 0 && f.Type != nil && f.Type.Mutable() {
-				ins.Mutable = true
+				ins.Flags |= F_MUTABLE
 			}
 		}
 
@@ -191,17 +191,19 @@ struct FieldIns {
 
 // Structure instance.
 struct StructIns {
-	Source:     &Type // See developer reference (9).
-	Decl:       &Struct
-	Generics:   []&InsGeneric
-	Fields:     []&FieldIns
-	Methods:    []&Func
-	Mutable:    bool // This structure has mutable defines.
-	Comparable: bool
-	Refers:     &ReferenceStack
+	Source:   &Type // See developer reference (9).
+	Decl:     &Struct
+	Generics: []&InsGeneric
+	Fields:   []&FieldIns
+	Methods:  []&Func
+	Refers:   &ReferenceStack
 
-	checked: bool
-	env:     &environ
+	// Possible flags are:
+	//	F_MUTABLE: if structure has fields with mutable types
+	//	F_COMPARABLE: if all structure fields are comparible
+	Flags: Flag
+
+	env: &environ
 }
 
 impl Kind for StructIns {
@@ -260,8 +262,12 @@ impl StructIns {
 		// Because type analysis is a simple precondition checker.
 		// For the actual type, we have to check.
 		// See developer reference (10.2.1).
-		self.Comparable = self.Comparable || t.Comparable()
-		self.Mutable = self.Mutable || t.Mutable()
+		if self.Flags&F_COMPARABLE == 0 && t.Comparable() {
+			self.Flags |= F_COMPARABLE
+		}
+		if self.Flags&F_MUTABLE == 0 && t.Mutable() {
+			self.Flags |= F_MUTABLE
+		}
 	}
 
 	// Reports whether instances are same.

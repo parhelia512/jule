@@ -38,11 +38,14 @@ struct InsGeneric {
 struct TypeAlias {
 	AST:      &ast::TypeAlias
 	Scope:    &ast::Scope
-	Used:     bool
-	Generic:  bool
 	FullName: string // See developer reference (16).
 	Type:     &Type
 	Generics: []&ast::Generic // See the developer reference (3).
+
+	// Possible flags are:
+	//	F_USED: if type alias is used in code
+	//	F_GENERIC: if type alias is generic
+	Flags: Flag
 }
 
 // Kind of type declaration.
@@ -54,9 +57,12 @@ trait Kind {
 // Evaluated type declaration.
 struct Type {
 	Provider: string // Identifier of the type alias, if type provided by a type alias.
-	Generic:  bool
-	Variadic: bool
 	Kind:     Kind
+
+	// Possible flags are:
+	//	F_VARIADIC: if type is variadic
+	//	F_GENERIC: if type is resolved from a generic type alias
+	Flags: Flag
 }
 
 impl Kind for Type {
@@ -66,19 +72,21 @@ impl Kind for Type {
 		// If type source is a generic, return the actual type.
 		// Because name of the generic type might be confusing,
 		// expose the current type of the generic.
-		if self.Provider != "" && !self.Generic {
+		if self.Flags&F_GENERIC == 0 && self.Provider != "" {
 			return self.Provider
 		}
 		if self.IsNil() {
 			return "nil"
 		}
 
-		mut kind := strings::Builder{}
-		if self.Variadic {
+		if self.Flags&F_VARIADIC != 0 {
+			mut kind := strings::Builder{}
 			kind.WriteString("...")!
+			kind.WriteString(self.Kind.String())!
+			return kind.String()
+		} else {
+			return self.Kind.String()
 		}
-		kind.WriteString(self.Kind.String())!
-		return kind.String()
 	}
 
 	// Reports whether types are same.
@@ -155,7 +163,7 @@ impl Type {
 		unsafe {
 			mut _self := *(&self)
 			if _self.SoftStruct() != nil {
-				return _self.SoftStruct().Comparable
+				return _self.SoftStruct().Flags&F_COMPARABLE != 0
 			}
 			if _self.Array() != nil {
 				return _self.Array().Value.Comparable()
@@ -169,7 +177,7 @@ impl Type {
 		unsafe {
 			mut _self := *(&self)
 			if _self.SoftStruct() != nil {
-				return _self.SoftStruct().Mutable
+				return _self.SoftStruct().Flags&F_MUTABLE != 0
 			}
 			if _self.Chan() != nil {
 				return _self.Chan().Value.Mutable()
@@ -827,10 +835,14 @@ impl typeChecker {
 				panic("unreachable")
 			}
 			if self.disableTA&taNotComparable == 0 {
-				s.Comparable = s.Comparable && tags&taNotComparable == 0
+				if s.Flags&F_COMPARABLE != 0 && tags&taNotComparable != 0 {
+					s.Flags &= ^F_COMPARABLE
+				}
 			}
 			if self.disableTA&taMutable == 0 {
-				s.Mutable = s.Mutable || tags&taMutable != 0
+				if s.Flags&F_MUTABLE == 0 && tags&taMutable != 0 {
+					s.Flags |= F_MUTABLE
+				}
 			}
 		}
 	}
@@ -1037,7 +1049,7 @@ impl typeChecker {
 			return nil
 		}
 
-		ta.Used = true
+		ta.Flags |= F_USED
 
 		{
 			ok := self.checkIllegalCycles(decl, ta)
@@ -1062,7 +1074,7 @@ impl typeChecker {
 			// Check strict type structure if impl statements are implemented.
 			// But do not check if source type is nil, it means type type alias is still checking.
 			mut s := ta.Type.SoftStruct()
-			if s.Source != nil && !s.checked {
+			if s.Source != nil && s.Flags&F_CHECKED == 0 {
 				ok := self.checkStructIns(s, decl)
 				if !ok {
 					return nil
@@ -1072,7 +1084,7 @@ impl typeChecker {
 
 		mut tk := &Type{
 			Provider: ta.FullName,
-			Generic:  ta.Generic,
+			Flags:    ta.Flags & F_GENERIC,
 			Kind:     ta.Type.Kind,
 		}
 
@@ -1114,10 +1126,10 @@ impl typeChecker {
 	}
 
 	fn checkStructIns(mut *self, mut ins: &StructIns, mut errorToken: &token::Token): (ok: bool) {
-		if ins.checked {
+		if ins.Flags&F_CHECKED != 0 {
 			return true
 		}
-		ins.checked = true
+		ins.Flags |= F_CHECKED
 		// Break algorithm cycle.
 		if self.referencer != nil && self.referencer.owner == ins.Decl {
 			return true
@@ -1370,10 +1382,10 @@ impl typeChecker {
 	fn buildStructIns(mut *self, mut s: &StructIns, mut errToken: &token::Token): &StructIns {
 		s = self.fromStructIns(s, errToken)
 		if s != nil {
-			if !s.Comparable {
+			if s.Flags&F_COMPARABLE == 0 {
 				self.pushTA(taNotComparable)
 			}
-			if s.Mutable {
+			if s.Flags&F_MUTABLE != 0 {
 				self.pushTA(taMutable)
 			}
 			ok := self.checkIllegalCycles(errToken, s)
@@ -1826,9 +1838,7 @@ impl typeChecker {
 		}
 
 		mut ins := f.instanceForce()
-		ins.Anon = true
-		ins.AsAnon = true
-		ins.reloaded = true
+		ins.Flags |= F_ANON | F_AS_ANON | F_RELOADED
 
 		ok := self.checkFuncTypes(ins)
 		if !ok {
@@ -2025,7 +2035,7 @@ impl typeChecker {
 	// Rechecks structure instance.
 	// Updates s to common instance before return.
 	fn recheckStructIns(mut *self, mut &s: *&StructIns, mut errorToken: &token::Token): (ok: bool) {
-		(*s).checked = false
+		(*s).Flags &= ^F_CHECKED
 
 		// We need to hard-check methods, if it have any method.
 		// Because method types will not be rechecked with the recheck strategy.

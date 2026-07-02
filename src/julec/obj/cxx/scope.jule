@@ -1188,7 +1188,7 @@ impl scopeCoder {
 	}
 
 	fn case(mut &self, mut m: &sema::Match, mut l: sema::OperandExpr, mut c: &sema::Case) {
-		if len(c.Exprs) != 0 && !m.Comptime {
+		if len(c.Exprs) != 0 && m.Flags&sema::F_CONST == 0 {
 			if len(m.Cases) > 0 && m.Cases[0] == c {
 				self.oc.write("if (")
 			} else {
@@ -1196,7 +1196,7 @@ impl scopeCoder {
 			}
 			for (i, mut expr) in c.Exprs {
 				match {
-				| !m.TypeMatch:
+				| m.Flags&sema::F_TYPE == 0:
 					mut r := sema::OperandExpr{
 						Model: expr.Model,
 						Type:  expr.Type,
@@ -1250,7 +1250,8 @@ impl scopeCoder {
 		if len(m.Cases) == 0 && m.Default == nil {
 			return
 		}
-		if m.Comptime && (m.Default == nil || len(m.Default.Scope.Stmts) == 0) {
+		if m.Flags&sema::F_CONST != 0 &&
+			(m.Default == nil || len(m.Default.Scope.Stmts) == 0) {
 			return
 		}
 		self.oc.write("{\n")
@@ -1262,7 +1263,7 @@ impl scopeCoder {
 		mut l := sema::OperandExpr{}
 
 		// Constant expressions generated as literals in conditions.
-		if !m.Comptime {
+		if m.Flags&sema::F_CONST == 0 {
 			l.Type = m.Expr.Type
 			if m.Expr.IsConst() {
 				matchExprS := writeAndReadFromBuf(&self.oc.Buf,
@@ -1771,7 +1772,8 @@ impl scopeCoder {
 	}
 
 	fn returnStmt(mut &self, mut r: &sema::Return) {
-		hasDefer := r.Func.Decl != nil && r.Func.Decl.HasDefer
+		hasDefer := r.Func.Decl != nil &&
+			r.Func.Decl.Flags&sema::F_HAS_DEFER != 0
 		mut fc := isFallibleResult(r.Expr) // Fallible functions should be handled with setResult.
 		if r.Func.Decl.IsVoid() {
 			if hasDefer {
@@ -1933,7 +1935,8 @@ impl scopeCoder {
 	}
 
 	fn errorForwarding(mut &self, mut m: &cst::ErrorForwardingExpr) {
-		hasDefer := m.Func.Decl != nil && m.Func.Decl.HasDefer
+		hasDefer := m.Func.Decl != nil &&
+			m.Func.Decl.Flags&sema::F_HAS_DEFER != 0
 		if !hasDefer {
 			self.oc.write(returnKw(m.Func))
 			self.oc.write(" ")
@@ -1957,7 +1960,8 @@ impl scopeCoder {
 	}
 
 	fn throwStmt(mut &self, mut m: &sema::Throw) {
-		hasDefer := m.Func.Decl != nil && m.Func.Decl.HasDefer
+		hasDefer := m.Func.Decl != nil &&
+			m.Func.Decl.Flags&sema::F_HAS_DEFER != 0
 		if m.Func.Decl.IsVoid() {
 			mut v, _ := m.Error.Model.(&sema::Var)
 			if v != nil && v.AST.Name == "error" {
@@ -2279,7 +2283,7 @@ impl scopeCoder {
 	fn scope2(mut &self, mut s: &sema::Scope, stmt: bool) {
 		// Scope is deferred.
 		// Memorize it for deferred handling.
-		if s.Deferred {
+		if s.Traits&sema::ST_DEFER != 0 {
 			self.deferredScopes = append(self.deferredScopes, s)
 			return
 		}

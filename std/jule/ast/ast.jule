@@ -384,7 +384,7 @@ struct Scope {
 
 	// Possible flags are:
 	//	F_UNSAFE: if scope is unsafe
-	//	F_DEFER: if scope is deferred
+	//	F_DEFER: if scope is deferred or short function literal body
 	Flags: Flag
 }
 
