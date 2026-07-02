@@ -1155,7 +1155,9 @@ impl sema {
 	}
 
 	fn checkFuncParamKind(mut &self, mut p: &ParamIns) {
-		p.Type.Variadic = p.Decl.AST.Flags&ast::F_VARIADIC != 0
+		if p.Decl.AST.Flags&ast::F_VARIADIC != 0 {
+			makeVariadic(&p.Type, p.Type)
+		}
 		if p.Decl.AST.Flags&ast::F_REFERENCE != 0 {
 			checkTypeForRef(self, p.Type, p.Decl.AST.Token)
 		}

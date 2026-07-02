@@ -83,10 +83,7 @@ impl Kind for Type {
 
 	// Reports whether types are same.
 	fn Equal(&self, other: &Type): bool {
-		if self.IsNil() {
-			return other.IsNil()
-		}
-		return self.Kind.Equal(other)
+		return self.Kind == other.Kind || self.Kind.Equal(other)
 	}
 }
 
@@ -1090,30 +1087,30 @@ impl typeChecker {
 		return tk
 	}
 
-	fn fromEnum(mut *self, decl: &token::Token, mut e: &Enum): &Enum {
+	fn fromEnum(mut *self, decl: &token::Token, mut e: &Enum): &Type {
 		if !self.s.isAccessibleDefine(e.AST.Flags&ast::F_PUBLIC != 0, e.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
-		return e
+		return e.getType()
 	}
 
-	fn fromTypeEnum(mut *self, decl: &token::Token, mut e: &TypeEnum): &TypeEnum {
+	fn fromTypeEnum(mut *self, decl: &token::Token, mut e: &TypeEnum): &Type {
 		if !self.s.isAccessibleDefine(e.AST.Flags&ast::F_PUBLIC != 0, e.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
-		return e
+		return e.getType()
 	}
 
-	fn fromTrait(mut *self, decl: &token::Token, mut t: &Trait): &Trait {
+	fn fromTrait(mut *self, decl: &token::Token, mut t: &Trait): &Type {
 		if !self.s.isAccessibleDefine(t.AST.Flags&ast::F_PUBLIC != 0, t.AST.Token) {
 			self.pushErr(decl, "undefined: "+decl.Kind)
 			return nil
 		}
 		self.pushTA(taMutable)
 		self.pushReference(t)
-		return t
+		return t.getType()
 	}
 
 	fn checkStructIns(mut *self, mut ins: &StructIns, mut errorToken: &token::Token): (ok: bool) {

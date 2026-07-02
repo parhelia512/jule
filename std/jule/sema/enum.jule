@@ -14,6 +14,9 @@ struct Enum {
 	FullName: string // See developer reference (16).
 	Type:     &Type
 	Items:    []&Var // See developer reference (14).
+
+	// Type cache.
+	typ: &Type
 }
 
 impl Kind for Enum {
@@ -25,12 +28,20 @@ impl Kind for Enum {
 
 	// Reports whether types are same.
 	fn Equal(&self, other: &Type): bool {
-		e, ok := other.Kind.(&Enum)
-		return ok && self == e
+		return other != nil && other.Kind == self
 	}
 }
 
 impl Enum {
+	fn getType(mut &self): &Type {
+		if self.typ == nil {
+			self.typ = &Type{
+				Kind: self,
+			}
+		}
+		return self.typ
+	}
+
 	// Returns item by identifier.
 	// Returns nil if not exist any item in this identifier.
 	fn FindItem(mut *self, name: string): &Var {
@@ -54,6 +65,9 @@ struct TypeEnum {
 	AST:      &ast::TypeEnum
 	FullName: string // See developer reference (16).
 	Items:    []&TypeEnumItem
+
+	// Type cache.
+	typ: &Type
 }
 
 impl Kind for TypeEnum {
@@ -65,7 +79,17 @@ impl Kind for TypeEnum {
 
 	// Reports whether types are same.
 	fn Equal(&self, other: &Type): bool {
-		e, ok := other.Kind.(&TypeEnum)
-		return ok && self == e
+		return other != nil && other.Kind == self
+	}
+}
+
+impl TypeEnum {
+	fn getType(mut &self): &Type {
+		if self.typ == nil {
+			self.typ = &Type{
+				Kind: self,
+			}
+		}
+		return self.typ
 	}
 }

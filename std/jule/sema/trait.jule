@@ -11,6 +11,9 @@ struct Trait {
 	Inherits:    []&Type
 	Methods:     []&Func
 	Implemented: []&Struct
+
+	// Type cache.
+	typ: &Type
 }
 
 impl Kind for Trait {
@@ -22,12 +25,20 @@ impl Kind for Trait {
 
 	// Reports whether types are same.
 	fn Equal(&self, other: &Type): bool {
-		t, ok := other.Kind.(&Trait)
-		return ok && self == t
+		return other != nil && other.Kind == self
 	}
 }
 
 impl Trait {
+	fn getType(mut &self): &Type {
+		if self.typ == nil {
+			self.typ = &Type{
+				Kind: self,
+			}
+		}
+		return self.typ
+	}
+
 	// Returns method by identifier.
 	// Returns nil if not exist any method in this identifier.
 	fn FindMethod(mut *self, name: string): &Func {
