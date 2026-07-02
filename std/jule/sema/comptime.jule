@@ -555,15 +555,15 @@ impl comptimeTypeInfo {
 			mut f := self.base.Func()
 			match {
 			| f.IsBuiltin():
-				e.pushErr(fc.Args[0].Token, "type @ is invalid for built-in function", self.base.String())
+				e.pushErr(fc.Token, "type @ is invalid for built-in function", self.base.String())
 				return nil
 			| f.IsAnon():
-				e.pushErr(fc.Args[0].Token, "type @ is invalid for anonymous function", self.base.String())
+				e.pushErr(fc.Token, "type @ is invalid for anonymous function", self.base.String())
 				return nil
 			}
 			decl = f.Decl
 		|:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Decl", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Decl", self.base.String())
 			return nil
 		}
 		return &Value{
@@ -686,12 +686,12 @@ impl comptimeTypeInfo {
 		}
 		prim := self.base.Prim()
 		if prim == nil {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Bits", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Bits", self.base.String())
 			return nil
 		}
 		n := types::BitSizeOf(prim.Kind)
 		if n == -1 {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Bits", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Bits", self.base.String())
 			return nil
 		}
 		mut constant := constant::NewI64(i64(n))
@@ -712,7 +712,7 @@ impl comptimeTypeInfo {
 		mut ptr := self.base.Ptr()
 		if ptr != nil {
 			if ptr.IsUnsafe() {
-				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Value", self.base.String())
+				e.pushErr(fc.Token, "type @ is invalid for function Value", self.base.String())
 				return nil
 			}
 			return buildComptimeTypeInfoData(e.s, ptr.Value)
@@ -741,7 +741,7 @@ impl comptimeTypeInfo {
 		if m != nil {
 			return buildComptimeTypeInfoData(e.s, m.Value)
 		}
-		e.pushErr(fc.Args[0].Token, "type @ is invalid for function Value", self.base.String())
+		e.pushErr(fc.Token, "type @ is invalid for function Value", self.base.String())
 		return nil
 	}
 
@@ -753,7 +753,7 @@ impl comptimeTypeInfo {
 		}
 		mut arr := self.base.Array()
 		if arr == nil {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Size", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Size", self.base.String())
 			return nil
 		}
 		mut constant := constant::NewI64(i64(arr.N))
@@ -773,7 +773,7 @@ impl comptimeTypeInfo {
 		}
 		mut m := self.base.Map()
 		if m == nil {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Key", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Key", self.base.String())
 			return nil
 		}
 		return buildComptimeTypeInfoData(e.s, m.Key)
@@ -805,7 +805,7 @@ impl comptimeTypeInfo {
 				},
 			}
 		}
-		e.pushErr(fc.Args[0].Token, "type @ is invalid for function Fields", self.base.String())
+		e.pushErr(fc.Token, "type @ is invalid for function Fields", self.base.String())
 		return nil
 	}
 
@@ -877,7 +877,7 @@ impl comptimeTypeInfo {
 		}
 		mut tup := self.base.Tuple()
 		if tup == nil {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Types", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Types", self.base.String())
 			return nil
 		}
 		mut infos := &comptimeTypeInfos{
@@ -931,7 +931,7 @@ impl comptimeTypeInfo {
 		}
 		mut f := self.base.Func()
 		if f == nil {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Result", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Result", self.base.String())
 			return nil
 		}
 		if f.Result == nil {
@@ -948,7 +948,7 @@ impl comptimeTypeInfo {
 		}
 		mut f := self.base.Func()
 		if f == nil {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Params", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Params", self.base.String())
 			return nil
 		}
 		return &Value{
@@ -983,7 +983,7 @@ impl comptimeTypeInfo {
 		mut s := self.base.SoftStruct()
 		isStrict := s != nil && s.Source != nil
 		if !isStrict {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Source", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function Source", self.base.String())
 			return nil
 		}
 		return buildComptimeTypeInfoData(e.s, s.Source)
@@ -998,7 +998,7 @@ impl comptimeTypeInfo {
 		s := self.base.SoftStruct()
 		isStrict := s != nil && s.Source != nil
 		if !isStrict {
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function ActualSource", self.base.String())
+			e.pushErr(fc.Token, "type @ is invalid for function ActualSource", self.base.String())
 			return nil
 		}
 		mut t := &Type{Kind: self.base.ActualKind()}
@@ -1646,7 +1646,7 @@ impl comptimeDecl {
 		mut public := false
 		match type self.decl {
 		| &Param:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Public", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Public", self.declAsStr())
 			return nil
 		| &Struct:
 			public = self.decl.(&Struct).AST.Flags&ast::F_PUBLIC != 0
@@ -1665,7 +1665,7 @@ impl comptimeDecl {
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
-				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Public", self.declAsStr())
+				e.pushErr(fc.Token, "type @ is invalid for function Public", self.declAsStr())
 				return nil
 			}
 			public = v.AST.Flags&ast::F_PUBLIC != 0
@@ -1694,7 +1694,7 @@ impl comptimeDecl {
 		| &Trait
 		| &Field
 		| &Param:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Extern", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Extern", self.declAsStr())
 			return nil
 		| &Struct:
 			_extern = self.decl.(&Struct).AST.Flags&ast::F_EXTERN != 0
@@ -1705,7 +1705,7 @@ impl comptimeDecl {
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
-				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Extern", self.declAsStr())
+				e.pushErr(fc.Token, "type @ is invalid for function Extern", self.declAsStr())
 				return nil
 			}
 			_extern = v.AST.Flags&ast::F_EXTERN != 0
@@ -1731,7 +1731,7 @@ impl comptimeDecl {
 		| &Func:
 			break
 		|:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Fallible", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Fallible", self.declAsStr())
 			return nil
 		}
 		mut f := self.decl.(&Func)
@@ -1758,7 +1758,7 @@ impl comptimeDecl {
 		| &TypeEnum
 		| &Trait
 		| &TypeAlias:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Mutable", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Mutable", self.declAsStr())
 			return nil
 		| &Param:
 			mutable = self.decl.(&Param).AST.Flags&ast::F_MUTABLE != 0
@@ -1767,7 +1767,7 @@ impl comptimeDecl {
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
-				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Mutable", self.declAsStr())
+				e.pushErr(fc.Token, "type @ is invalid for function Mutable", self.declAsStr())
 				return nil
 			}
 			mutable = v.AST.Flags&ast::F_MUTABLE != 0
@@ -1799,7 +1799,7 @@ impl comptimeDecl {
 		| &TypeAlias
 		| &Field
 		| &Var:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Variadic", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Variadic", self.declAsStr())
 			return nil
 		| &Param:
 			variadic = self.decl.(&Param).AST.Flags&ast::F_VARIADIC != 0
@@ -1830,12 +1830,12 @@ impl comptimeDecl {
 		| &Trait
 		| &TypeAlias
 		| &Field:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Reference", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Reference", self.declAsStr())
 			return nil
 		| &Var:
 			v := self.decl.(&Var)
 			if v.IsEnumField() {
-				e.pushErr(fc.Args[0].Token, "type @ is invalid for function Reference", self.declAsStr())
+				e.pushErr(fc.Token, "type @ is invalid for function Reference", self.declAsStr())
 				return nil
 			}
 			ref = v.AST.Flags&ast::F_REFERENCE != 0
@@ -1868,7 +1868,7 @@ impl comptimeDecl {
 		| &Field
 		| &Var
 		| &Param:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Params", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Params", self.declAsStr())
 			return nil
 		| &Func:
 			mut f := self.decl.(&Func)
@@ -1903,7 +1903,7 @@ impl comptimeDecl {
 		| &Var
 		| &Param
 		| &Func:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Fields", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Fields", self.declAsStr())
 			return nil
 		| &Enum:
 			mut enm := self.decl.(&Enum)
@@ -1944,7 +1944,7 @@ impl comptimeDecl {
 		| &Param
 		| &Func
 		| &Enum:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Methods", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Methods", self.declAsStr())
 			return nil
 		| &Trait:
 			mut t := self.decl.(&Trait)
@@ -1987,7 +1987,7 @@ impl comptimeDecl {
 				Model:    constant,
 			}
 		|:
-			e.pushErr(fc.Args[0].Token, "type @ is invalid for function Tag", self.declAsStr())
+			e.pushErr(fc.Token, "type @ is invalid for function Tag", self.declAsStr())
 			return nil
 		}
 	}

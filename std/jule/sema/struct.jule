@@ -200,7 +200,7 @@ struct StructIns {
 
 	// Possible flags are:
 	//	F_MUTABLE: if structure has fields with mutable types
-	//	F_COMPARABLE: if all structure fields are comparible
+	//	F_COMPARABLE: if all structure fields are comparable
 	Flags: Flag
 
 	env: &environ
