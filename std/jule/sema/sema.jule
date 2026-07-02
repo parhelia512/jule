@@ -298,6 +298,7 @@ struct commonSemaMeta {
 	flags:             int          // General flags.
 	gstructs:          []&StructIns // Generic structs waiting to be checked.
 	comptimeTypeInfos: []&comptimeTypeInfo
+	refcache:          []&ReferenceStack
 	runtime:           &ImportInfo       // Implicitly imported "std/runtime" package.
 	mrc:               missingRetChecker // General missing return statement checker.
 }
@@ -3002,10 +3003,9 @@ impl sema {
 			message.WriteString(refersTo)!
 			message.WriteByte('\n')!
 		}
-		mut cached := make([]&ReferenceStack, 0, 10)
+		mut &cached := &self.meta.refcache
 		for (_, mut file) in self.files {
 			for (_, mut v) in file.Vars {
-				cached = cached[:0]
 				let mut refCheck: fn(mut &cached: *[]&ReferenceStack, mut r: &ReferenceStack, owner: string): (cycle: bool)
 				&_refCheck := &refCheck // For closure.
 				refCheck = fn|mut cached, mut r, owner| {
@@ -3056,7 +3056,7 @@ impl sema {
 					}
 					return false
 				}
-				if refCheck(&cached, v.Refers, v.AST.Name) {
+				if refCheck(cached, v.Refers, v.AST.Name) {
 					self.pushErr(v.AST.Token, "illegal cross cycle in declaration:\n"+message.String())
 					return
 				}
