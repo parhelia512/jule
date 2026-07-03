@@ -4820,16 +4820,16 @@ impl binaryEval {
 			fall
 		| self.l.Type.IsNil():
 			return self.evalNil()
-		| self.r.Type.Trait() != nil:
-			self.l, self.r = self.r, self.l
-			fall
-		| self.l.Type.Trait() != nil:
-			return self.evalTrait()
 		| self.r.Type.Prim() != nil && self.r.Type.Prim().IsAny():
 			self.l, self.r = self.r, self.l
 			fall
 		| self.l.Type.Prim() != nil && self.l.Type.Prim().IsAny():
 			return self.evalAny()
+		| self.r.Type.Trait() != nil:
+			self.l, self.r = self.r, self.l
+			fall
+		| self.l.Type.Trait() != nil:
+			return self.evalTrait()
 		| self.r.Type.TypeEnum() != nil:
 			self.l, self.r = self.r, self.l
 			fall
