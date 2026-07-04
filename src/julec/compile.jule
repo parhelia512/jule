@@ -687,9 +687,6 @@ fn build(mut args: []string) {
 		}
 	}
 
-	// Cache the IR.
-	ir.Cache()
-
 	applyTargetIndependentOptimizations(ir)
 
 	// See compiler reference (1)

@@ -87,15 +87,6 @@ impl identCoder {
 		self.writeIdentTo(buf, name)
 	}
 
-	fn needCacheHit(*self, path: string): string {
-		pkg := filepath::Dir(path)
-		name, ok := self.oc.ir.PackageNameCache[pkg]
-		if !ok {
-			panic("cache miss: " + pkg)
-		}
-		return name
-	}
-
 	fn traitFunc(*self, mut &buf: *strings::Builder, t: &sema::Trait, mut f: &sema::Func) {
 		self.traitDecl(buf, t)
 		buf.WriteByte('_')!
@@ -132,11 +123,7 @@ impl identCoder {
 			identCoder.export(buf, export)
 			return
 		}
-		file := self.oc.ir.Importer.GetFileSet(f.AST.Token.FileSetID)
-		name := self.needCacheHit(file.Path)
-		buf.WriteString(name)!
-		buf.WriteByte('_')!
-		self.writeIdentTo(buf, f.AST.Name)
+		self.toOut(buf, f.AST.Name, uintptr(f))
 	}
 
 	fn funcIns(*self, mut &buf: *strings::Builder, mut f: &sema::FuncIns) {
@@ -165,11 +152,7 @@ impl identCoder {
 	}
 
 	fn traitDecl(*self, mut &buf: *strings::Builder, t: &sema::Trait) {
-		file := self.oc.ir.Importer.GetFileSet(t.AST.Token.FileSetID)
-		name := self.needCacheHit(file.Path)
-		buf.WriteString(name)!
-		buf.WriteByte('_')!
-		self.writeIdentTo(buf, t.AST.Name)
+		self.toOut(buf, t.AST.Name, uintptr(t))
 	}
 
 	fn param(*self, mut &buf: *strings::Builder, p: &sema::Param) {
@@ -195,11 +178,7 @@ impl identCoder {
 			buf.WriteString(s.AST.Name)!
 			return
 		}
-		file := self.oc.ir.Importer.GetFileSet(s.AST.Token.FileSetID)
-		name := self.needCacheHit(file.Path)
-		buf.WriteString(name)!
-		buf.WriteByte('_')!
-		self.writeIdentTo(buf, s.AST.Name)
+		self.toOut(buf, s.AST.Name, uintptr(s))
 	}
 
 	fn structureIns(*self, mut &buf: *strings::Builder, mut s: &sema::StructIns) {
@@ -296,11 +275,7 @@ impl identCoder {
 				identCoder.export(buf, export)
 				return
 			}
-			file := self.oc.ir.Importer.GetFileSet(v.AST.Token.FileSetID)
-			name := self.needCacheHit(file.Path)
-			buf.WriteString(name)!
-			buf.WriteByte('_')!
-			self.writeIdentTo(buf, v.AST.Name)
+			self.toOut(buf, v.AST.Name, uintptr(v))
 		}
 	}
 

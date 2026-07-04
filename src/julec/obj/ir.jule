@@ -14,11 +14,10 @@ use "std/strings"
 
 // Intermediate representation of the code for compiler.
 struct IR {
-	Root:             string            // Directory of the root package.
-	Passes:           [][]string        // All unique pass directives.
-	Runtime:          &sema::ImportInfo // ImportInfo instance of the "std/runtime" package.
-	Ordered:          OrderedDefines    // Ordered defines, nil by default. Initialized by the Order method.
-	PackageNameCache: map[string]string // Package defines name cache, nil by default. Initialized by the Cache method
+	Root:    string            // Directory of the root package.
+	Passes:  [][]string        // All unique pass directives.
+	Runtime: &sema::ImportInfo // ImportInfo instance of the "std/runtime" package.
+	Ordered: OrderedDefines    // Ordered defines, nil by default. Initialized by the Order method.
 
 	// The importer of the IR.
 	Importer: sema::Importer
@@ -88,29 +87,6 @@ impl IR {
 }
 
 impl IR {
-	fn cache(mut *self, imp: &sema::ImportInfo) {
-		name := strings::ReplaceAll(imp.LinkPath, jule::ImportPathSep, "_")
-		self.PackageNameCache[imp.Path] = "__jule_" + name
-	}
-
-	// Caches the IR.
-	fn Cache(mut *self) {
-		// Build an imitiation import information for our root package.
-		rootImp := &sema::ImportInfo{
-			Path:     self.Root,
-			LinkPath: "std/main",
-		}
-
-		self.PackageNameCache = make(map[string]string, 256)
-		self.cache(rootImp)
-		for (_, mut imp) in self.Used {
-			if imp.Extern {
-				continue
-			}
-			self.cache(imp)
-		}
-	}
-
 	// Collects all pass directives of the IR and stores them in [Passes].
 	// Eliminates duplicated directives.
 	// Appending custom directives before this function is allowed.
