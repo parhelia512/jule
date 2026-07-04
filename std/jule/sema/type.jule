@@ -462,8 +462,7 @@ impl Kind for Prim {
 
 	// Reports whether types are same.
 	fn Equal(&self, other: &Type): bool {
-		p, ok := other.Kind.(&Prim)
-		return ok && self == p
+		return other != nil && other.Kind == self
 	}
 }
 
