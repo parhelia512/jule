@@ -52,13 +52,14 @@ impl resource::File for file {
 
 // Default importer for the reference Jule compiler.
 struct importer {
-	mainPackagePath: string                    // Path of the main package.
 	mod:             &mod::Mod                 // Current module.
 	mods:            []&mod::Mod               // Registered modules.
 	pkgs:            []&sema::ImportInfo       // Registered packages.
 	filesets:        []&token::FileSet         // Registered FileSets.
 	tags:            []string                  // Build tags.
 	files:           map[string]resource::File // Included files.
+	tokenBuf:        []&token::Token           // Common token buffer.
+	mainPackagePath: string                    // Path of the main package.
 }
 
 impl sema::Importer for importer {
@@ -167,12 +168,13 @@ impl sema::Importer for importer {
 			file.ID = len(self.filesets)
 			unsafe { file.FillMut(readBuff(file.Path)) }
 
-			mut tokens, mut logs := token::ScanAll(file, parser::TokenOptions)
+			self.tokenBuf = self.tokenBuf[:0]
+			(self.tokenBuf), mut logs := token::AppendAll(self.tokenBuf, file, parser::TokenOptions)
 			if len(logs) > 0 {
 				return nil, logs
 			}
 
-			mut finfo := parser::ParseFile(file, tokens)
+			mut finfo := parser::ParseFile(file, self.tokenBuf)
 			if len(finfo.Errors) > 0 {
 				return nil, finfo.Errors
 			}
