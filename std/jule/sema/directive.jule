@@ -48,54 +48,6 @@ impl directiveChecker {
 		}
 	}
 
-	fn checkNamespace(mut *self, mut d: &ast::Directive) {
-		match type self.o {
-		| &Struct:
-			if self.o.(&Struct).AST.Flags&ast::F_EXTERN == 0 {
-				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
-			}
-		| &Func:
-			if self.o.(&Func).AST.Flags&ast::F_EXTERN == 0 {
-				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
-			}
-		| &Var:
-			if self.o.(&Var).AST.Flags&ast::F_EXTERN == 0 {
-				self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
-			}
-		|:
-			self.s.pushErr(d.Tag, "declaration does not supports directive: "+d.Tag.Kind)
-		}
-
-		if len(d.Args) == 0 {
-			self.s.pushErr(d.Tag, "missing expression")
-			return
-		} else if len(d.Args) > 1 {
-			self.s.pushErr(d.Args[1], `passed more argument than expected to directive #namespace`)
-			self.s.pushSuggestion(`use like; #namespace "namespace"`)
-		}
-
-		arg := d.Args[0]
-		if arg.ID != token::STRING || arg.Kind[0] != '"' {
-			self.s.pushErr(arg, "invalid syntax")
-			return
-		}
-
-		// remove quotes
-		d.Args[0].Kind = arg.Kind[1 : len(arg.Kind)-1]
-
-		// Push relevant directives.
-		match type self.o {
-		| &Struct:
-			if findDirective(*self.d, directive::Typedef) == nil {
-				mut typedef := &ast::Directive{
-					Tag: new(token::Token, *d.Tag),
-				}
-				typedef.Tag.Kind = directive::Typedef
-				*self.d = append(*self.d, typedef)
-			}
-		}
-	}
-
 	fn checkTest(mut *self, d: &ast::Directive) {
 		match type self.o {
 		| &Func:
@@ -220,8 +172,6 @@ impl directiveChecker {
 			self.checkCdef(d)
 		| directive::Typedef:
 			self.checkTypedef(d)
-		| directive::Namespace:
-			self.checkNamespace(d)
 		| directive::Test:
 			self.checkTest(d)
 		| directive::Export:

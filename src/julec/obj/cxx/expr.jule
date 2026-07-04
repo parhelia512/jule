@@ -535,13 +535,6 @@ impl exprCoder {
 				return
 			}
 		}
-		if m.AST.Flags&ast::F_EXTERN != 0 {
-			d := obj::FindDirective(m.AST.Directives, directive::Namespace)
-			if d != nil {
-				self.oc.writeBytes(concatAllParts(d.Args...))
-				self.oc.write("::")
-			}
-		}
 		self.oc.ic.var(&self.oc.Buf, m)
 	}
 
@@ -1672,13 +1665,6 @@ impl exprCoder {
 	}
 
 	fn funcIns(mut &self, mut m: &sema::FuncIns) {
-		if m.Decl != nil && m.Decl.AST.Flags&ast::F_EXTERN != 0 {
-			d := obj::FindDirective(m.Decl.AST.Directives, directive::Namespace)
-			if d != nil {
-				self.oc.writeBytes(concatAllParts(d.Args...))
-				self.oc.write("::")
-			}
-		}
 		self.oc.ic.funcIns(&self.oc.Buf, m)
 	}
 
