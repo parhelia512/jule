@@ -278,7 +278,7 @@ a full wide digit for the last step:
 	                       ---------------------
 	                               [    rem    ]
 
-Today, the code in divRecStep works like the first example. Perhaps in
+Today, the code in divRecursiveStep works like the first example. Perhaps in
 the future we will make it work like the alternative, to avoid a special case
 in the final iteration.
 
@@ -621,7 +621,7 @@ fn divLargeW(mut &z: *[]Word, mut &u: *[]Word, uIn: []Word, vIn: []Word) {
 	if n < divRecursiveThreshold {
 		divBasic(z, u, v)
 	} else {
-		divRec(z, u, v)
+		divRecursive(z, u, v)
 	}
 
 	*z = normW(*z)
@@ -631,7 +631,7 @@ fn divLargeW(mut &z: *[]Word, mut &u: *[]Word, uIn: []Word, vIn: []Word) {
 	*u = normW(*u)
 }
 
-// The number of divisor digits at which point divRec is faster than divBasic.
+// The number of divisor digits at which point divRecursive is faster than divBasic.
 const divRecursiveThreshold = 100
 
 // Reports whether the two digit numbers x1 x2 > y1 y2.
@@ -685,16 +685,9 @@ fn divBasic(mut &q: *[]Word, mut &u: *[]Word, v: []Word) {
 				if rhat < prevRhat {
 					break
 				}
-				// No need for a full mulWW: x1, x2 = mulWW(qhat, vn2)
+				// TODO: No need for a full mulWW.
 				// x2 += vn2; if x2 overflows, x1++
-				// TODO: Make sure this is a good exchange with mulWW version.
-				{
-					_x2, carry := bits::Add(uint(x2), uint(vn2), 0)
-					if carry == 0 {
-						x1++
-					}
-					x2 = Word(_x2)
-				}
+				x1, x2 = mulWW(qhat, vn2)
 			}
 		}
 
@@ -732,8 +725,8 @@ fn divBasic(mut &q: *[]Word, mut &u: *[]Word, v: []Word) {
 // It overwrites z with ⌊u/v⌋ and overwrites u with the remainder r.
 // z must be large enough to hold ⌊u/v⌋.
 // This function is just for allocating and freeing temporaries
-// around divRecStep, the real implementation.
-fn divRec(mut &z: *[]Word, mut &u: *[]Word, mut v: []Word) {
+// around divRecursiveStep, the real implementation.
+fn divRecursive(mut &z: *[]Word, mut &u: *[]Word, mut v: []Word) {
 	// Recursion depth is (much) less than 2 log₂(len(v)).
 	// Allocate a slice of temporaries to be reused across recursion,
 	// plus one extra temporary not live across the recursion.
@@ -742,7 +735,7 @@ fn divRec(mut &z: *[]Word, mut &u: *[]Word, mut v: []Word) {
 	mut temps := make([][]Word, recDepth)
 
 	clearW(*z)
-	divRecStep(z, *u, v, 0, tmp, temps)
+	divRecursiveStep(z, *u, v, 0, tmp, temps)
 }
 
 // The actual implementation of recursive division.
@@ -750,7 +743,7 @@ fn divRec(mut &z: *[]Word, mut &u: *[]Word, mut v: []Word) {
 // z must be large enough to hold ⌊u/v⌋.
 // It uses temps[depth] (allocating if needed) as a temporary live across
 // the recursive call. It also uses tmp, but not live across the recursion.
-fn divRecStep(mut &z: *[]Word, mut u: []Word, mut v: []Word,
+fn divRecursiveStep(mut &z: *[]Word, mut u: []Word, mut v: []Word,
 	depth: int, mut tmp: []Word, mut temps: [][]Word) {
 	// u is a subsection of the original and may have leading zeros.
 	// TODO: The v = normW(v) is useless and should be removed.
@@ -783,7 +776,7 @@ fn divRecStep(mut &z: *[]Word, mut u: []Word, mut v: []Word,
 
 	// Allocate words for qhat below.
 	if temps[depth] == nil {
-		temps[depth] = getW(n) // TODO: Can be just W+1.
+		temps[depth] = getW(W + 1)
 	} else {
 		temps[depth] = makeW(temps[depth], W+1)
 	}
@@ -816,11 +809,11 @@ fn divRecStep(mut &z: *[]Word, mut u: []Word, mut v: []Word,
 		// Compute the 2-by-1 guess q̂, leaving r̂ in uu[s:W+n].
 		mut qhat := temps[depth]
 		clearW(qhat)
-		divRecStep(&qhat, uu[s:W+n], v[s:], depth+1, tmp, temps)
+		divRecursiveStep(&qhat, uu[s:W+n], v[s:], depth+1, tmp, temps)
 		qhat = normW(qhat)
 
 		// Extend to a 3-by-2 quotient and remainder.
-		// Because divRecStep overwrote the top part of uu with
+		// Because divRecursiveStep overwrote the top part of uu with
 		// the remainder r̂, the full uu already contains the equivalent
 		// of r̂·B + uₙ₋₂ from the “Refining Guesses” discussion.
 		// Subtracting q̂·vₙ₋₂ from it will compute the full-length remainder.
@@ -847,7 +840,7 @@ fn divRecStep(mut &z: *[]Word, mut u: []Word, mut v: []Word,
 			addAtW(uu[s:], v[s:], 0)
 		}
 		if cmpW(qhatv, normW(uu)) > 0 {
-			panic("math/big: divRecStep: impossible")
+			panic("math/big: divRecursiveStep: impossible")
 		}
 		c := subVV(uu[:len(qhatv)], uu[:len(qhatv)], qhatv)
 		if c > 0 {
@@ -864,7 +857,7 @@ fn divRecStep(mut &z: *[]Word, mut u: []Word, mut v: []Word,
 	s := W - 1
 	mut qhat := temps[depth]
 	clearW(qhat)
-	divRecStep(&qhat, normW(u[s:]), v[s:], depth+1, tmp, temps)
+	divRecursiveStep(&qhat, normW(u[s:]), v[s:], depth+1, tmp, temps)
 	qhat = normW(qhat)
 	mut qhatv := makeW(tmp, 3*n)
 	clearW(qhatv)
@@ -882,14 +875,14 @@ fn divRecStep(mut &z: *[]Word, mut u: []Word, mut v: []Word,
 		}
 	}
 	if cmpW(qhatv, normW(u)) > 0 {
-		panic("math/big: divRecStep: impossible")
+		panic("math/big: divRecursiveStep: impossible")
 	}
 	mut c := subVV(u[0:len(qhatv)], u[0:len(qhatv)], qhatv)
 	if c > 0 {
 		c = subVW(u[len(qhatv):], u[len(qhatv):], c)
 	}
 	if c > 0 {
-		panic("math/big: divRecStep: impossible")
+		panic("math/big: divRecursiveStep: impossible")
 	}
 
 	// Done!

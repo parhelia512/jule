@@ -545,8 +545,6 @@ impl Int {
 		// temp variables for multiprecision update
 		mut q := Int{}
 		mut r := Int{}
-		mut s := Int{}
-		mut t := Int{}
 
 		// ensure A >= B
 		if cmpW(A.abs, B.abs) < 0 {
@@ -563,16 +561,17 @@ impl Int {
 				// Simulate the effect of the single-precision steps using the cosequences.
 				// A = u0*A + v0*B
 				// B = u1*A + v1*B
-				lehmerUpdate(&A, &B, &q, &r, &s, &t, u0, u1, v0, v1, even)
+				lehmerUpdate(&A, &B, &q, &r, u0, u1, v0, v1, even)
+
 				if extended {
 					// Ua = u0*Ua + v0*Ub
 					// Ub = u1*Ua + v1*Ub
-					lehmerUpdate(&Ua, &Ub, &q, &r, &s, &t, u0, u1, v0, v1, even)
+					lehmerUpdate(&Ua, &Ub, &q, &r, u0, u1, v0, v1, even)
 				}
 			} else {
 				// Single-digit calculations failed to simulate any quotients.
 				// Do a standard Euclidean step.
-				euclidUpdate(&A, &B, &Ua, &Ub, &q, &r, &s, &t, extended)
+				euclidUpdate(&A, &B, &Ua, &Ub, &q, &r, extended)
 			}
 		}
 
@@ -580,7 +579,7 @@ impl Int {
 			// extended Euclidean algorithm base case if B is a single Word
 			if len(A.abs) > 1 {
 				// A is longer than a single Word, so one update is needed.
-				euclidUpdate(&A, &B, &Ua, &Ub, &q, &r, &s, &t, extended)
+				euclidUpdate(&A, &B, &Ua, &Ub, &q, &r, extended)
 			}
 			if len(B.abs) > 0 {
 				// A and B are both a single Word.
@@ -601,15 +600,9 @@ impl Int {
 						even = !even
 					}
 
-					setWV(&t.abs, ua)
-					setWV(&s.abs, va)
-					t.neg = !even
-					s.neg = even
-
-					t.Mul(&Ua, &t)
-					s.Mul(&Ub, &s)
-
-					Ua.Add(&t, &s)
+					mulWI(&Ua, &Ua, !even, ua)
+					mulWI(&Ub, &Ub, even, va)
+					Ua.Add(&Ua, &Ub)
 				} else {
 					for bWord != 0 {
 						aWord, bWord = bWord, aWord%bWord
@@ -1162,41 +1155,33 @@ fn lehmerSimulate(A: Int, B: Int): (u0: Word, u1: Word, v0: Word, v1: Word, even
 // For even == true: u0, v1 >= 0 && u1, v0 <= 0
 // For even == false: u0, v1 <= 0 && u1, v0 >= 0
 // q, r, s, t are temporary variables to avoid allocations in the multiplication.
-fn lehmerUpdate(mut &A: *Int, mut &B: *Int, mut &q: *Int, mut &r: *Int, mut &s: *Int, mut &t: *Int,
+fn lehmerUpdate(mut &A: *Int, mut &B: *Int, mut &q: *Int, mut &r: *Int,
 	u0: Word, u1: Word, v0: Word, v1: Word, even: bool) {
-	setWV(&t.abs, u0)
-	setWV(&s.abs, v0)
-	t.neg = !even
-	s.neg = even
+	mulWI(q, B, even, v0)
+	mulWI(r, A, even, u1)
+	mulWI(A, A, !even, u0)
+	mulWI(B, B, !even, v1)
+	A.Add(A, q)
+	B.Add(B, r)
+}
 
-	t.Mul(A, t)
-	s.Mul(B, s)
-
-	setWV(&r.abs, u1)
-	setWV(&q.abs, v1)
-	r.neg = even
-	q.neg = !even
-
-	r.Mul(A, r)
-	q.Mul(B, q)
-
-	A.Add(t, s)
-	B.Add(r, q)
+fn mulWI(mut &z: *Int, mut &x: *Int, neg: bool, w: Word) {
+	mulAddWW(&z.abs, x.abs, w, 0)
+	z.neg = x.neg != neg
 }
 
 // Performs a single step of the Euclidean GCD algorithm
 // if extended is true, it also updates the cosequence Ua, Ub.
 fn euclidUpdate(mut &A: *Int, mut &B: *Int, mut &Ua: *Int, mut &Ub: *Int, mut &q: *Int,
-	mut &r: *Int, mut &s: *Int, mut &t: *Int, extended: bool) {
+	mut &r: *Int, extended: bool) {
 	q.QuoRem(A, B, r)
 
-	*A, *B, *r = *B, *r, *A
-
 	if extended {
-		// Ua, Ub = Ub, Ua - q*Ub
-		t.Set(Ub)
-		s.Mul(Ub, q)
-		Ub.Sub(Ua, s)
-		Ua.Set(t)
+		// Ua, Ub = Ub, Ua-q*Ub
+		q.Mul(q, Ub)
+		*Ua, *Ub = *Ub, *Ua
+		Ub.Sub(Ub, q)
 	}
+
+	*A, *B, *r = *B, *r, *A
 }
