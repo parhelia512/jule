@@ -10,7 +10,7 @@ fn checkSema(data: string): (err: bool) {
 	mut fs := token::FileSet.New("/jule/sema/test")
 	fs.ID = 0
 	fs.Fill([]byte(data))
-	mut tokens, errors := token::ScanAll(fs, parser::TokenOptions)
+	mut tokens, errors := token::AppendAll(nil, fs, parser::TokenOptions)
 	if len(errors) > 0 {
 		panic("sema: lexer issue")
 	}
