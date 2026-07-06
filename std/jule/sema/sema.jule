@@ -295,12 +295,13 @@ const (
 )
 
 struct commonSemaMeta {
-	flags:             int          // General flags.
+	errors:            []log::Log   // Common error logs.
 	gstructs:          []&StructIns // Generic structs waiting to be checked.
 	comptimeTypeInfos: []&comptimeTypeInfo
 	refcache:          []&ReferenceStack
 	runtime:           &ImportInfo       // Implicitly imported "std/runtime" package.
 	mrc:               missingRetChecker // General missing return statement checker.
+	flags:             int               // General flags.
 }
 
 impl commonSemaMeta {
@@ -326,13 +327,12 @@ const (
 // Semantic analyzer for tables.
 // Accepts tables as files of package.
 struct sema {
-	errors:   []log::Log
 	files:    []&SymTab // Package files.
 	file:     &SymTab   // Current package file.
-	flags:    int
 	meta:     &commonSemaMeta
-	step:     int
 	importer: Importer
+	flags:    int
+	step:     int
 }
 
 impl Lookup for sema {
@@ -460,13 +460,13 @@ impl sema {
 	fn setCurrentFile(mut *self, mut f: &SymTab) { self.file = f }
 
 	fn pushErr(mut *self, token: &token::Token, fmt: string, args: ...any) {
-		self.errors = append(self.errors,
+		self.meta.errors = append(self.meta.errors,
 			compilerErr(self.importer.GetFileSet(token.FileSetID), token, true, fmt, args...))
 	}
 
 	fn pushErrorFromLitError(mut *self, t: &token::Token, err: lit::Error) {
 		file := self.importer.GetFileSet(t.FileSetID)
-		self.errors = append(self.errors, log::Log{
+		self.meta.errors = append(self.meta.errors, log::Log{
 			Kind:   log::Error,
 			Row:    t.Row,
 			Column: t.Column + err.Offset,
@@ -484,7 +484,7 @@ impl sema {
 
 	// Push suggestion to last log.
 	fn pushSuggestion(mut *self, fmt: string, args: ...any) {
-		unsafe { pushSuggestion(&self.errors[len(self.errors)-1], fmt, args...) }
+		unsafe { pushSuggestion(&self.meta.errors[len(self.meta.errors)-1], fmt, args...) }
 	}
 
 	// Reports whether define is accessible in the current package.
@@ -657,11 +657,6 @@ impl sema {
 			if !imp.Extern {
 				mut sema := semas[i]
 				sema.check()
-				if len(sema.errors) != 0 {
-					self.errors = append(self.errors, sema.errors...)
-					sema.errors = nil
-					return false
-				}
 			}
 		}
 		return true
@@ -1002,7 +997,7 @@ impl sema {
 		mut f: &FuncIns,
 		mut &ignored: *[]&Type,
 		mut &recheckNeed: *[]recheckableType): (ok: bool) {
-		n := len(self.errors)
+		n := len(self.meta.errors)
 		// Check with funcEnvironment, we need to generics of owner, if any.
 		// If owner generics ignored, we cannot resolve them with type inference.
 		// Resolve owner generics in time, only ignore generics of the function.
@@ -1030,7 +1025,7 @@ impl sema {
 			}
 			return ok
 		})
-		return ok && len(self.errors) == n
+		return ok && len(self.meta.errors) == n
 	}
 
 	fn getTraitCheckFuncKind(mut &self, mut f: &Func): &FuncIns {
@@ -1113,11 +1108,6 @@ impl sema {
 			ok = algo(f.env.sema)
 		}
 
-		if f.env.sema != self {
-			self.errors = append(self.errors, f.env.sema.errors...)
-			f.env.sema.errors = nil
-		}
-
 		return ok
 	}
 
@@ -1145,11 +1135,6 @@ impl sema {
 			s.env.sema.setCurrentFile(old)
 		} else {
 			ok = algo(s.env.sema)
-		}
-
-		if s.env.sema != self {
-			self.errors = append(self.errors, s.env.sema.errors...)
-			s.env.sema.errors = nil
 		}
 
 		return ok
@@ -1205,7 +1190,7 @@ impl sema {
 		if f.IsBuiltin() || f.IsAnon() {
 			return true
 		}
-		n := len(self.errors)
+		n := len(self.meta.errors)
 		ok := self.funcEnvironment(f, fn|mut sema, mut generics| {
 			self.reloadSelf(f)
 			mut ok := true
@@ -1226,7 +1211,7 @@ impl sema {
 			}
 			return ok
 		})
-		return ok && n == len(self.errors)
+		return ok && n == len(self.meta.errors)
 	}
 
 	fn checkRefValidityForInitExpr(mut &self,
@@ -1437,7 +1422,7 @@ impl sema {
 			self.checkTypeAliasDeclDup(ta)
 
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -1498,7 +1483,7 @@ impl sema {
 		for (_, mut e) in self.file.TypeEnums {
 			self.checkTypeEnumDecl(e)
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -1595,14 +1580,14 @@ impl sema {
 		for (_, mut e) in self.file.Enums {
 			self.precheckEnumDecl(e)
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
 		for (_, mut e) in self.file.Enums {
 			self.checkEnumDecl(e)
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -1865,7 +1850,7 @@ impl sema {
 			f.Owner = t
 
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return
 			}
 
@@ -1910,7 +1895,7 @@ impl sema {
 		for (_, mut t) in self.file.Traits {
 			self.checkTraitDecl(t)
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -2116,7 +2101,7 @@ impl sema {
 		for (_, mut decl) in self.file.Vars {
 			self.checkGlobalVarDecl(decl)
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -2217,7 +2202,7 @@ impl sema {
 		for (_, mut s) in self.file.Structs {
 			self.checkStructDecl(s)
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -2231,7 +2216,7 @@ impl sema {
 			| !self.checkFuncDeclsBy(s.Methods):
 			}
 			// Break checking if type alias has error.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -2268,7 +2253,7 @@ impl sema {
 		for (_, mut f) in funcs {
 			self.checkFuncDecl(f)
 			// Break checking if error occurs.
-			if len(self.errors) > 0 {
+			if len(self.meta.errors) > 0 {
 				return false
 			}
 		}
@@ -2576,12 +2561,12 @@ impl sema {
 		mut recheckNeed: []recheckableType): (ok: bool, exist: bool) {
 		// If len(recheckNeed)>0, check the types before handling function.
 		if len(recheckNeed) > 0 {
-			n := len(self.errors)
+			n := len(self.meta.errors)
 			ok = true
 			for (_, mut t) in recheckNeed {
 				ok = self.recheckType(t, et, (*f).Refers) && ok
 			}
-			if !ok || n != len(self.errors) {
+			if !ok || n != len(self.meta.errors) {
 				return false, false
 			}
 		}
@@ -2701,10 +2686,6 @@ impl sema {
 				mut kind := tc.checkDecl(f.Decl.AST.Type)
 				ok = kind != nil && ok
 				if kind == nil {
-					if self != s.env.sema && len(s.env.sema.errors) > 0 {
-						self.errors = append(self.errors, s.env.sema.errors...)
-						s.env.sema.errors = nil
-					}
 					continue
 				}
 				f.Type = kind
@@ -2885,12 +2866,12 @@ impl sema {
 			sc.table.TypeAliases = f.env.generics[:len(f.env.generics):len(f.env.generics)]
 		}
 
-		n := len(sc.s.errors)
+		n := len(sc.s.meta.errors)
 		sc.check(f.Decl.AST.Scope, f.Scope)
 		f.Scope.Owner = uintptr(f)
 
 		// Check return statements if scopeChecker not forced to stop and no error.
-		if !sc.stopped() && len(sc.s.errors) == n {
+		if !sc.stopped() && len(sc.s.meta.errors) == n {
 			self.checkRets(f, sc)
 		}
 	}
@@ -2913,11 +2894,6 @@ impl sema {
 			f.Decl.sema.setCurrentFile(old)
 		} else {
 			self.checkFuncInsSc(f, sc)
-		}
-
-		if f.env.sema != self {
-			self.errors = append(self.errors, f.env.sema.errors...)
-			f.env.sema.errors = nil
 		}
 	}
 
@@ -3085,7 +3061,7 @@ impl sema {
 			self.setCurrentFile(f)
 			self.precheckFuncs()
 		}
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 		// We can check global variables here. Structures may refer to a global
@@ -3097,7 +3073,7 @@ impl sema {
 			self.setCurrentFile(f)
 			self.checkGlobals()
 		}
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 		// Precheck structures before analysis of the implementations such as
@@ -3106,7 +3082,7 @@ impl sema {
 			self.setCurrentFile(f)
 			self.precheckStructTypes()
 		}
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 		// Check structures of strict type aliases.
@@ -3139,7 +3115,7 @@ impl sema {
 		}
 
 		// If there is no error, check initialization cycles.
-		if len(self.errors) == 0 {
+		if len(self.meta.errors) == 0 {
 			self.checkInitializationCycles()
 		}
 	}
@@ -3162,17 +3138,17 @@ impl sema {
 
 	fn check(mut &self) {
 		self.checkImports()
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 
 		self.checkInherits()
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 
 		self.implImpls()
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 		self.step |= stepImplsImplemented
@@ -3180,12 +3156,12 @@ impl sema {
 		// Check enums here.
 		// See developer reference (5).
 		self.checkEnums()
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 
 		self.checkPackageDecls()
-		if len(self.errors) > 0 {
+		if len(self.meta.errors) > 0 {
 			return
 		}
 

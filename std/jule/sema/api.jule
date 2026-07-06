@@ -103,12 +103,12 @@ fn analyzePackage(mut files: []&ast::AST, mut importer: Importer, flags: int): (
 	if importer != nil {
 		ok := sema.checkPackages(importer.AllPackages())
 		if !ok {
-			return nil, sema.errors
+			return nil, meta.errors
 		}
 	}
 	sema.check()
-	if len(sema.errors) > 0 {
-		return nil, sema.errors
+	if len(meta.errors) > 0 {
+		return nil, meta.errors
 	}
 
 	mut pkg := &Package{

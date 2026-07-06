@@ -1765,10 +1765,10 @@ impl eval {
 	}
 
 	fn castTypeEnumT(mut *self, mut t: &Type, mut v: &Value, mut errorToken: &token::Token) {
-		n := len(self.s.errors)
+		n := len(self.s.meta.errors)
 		// quick check: if type t and value type comparable.
 		if !self.s.checkTypeCompatibility(t, v.Type, errorToken, typeCompDefault) {
-			self.s.errors = self.s.errors[:n] // Remove logged errors by checkTypeCompatibility.
+			self.s.meta.errors = self.s.meta.errors[:n] // Remove logged errors by checkTypeCompatibility.
 			self.pushErr(errorToken, "type @ does not support casting to type @", v.Type.String(), t.String())
 		}
 		v.Constant = nil
@@ -1776,9 +1776,9 @@ impl eval {
 	}
 
 	fn castTrait(mut *self, mut t: &Type, mut v: &Value, mut errorToken: &token::Token) {
-		n := len(self.s.errors)
+		n := len(self.s.meta.errors)
 		if !self.s.checkTypeCompatibility(t, v.Type, errorToken, typeCompDefault) {
-			self.s.errors = self.s.errors[:n] // Remove logged errors by checkTypeCompatibility.
+			self.s.meta.errors = self.s.meta.errors[:n] // Remove logged errors by checkTypeCompatibility.
 			self.pushErr(errorToken, "type @ does not support casting to type @", v.Type.String(), t.String())
 		}
 		v.Constant = nil
@@ -2242,13 +2242,7 @@ impl eval {
 			self.s = f.Owner.Decl.sema
 		}
 
-		defer {
-			if old != self.s {
-				old.errors = append(old.errors, self.s.errors...)
-				self.s.errors = nil
-			}
-			self.s = old
-		}
+		defer { self.s = old }
 
 		mut fcac := fnCallArgChecker{
 			e:                 self,
@@ -3371,9 +3365,9 @@ impl eval {
 				return nil
 			}
 		} else if v.Type.TypeEnum() != nil {
-			n := len(self.s.errors)
+			n := len(self.s.meta.errors)
 			if !self.s.checkTypeCompatibility(v.Type, t, errorToken, typeCompDefault) {
-				self.s.errors = self.s.errors[:n] // Remove logged errors by checkTypeCompatibility.
+				self.s.meta.errors = self.s.meta.errors[:n] // Remove logged errors by checkTypeCompatibility.
 				self.pushErr(errorToken, "type @ not supports type assertion to type @", v.Type.String(), t.String())
 				return nil
 			}

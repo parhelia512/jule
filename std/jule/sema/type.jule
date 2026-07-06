@@ -1830,9 +1830,9 @@ impl typeChecker {
 
 		mut f := buildFunc(decl)
 
-		n := len(self.s.errors)
+		n := len(self.s.meta.errors)
 		self.s.checkAnonFuncDecl(f)
-		if n != len(self.s.errors) {
+		if n != len(self.s.meta.errors) {
 			return nil
 		}
 

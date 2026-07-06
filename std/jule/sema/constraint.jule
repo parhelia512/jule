@@ -76,13 +76,13 @@ impl constraintChecker {
 				}
 				generic.Constraint = make([]ConstraintMask, 0, len(g.Constraint.Mask))
 				for (_, mut mask) in g.Constraint.Mask {
-					n := len(sema.errors)
+					n := len(sema.meta.errors)
 					mut typ := sema.buildTypeWithRefers(mask.Type, sema, generics, nil, nil)
 					if typ == nil {
 						mut itd, _ := mask.Type.Data.(&ast::NameExpr)
 						if itd != nil && isBuiltinConstraint(itd.Name) {
 							typ = &Type{Kind: buildPrimType(itd.Name)}
-							sema.errors = sema.errors[:n]
+							sema.meta.errors = sema.meta.errors[:n]
 						} else {
 							return false
 						}

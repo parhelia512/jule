@@ -668,7 +668,7 @@ impl scopeChecker {
 			self.s.pushErr(decl.Token, "blank identifier cannot be used as an identifier for this declaration")
 			return
 		}
-		n := len(self.s.errors)
+		n := len(self.s.meta.errors)
 		mut v := buildVar(decl)
 		if out != nil {
 			*out = v
@@ -676,7 +676,7 @@ impl scopeChecker {
 		v.Scope = self.scope
 		self.checkVarDecl1(v)
 		// Do not continue to analysis of this scope, variable declaration have error(s).
-		if len(self.s.errors) != n {
+		if len(self.s.meta.errors) != n {
 			self.stop()
 		}
 	}
@@ -919,7 +919,7 @@ impl scopeChecker {
 		mut comptime := v.Type.comptimeRange()
 		comptime.kind.ready(kind.KeyA, kind.KeyB)
 		mut i := 0
-		errors := len(self.s.errors)
+		errors := len(self.s.meta.errors)
 		for i < comptime.kind.len(); i++ {
 			mut ssc := self.newChildChecker()
 			mut scope := self.getChild()
@@ -933,7 +933,7 @@ impl scopeChecker {
 			}
 			comptime.kind.step(i, kind.KeyA, kind.KeyB)
 			self.checkChildSsc(it.Scope, scope, ssc)
-			if errors != len(self.s.errors) {
+			if errors != len(self.s.meta.errors) {
 				// Stop execution if new error occurred.
 				break
 			}
@@ -1505,7 +1505,7 @@ impl scopeChecker {
 			return
 		}
 
-		errors := len(self.s.errors)
+		errors := len(self.s.meta.errors)
 		mut eval := self.s.eval(self)
 		mut right, mut rightData, mut ok := self.getRightExprsOfMultiAssign(a, eval)
 		if !ok {
@@ -1540,7 +1540,7 @@ impl scopeChecker {
 					// On trait types, we should know type is compatible for casting.
 					// Otherwise runtime assertion implementation will generate
 					// errors about it too.
-					if errors == len(self.s.errors) && self.s.meta.runtime != nil {
+					if errors == len(self.s.meta.errors) && self.s.meta.runtime != nil {
 						mut decl := runtimeFindFunc(self.s.meta.runtime, "dynAssertAssign")
 						mut f := decl.instanceForce()
 						f.Generics = append(f.Generics, &InsGeneric{Type: ce.Expr.Type}, &InsGeneric{Type: ce.Type})
@@ -1987,7 +1987,7 @@ impl scopeChecker {
 
 		// Save the current error count of semantic analysis.
 		// It will be used to detect new errors, if any.
-		errors := len(self.s.errors)
+		errors := len(self.s.meta.errors)
 
 		// Do not check default if comptime matching enabled.
 		// We do not know any case will be matched yet.
@@ -2003,7 +2003,7 @@ impl scopeChecker {
 		// If there is no error for this match statement,
 		// check the cases for enum if matching an enum.
 		// If match statement have a default case, avoid evaluation cost, handled all cases.
-		if mc.Default == nil && errors == len(self.s.errors) {
+		if mc.Default == nil && errors == len(self.s.meta.errors) {
 			mut enm := getMatchEnum(mc.Expr.Type)
 			if enm != nil {
 				self.checkAllEnumCasesHandled(m, enm)
@@ -2635,7 +2635,7 @@ impl scopeChecker {
 			s.Traits |= ST_UNSAFE
 		}
 
-		errors := len(self.s.errors)
+		errors := len(self.s.meta.errors)
 
 		self.tree = tree
 		self.scope = s
@@ -2653,7 +2653,7 @@ impl scopeChecker {
 
 	FinalStage:
 		// If we have new errors, don't check unused declarations.
-		if errors == len(self.s.errors) {
+		if errors == len(self.s.meta.errors) {
 			self.checkVars()
 			self.checkAliases()
 
