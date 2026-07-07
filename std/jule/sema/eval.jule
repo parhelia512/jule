@@ -984,7 +984,7 @@ impl eval {
 
 		if isRef(v) {
 			self.pushErr(i.Token, "index is not supported by reference type @", v.Type.String())
-			self.pushSuggestion("try deference the reference pointer like: *x")
+			self.pushSuggestion("try dereference the reference pointer like: *x")
 			return
 		}
 
@@ -4258,7 +4258,7 @@ impl binaryEval {
 				}
 			|:
 				self.e.pushErr(self.op, "operator @ is not defined for reference type @", self.op.Kind, self.l.Type.String())
-				self.e.pushSuggestion("try deference the reference pointer like: *x")
+				self.e.pushSuggestion("try dereference the reference pointer like: *x")
 				return nil
 			}
 		}

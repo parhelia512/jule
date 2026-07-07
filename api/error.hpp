@@ -9,7 +9,7 @@
 #include "types.hpp"
 
 #define __JULE_ERROR__INVALID_MEMORY                                           \
-    "invalid memory address or nil pointer deference"
+    "invalid memory address or nil pointer dereference"
 #define __JULE_ERROR__INCOMPATIBLE_TYPE "incompatible type"
 #define __JULE_ERROR__MEMORY_ALLOCATION_FAILED "memory allocation failed"
 #define __JULE_ERROR__INDEX_OUT_OF_RANGE "index out of range"
