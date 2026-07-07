@@ -57,48 +57,48 @@ struct Runtime {
 	Park2:       &sema::FuncIns
 	Runtimepark: &sema::FuncIns // Compiler implemented `runtimepark` function.
 
-	Rand:            &sema::FuncIns
-	Osyield:         &sema::FuncIns
-	ToString:        &sema::Func
-	ArrayCmp:        &sema::Func
-	DynAssertAssign: &sema::Func
-	Maphash:         &sema::Func
-	Memcopy:         &sema::Func
-	Fastmemcopy:     &sema::Func
-	FastmemcopyImpl: &sema::FuncIns
-	Prememappend:    &sema::Func
-	Memappend:       &sema::Func
-	Zprint:          &sema::FuncIns // from "std/internal/runtime/builtin"
-	Zprintln:        &sema::FuncIns // from "std/internal/runtime/builtin"
-	Emptyselect:     &sema::FuncIns
-	Runselect:       &sema::FuncIns
-	RCAdd:           &sema::FuncIns
-	RCLoad:          &sema::FuncIns
-	RCDrop:          &sema::FuncIns
-	RCAddAtomic:     &sema::FuncIns
-	RCLoadAtomic:    &sema::FuncIns
-	RCDropAtomic:    &sema::FuncIns
-	RuneCount:       &sema::FuncIns
-	StringBytePtr:   &sema::FuncIns
-	SliceBytePtr:    &sema::FuncIns
-	StringAsSlice:   &sema::FuncIns
-	SliceAsString:   &sema::FuncIns
-	Stopm:           &sema::FuncIns
-	CheckNilRef:     &sema::FuncIns
-	Cmplx64Eq:       &sema::FuncIns
-	Cmplx64Neg:      &sema::FuncIns
-	Cmplx64Add:      &sema::FuncIns
-	Cmplx64Sub:      &sema::FuncIns
-	Cmplx64Mul:      &sema::FuncIns
-	Cmplx64Div:      &sema::FuncIns
-	Cmplx128Eq:      &sema::FuncIns
-	Cmplx128Neg:     &sema::FuncIns
-	Cmplx128Add:     &sema::FuncIns
-	Cmplx128Sub:     &sema::FuncIns
-	Cmplx128Mul:     &sema::FuncIns
-	Cmplx128Div:     &sema::FuncIns
-	Cmplx128cmplx64: &sema::FuncIns
-	Cmplx64cmplx128: &sema::FuncIns
+	Rand:                &sema::FuncIns
+	Osyield:             &sema::FuncIns
+	ToString:            &sema::Func
+	ArrayCmp:            &sema::Func
+	DynAssertAssign:     &sema::Func
+	Maphash:             &sema::Func
+	Fastmemcopy:         &sema::Func
+	FastmemcopyForward:  &sema::FuncIns
+	FastmemcopyBackward: &sema::FuncIns
+	Prememappend:        &sema::Func
+	Memappend:           &sema::Func
+	Zprint:              &sema::FuncIns // from "std/internal/runtime/builtin"
+	Zprintln:            &sema::FuncIns // from "std/internal/runtime/builtin"
+	Emptyselect:         &sema::FuncIns
+	Runselect:           &sema::FuncIns
+	RCAdd:               &sema::FuncIns
+	RCLoad:              &sema::FuncIns
+	RCDrop:              &sema::FuncIns
+	RCAddAtomic:         &sema::FuncIns
+	RCLoadAtomic:        &sema::FuncIns
+	RCDropAtomic:        &sema::FuncIns
+	RuneCount:           &sema::FuncIns
+	StringBytePtr:       &sema::FuncIns
+	SliceBytePtr:        &sema::FuncIns
+	StringAsSlice:       &sema::FuncIns
+	SliceAsString:       &sema::FuncIns
+	Stopm:               &sema::FuncIns
+	CheckNilRef:         &sema::FuncIns
+	Cmplx64Eq:           &sema::FuncIns
+	Cmplx64Neg:          &sema::FuncIns
+	Cmplx64Add:          &sema::FuncIns
+	Cmplx64Sub:          &sema::FuncIns
+	Cmplx64Mul:          &sema::FuncIns
+	Cmplx64Div:          &sema::FuncIns
+	Cmplx128Eq:          &sema::FuncIns
+	Cmplx128Neg:         &sema::FuncIns
+	Cmplx128Add:         &sema::FuncIns
+	Cmplx128Sub:         &sema::FuncIns
+	Cmplx128Mul:         &sema::FuncIns
+	Cmplx128Div:         &sema::FuncIns
+	Cmplx128cmplx64:     &sema::FuncIns
+	Cmplx64cmplx128:     &sema::FuncIns
 
 	Map:         &sema::Struct
 	MapIterator: &sema::Struct
@@ -165,9 +165,9 @@ fn CollectRuntime(mut ir: &obj::IR): &Runtime {
 	meta.ArrayCmp = obj::RuntimeFindFunc(p, "arrayCmp")
 	meta.DynAssertAssign = obj::RuntimeFindFunc(p, "dynAssertAssign")
 	meta.Maphash = obj::RuntimeFindFunc(p, "maphash")
-	meta.Memcopy = obj::RuntimeFindFunc(p, "memcopy")
 	meta.Fastmemcopy = obj::RuntimeFindFunc(p, "fastmemcopy")
-	meta.FastmemcopyImpl = obj::RuntimeFindFunc(p, "fastmemcopy_impl").Instances[0]
+	meta.FastmemcopyForward = obj::RuntimeFindFunc(p, "fastmemcopy_forward").Instances[0]
+	meta.FastmemcopyBackward = obj::RuntimeFindFunc(p, "fastmemcopy_backward").Instances[0]
 	meta.Prememappend = obj::RuntimeFindFunc(p, "prememappend")
 	meta.Memappend = obj::RuntimeFindFunc(p, "memappend")
 	meta.Emptyselect = obj::RuntimeFindFunc(p, "emptyselect").Instances[0]

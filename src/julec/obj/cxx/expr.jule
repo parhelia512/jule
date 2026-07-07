@@ -1387,8 +1387,13 @@ impl exprCoder {
 			self.possibleRefExpr(m.Args[1])
 			self.oc.write("}")
 			return
-		| meta::Program.Runtime.FastmemcopyImpl:
-			self.oc.write("memmove(")
+		| meta::Program.Runtime.FastmemcopyForward:
+			self.oc.write("std::copy(")
+			self.args(m)
+			self.oc.write(")")
+			return
+		| meta::Program.Runtime.FastmemcopyBackward:
+			self.oc.write("std::copy_backward(")
 			self.args(m)
 			self.oc.write(")")
 			return
@@ -1736,14 +1741,10 @@ impl exprCoder {
 			ie.Expr.Model = unsafe { *(*sema::Expr)(&model) }
 		}
 
-		if sema::Fastmemcopy(m.Dest.Type.Slice().Value) {
-			mut ins := obj::FindFuncGenericInstance(meta::Program.Runtime.Fastmemcopy, m.Dest.Type, m.Src.Type)
-			self.oc.ic.funcIns(&self.oc.Buf, ins)
-		} else {
-			mut ins := obj::FindFuncGenericInstance(meta::Program.Runtime.Memcopy, m.Dest.Type, m.Src.Type)
-			self.oc.ic.funcIns(&self.oc.Buf, ins)
-		}
-
+		// Use the `fastmemcopy` function isntead of the Pure Jule `memcopy` function.
+		// See documentation of the `fastmemcopy` function.
+		mut ins := obj::FindFuncGenericInstance(meta::Program.Runtime.Fastmemcopy, m.Dest.Type, m.Src.Type)
+		self.oc.ic.funcIns(&self.oc.Buf, ins)
 		self.oc.write("(")
 		self.possibleRefExpr(m.Dest.Model)
 		self.oc.write(", ")
