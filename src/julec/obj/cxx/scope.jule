@@ -8,6 +8,7 @@ use "julec/obj/cst"
 use "julec/obj/meta"
 use "julec/opt"
 use "std/conv"
+use "std/jule"
 use "std/jule/ast"
 use "std/jule/constant"
 use "std/jule/directive"
@@ -1904,6 +1905,11 @@ impl scopeCoder {
 
 	fn var(mut &self, mut v: &sema::Var) {
 		if v.AST.Flags&ast::F_CONST == 0 {
+			// If variable have blank identifier, just execute the initialization expression.
+			if jule::IsBlank(v.AST.Name) {
+				self.oc.ec.model(v.Value.Model)
+				return
+			}
 			self.oc.var(v)
 		}
 	}

@@ -664,10 +664,6 @@ impl scopeChecker {
 	}
 
 	fn checkVarDecl(mut &self, mut decl: &ast::Var, mut &out: *&Var) {
-		if jule::IsBlank(decl.Name) {
-			self.s.pushErr(decl.Token, "blank identifier cannot be used as an identifier for this declaration")
-			return
-		}
 		n := len(self.s.meta.errors)
 		mut v := buildVar(decl)
 		if out != nil {
