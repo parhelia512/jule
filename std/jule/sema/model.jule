@@ -262,8 +262,8 @@ struct BuiltinCloseCallExpr {
 // The Len field is undefined for channel types.
 struct BuiltinMakeCallExpr {
 	Type: &Type
-	Len:  Expr
-	Cap:  Expr
+	Len:  &Value
+	Cap:  &Value
 }
 
 // Expression Model: for built-in append function calls.

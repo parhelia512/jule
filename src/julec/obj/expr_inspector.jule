@@ -142,10 +142,10 @@ impl ExprInspector {
 		| &sema::BuiltinMakeCallExpr:
 			mut b := (*m).(&sema::BuiltinMakeCallExpr)
 			if b.Len != nil {
-				self.inspect(&b.Len)
+				self.inspect(&b.Len.Model)
 			}
 			if b.Cap != nil {
-				self.inspect(&b.Cap)
+				self.inspect(&b.Cap.Model)
 			}
 		| &sema::BuiltinAppendCallExpr:
 			mut b := (*m).(&sema::BuiltinAppendCallExpr)

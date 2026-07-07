@@ -139,7 +139,7 @@ impl boundary {
 		| &sema::BuiltinMakeCallExpr:
 			// Must be slice, but do not check it.
 			mut mk := value.(&sema::BuiltinMakeCallExpr)
-			c := getConstantSize(mk.Len)
+			c := getConstantSize(mk.Len.Model)
 			if c != nil {
 				// c should be equal to c - 1
 				// Because it is count of elements, not max index.

@@ -398,7 +398,7 @@ fn builtinCallerMake(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Valu
 				return v
 			}
 			e.checkIntegerIndexByData(capExpr, fc.Args[1].Token)
-			model.Cap = capExpr.Model
+			model.Cap = capExpr
 		}
 		return v
 	| t.Type.Slice() != nil:
@@ -418,7 +418,7 @@ fn builtinCallerMake(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Valu
 		e.checkIntegerIndexByData(lenExpr, fc.Args[1].Token)
 		mut model := &BuiltinMakeCallExpr{
 			Type: t.Type,
-			Len:  lenExpr.Model,
+			Len:  lenExpr,
 		}
 		v.Model = model
 		if len(fc.Args) == 3 {
@@ -428,7 +428,7 @@ fn builtinCallerMake(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Valu
 				return v
 			}
 			e.checkIntegerIndexByData(capExpr, fc.Args[2].Token)
-			model.Cap = capExpr.Model
+			model.Cap = capExpr
 		}
 		return v
 	| t.Type.Map() != nil:
@@ -449,7 +449,7 @@ fn builtinCallerMake(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Valu
 				return v
 			}
 			e.checkIntegerIndexByData(capExpr, fc.Args[1].Token)
-			model.Cap = capExpr.Model
+			model.Cap = capExpr
 		}
 		return v
 	|:
