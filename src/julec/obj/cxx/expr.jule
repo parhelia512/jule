@@ -2409,18 +2409,6 @@ impl exprCoder {
 
 	// Assumes collection element kind able to init.
 	fn initCollection(mut &self, mut elem: &sema::Type, size: string) {
-		// If element type supports fastmemcopy implementation, use it to initialize.
-		if sema::Fastmemcopy(elem) {
-			self.oc.write("memset(")
-			self.oc.write(collectionIdent)
-			self.oc.write(".begin(), 0, sizeof(")
-			self.oc.tc.kind(&self.oc.Buf, elem)
-			self.oc.write(")*")
-			self.oc.write(size)
-			self.oc.write(");")
-			return
-		}
-
 		self.oc.write("std::fill(")
 		self.oc.write(collectionIdent)
 		self.oc.write(".begin(), ")

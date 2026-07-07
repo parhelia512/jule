@@ -34,7 +34,7 @@ public:
                                       "heap-array of string",
                          58);
         }
-        (void)std::memset(buf, 0, len);
+        std::fill(buf, buf + len, 0);
         return buf;
     }
 
