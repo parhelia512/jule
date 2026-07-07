@@ -5,7 +5,7 @@
 // Hashing algorithm inspired by
 // https://github.com/golang/go/blob/f229e7031a6efb2f23241b5da000c3b3203081d6/src/runtime/hash32.go
 
-#build i386
+#build x32
 
 #disable boundary
 unsafe fn memhash(p: *unsafe, seed: uintptr, mut s: uintptr): uintptr {

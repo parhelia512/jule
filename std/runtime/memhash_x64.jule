@@ -5,7 +5,7 @@
 // Hashing algorithm inspired by
 // https://github.com/golang/go/blob/f9eb3e3cd59c1cf38a98f2367c6c8dc180db9a95/src/runtime/hash64.go
 
-#build arm64 || amd64
+#build x64
 
 const m5 = 0x1d8e4e27c47d124f
 
