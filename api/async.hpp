@@ -144,12 +144,12 @@ static inline void __jule_retireDrain(void) noexcept {
 }
 
 static inline void __jule_compilerBarrier(void) noexcept {
-#if defined(_MSC_VER)
-    _ReadWriteBarrier();
-#elif defined(__clang__) || defined(__GNUC__)
-    asm volatile("" ::: "memory");
+#if defined(__clang__) || defined(__GNUC__)
+    asm volatile("");
+#elif defined(_MSC_VER)
+    __nop();
 #else
-    std::atomic_signal_fence(std::memory_order_seq_cst);
+    std::atomic_signal_fence(std::memory_order_relaxed);
 #endif
 }
 
