@@ -497,7 +497,6 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 	}
 
 	mut prefix := e.prefix
-	e.prefix = s.Value
 	defer { e.prefix = prefix }
 
 	v = &Value{
@@ -510,7 +509,7 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 		if len(fc.Args) > 2 {
 			e.pushErr(fc.Args[2].Token, "variadic argument cannot be used with plain arguments")
 		}
-
+		e.prefix = t.Type
 		mut e1 := e.evalExpr(variadic.X, evalDefault|evalPhysicalMem|evalUnwrapUntyped)
 		if e1 == nil {
 			return nil
@@ -589,6 +588,7 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 
 		return v
 	}
+	e.prefix = s.Value
 
 	mut slice := &SliceExpr{
 		ElemType: s.Value,
