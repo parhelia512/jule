@@ -546,12 +546,12 @@ impl scopeCoder {
 		self.oc.addIndent() // Indent scope.
 		self.oc.indent()
 
-		// For async runtime, we need to add a compiler barrier here.
-		if self.oc.mode&_OBJ_ASYNC != 0 {
-			self.oc.write(compilerBarrier)
-			self.oc.write(";\n")
-			self.oc.indent()
-		}
+		// We need to add a compiler barrier here.
+		// Otherwise, C++ compiler may generate undefined behavior
+		// because of possible infinite loop.
+		self.oc.write(compilerBarrier)
+		self.oc.write(";\n")
+		self.oc.indent()
 
 		addrmap := self.registerAddrmap(uintptr(it))
 
@@ -586,12 +586,12 @@ impl scopeCoder {
 		self.oc.write(":;\n")
 		self.oc.indent()
 
-		// For async runtime, we need to add a compiler barrier here.
-		if self.oc.mode&_OBJ_ASYNC != 0 {
-			self.oc.write(compilerBarrier)
-			self.oc.write(";\n")
-			self.oc.indent()
-		}
+		// We need to add a compiler barrier here.
+		// Otherwise, C++ compiler may generate undefined behavior
+		// because of possible infinite loop.
+		self.oc.write(compilerBarrier)
+		self.oc.write(";\n")
+		self.oc.indent()
 
 		if it.Expr != nil {
 			self.oc.write(typeBool)
@@ -671,11 +671,11 @@ impl scopeCoder {
 		self.oc.ic.label(&self.oc.Buf, uintptr(l), addrmap)
 		self.oc.write(":")
 
-		// For async runtime, we need to add a compiler barrier here.
-		if self.oc.mode&_OBJ_ASYNC != 0 {
-			self.oc.write("; ")
-			self.oc.write(compilerBarrier)
-		}
+		// We need to add a compiler barrier here.
+		// Otherwise, C++ compiler may generate undefined behavior
+		// because of possible infinite loop.
+		self.oc.write("; ")
+		self.oc.write(compilerBarrier)
 	}
 
 	fn gotoStmt(mut &self, gt: &sema::Goto) {
