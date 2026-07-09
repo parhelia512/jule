@@ -597,6 +597,9 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 		ElemType: s.Value,
 		Elems:    make([]&Value, 0, len(fc.Args)-1),
 	}
+	// Since we use variadic type status for `s.Value`,
+	// we should check mutability according to the value type.
+	sValueMutable := s.Value.Mutable()
 	for (_, mut arg) in fc.Args[1:] {
 		// Do not unwrap untyped literals, type analysis will check overflows.
 		mut e1 := e.evalExpr(arg, evalDefault)
@@ -606,7 +609,11 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 		if e1.Type.Flags&F_VARIADIC != 0 {
 			e.pushErr(arg.Token, "variadic argument cannot be used with plain arguments")
 		}
-		if e.s.checkValidityForInitExpr(mutable, reference, s.Value, e1, arg.Token) {
+		// Temporarily set `s.Value` as variadic to obtain good error messages with
+		// decent type information data.
+		s.Value.Flags |= F_VARIADIC
+		defer { s.Value.Flags &= ^F_VARIADIC }
+		if e.s.checkValidityForInitExpr(sValueMutable, reference, s.Value, e1, arg.Token) {
 			// Check type if validity is good.
 			// Helps to reduce error logs and duplicated logs.
 			if !e.s.checkAssignType(reference, firstAssignToDest, s.Value, e1, arg.Token, e.getOwnerRefers()) {
