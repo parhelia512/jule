@@ -554,24 +554,27 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 			Elements: elems,
 		}
 
-		makeVariadic(&e1.Type, e1.Type.Slice().Value)
-
-		// Before the analysis, set variadic kind as not variadic.
+		// Before the analysis, handle variadic kind as not variadic.
 		// This is should be made to avoid mutability error for base type of slice.
 		// Element types should still be checked.
 		// Since the variadiced slice will not be mutated,
 		// just check mutability risk of elements.
-		e1.Type.Flags &= ^F_VARIADIC
+		//
+		// Since this type is mutable, variadic state should remain as is.
+		// Do not use `makeVariadic` here because it allocates a new type.
+		// We just use this type for type checking analysis,
+		// no need for a separate allocation.
+		e1.Type = e1.Type.Slice().Value
 
 		if e.s.checkValidityForInitExpr(mutable, reference, s.Value, e1, secondArg.Token) {
 			e1.Type.Flags |= F_VARIADIC
+			defer { e1.Type.Flags &= ^F_VARIADIC }
 			// Check type if validity is good.
 			// Helps to reduce error logs and duplicated logs.
 			if !e.s.checkAssignType(reference, firstAssignToDest, s.Value, e1, secondArg.Token, e.getOwnerRefers()) {
 				return nil
 			}
 		} else {
-			e1.Type.Flags |= F_VARIADIC
 			return nil
 		}
 
