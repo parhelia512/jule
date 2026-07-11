@@ -226,6 +226,10 @@ impl typeCompatibilityChecker {
 			return false
 		}
 	Struct:
+		// Accept only `[]Trait...` for variadic passes.
+		if self.src.Flags&F_VARIADIC != 0 {
+			return false
+		}
 		s := self.src.SoftStruct()
 		if !s.Decl.IsImplements(trt) {
 			return false
