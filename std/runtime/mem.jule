@@ -4,7 +4,6 @@
 
 use "std/comptime"
 use "std/internal/runtime"
-use "std/mem"
 use "std/unsafe"
 
 // Reports whether pointer allocations are points to same address.
@@ -240,13 +239,16 @@ fn memappend[Dest, Src](mut dest: Dest, mut src: Src): Dest {
 	return dest
 }
 
+// TODO: consider better linking
+extern fn __jule_panicString(m: string)
+
 // Checks whether the reference pointer is nil, panics if so.
 // Returns the pointer p.
 // Intended to allow inline safety checks.
-// For example: *(*int)(checkNilRef(myRef)) = 20
-fn checkNilRef(mut p: *unsafe): *unsafe {
+// For example: *(*int)(checkNilRef(myRef, "msg")) = 20
+fn checkNilRef(mut p: *unsafe, msg: string): *unsafe {
 	if p == nil {
-		panic("runtime: invalid memory address or nil pointer dereference")
+		extern.__jule_panicString(msg)
 	}
 	return p
 }

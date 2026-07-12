@@ -593,7 +593,7 @@ impl exprCoder {
 				if nilptr {
 					self.possibleRefExpr(v)
 				} else {
-					self.checkNilRef(v)
+					self.checkNilRef(m.Op, v)
 				}
 				self.oc.write(")")
 				return
@@ -669,14 +669,22 @@ impl exprCoder {
 		self.oc.write(")")
 	}
 
-	fn checkNilRef(mut &self, mut v: &sema::Var) {
+	fn checkNilRef(mut &self, token: &token::Token, mut v: &sema::Var) {
 		self.oc.write("((")
 		self.oc.tc.kind(&self.oc.Buf, v.Type)
 		self.oc.write(")(")
 		self.oc.ic.funcIns(&self.oc.Buf, meta::Program.Runtime.CheckNilRef)
 		self.oc.write("((void*)(")
 		self.model(v)
-		self.oc.write("))))")
+		self.oc.write("), ")
+		stringLitF(&self.oc.Buf, fn|| {
+			self.oc.write("\"runtime: nil reference pointer dereference\\nlocation: ")
+			mut len := 54 // runtime error message
+			len += self.oc.locInfo(token)
+			self.oc.write("\"")
+			return len
+		})
+		self.oc.write(")))")
 	}
 
 	fn possibleRefExpr(mut &self, mut expr: cst::Expr) {
