@@ -4,11 +4,6 @@
 
 use "std/sys"
 
-const (
-	_CLOCK_REALTIME  = 0 // Identifier for system-wide realtime clock.
-	_CLOCK_MONOTONIC = 6 // Monotonic system-wide clock.
-)
-
 fn nanotime(): i64 {
 	// Do not use `mach_absolute_time`, because Apple recommends `clock_gettime`.
 	// See: https://developer.apple.com/documentation/driverkit/mach_absolute_time
@@ -18,7 +13,7 @@ fn nanotime(): i64 {
 	// Since `nanotime` is widely used by the scheduler and scheduler-integrated
 	// primitives, such as [sync::Mutex], this is critical for performance.
 	mut ts := sys::Timespec{}
-	if unsafe { extern.clock_gettime(extern.clockid_t(_CLOCK_MONOTONIC), (*extern.timespec)(&ts)) } == -1 {
+	if unsafe { extern.clock_gettime(extern.clockid_t(sys::CLOCK_MONOTONIC), (*extern.timespec)(&ts)) } == -1 {
 		panic("runtime: nanotime failed")
 	}
 	return i64(ts.Sec)*1e9 + i64(ts.Nsec)
