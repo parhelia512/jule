@@ -13,7 +13,7 @@ fn nanotime(): i64 {
 	// Since `nanotime` is widely used by the scheduler and scheduler-integrated
 	// primitives, such as [sync::Mutex], this is critical for performance.
 	mut ts := sys::Timespec{}
-	if unsafe { extern.clock_gettime(extern.clockid_t(sys::CLOCK_MONOTONIC), (*extern.timespec)(&ts)) } == -1 {
+	if unsafe { extern.clock_gettime(extern.clockid_t(sys::CLOCK_UPTIME_RAW), (*extern.timespec)(&ts)) } == -1 {
 		panic("runtime: nanotime failed")
 	}
 	return i64(ts.Sec)*1e9 + i64(ts.Nsec)
