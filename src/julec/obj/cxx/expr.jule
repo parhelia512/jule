@@ -1749,7 +1749,7 @@ impl exprCoder {
 			ie.Expr.Model = unsafe { *(*sema::Expr)(&model) }
 		}
 
-		// Use the `fastmemcopy` function isntead of the Pure Jule `memcopy` function.
+		// Use the `fastmemcopy` function instead of the Pure Jule `memcopy` function.
 		// See documentation of the `fastmemcopy` function.
 		mut ins := obj::FindFuncGenericInstance(meta::Program.Runtime.Fastmemcopy, m.Dest.Type, m.Src.Type)
 		self.oc.ic.funcIns(&self.oc.Buf, ins)

@@ -1107,16 +1107,17 @@ impl fnCallArgChecker {
 		oldMut := self.e.target.mutable
 		self.e.target.mutable = p.Decl.AST.Flags&ast::F_MUTABLE != 0
 
-		// Save variadic status into separate variable.
-		// Because parameter might be variadic, but type might be not variadic.
-		// Some built-in functions passes non-variadic types.
-		// Also allocate new type based on [p.Type] because type should be remain non-variadic.
-		// The [p.Type] used as prefix and base type.
-		mut oldType := p.Type
-		p.Type = new(Type, *p.Type)
 		defer {
-			p.Type = oldType
+			self.e.prefix = old
+			self.e.target.mutable = oldMut
 		}
+
+		// We should allocate a new type for prefix.
+		// Because eval algorithm may use the prefix type, by reference.
+		// Since `p.Type` is variadic, type of the result expression will also
+		// be variadic, which is does not makes sense.
+		mut prefixType := new(Type, *p.Type)
+		prefixType.Flags &= ^F_VARIADIC
 
 		for i < len(self.args); i++ {
 			mut arg := self.args[i]
@@ -1125,11 +1126,11 @@ impl fnCallArgChecker {
 			| &ast::VariadicExpr:
 				self.e.prefix = &Type{
 					Kind: &Slice{
-						Value: p.Type,
+						Value: prefixType,
 					},
 				}
 			|:
-				self.e.prefix = p.Type
+				self.e.prefix = prefixType
 			}
 
 			mut v := self.e.eval(arg, evalDefault|evalPhysicalMem|evalUnwrapUntyped)
@@ -1159,8 +1160,6 @@ impl fnCallArgChecker {
 			ok = ok && self.checkArg(p, v, arg.Token)
 			model.Elems = append(model.Elems, v)
 		}
-		self.e.prefix = old
-		self.e.target.mutable = oldMut
 
 		if variadiced && more {
 			// Use variable i because when variadic argument appears iteral will break.
