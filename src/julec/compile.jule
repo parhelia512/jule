@@ -113,18 +113,6 @@ fn pushCompCmdClang(mut args: []string): []string {
 	}
 	// Enable wrap around behavior.
 	args = append(args, "-fwrapv")
-	// The -ffloat-store flag is used to prevent excess precision issues in
-	// floating-point arithmetic on certain architectures, particularly x86.
-	// By default, the x87 floating-point unit (FPU) uses extended precision
-	// (80-bit) for calculations, which can lead to inconsistencies when storing
-	// values in 32-bit or 64-bit floating-point variables. This flag forces
-	// intermediate floating-point results to be stored in memory before being
-	// used again, ensuring that they conform to the expected precision
-	// (32-bit float or 64-bit double). While this can improve consistency across
-	// different compiler optimizations and hardware, it may also introduce a slight
-	// performance overhead due to additional memory operations. But it is a
-	// good tradeoff for consistency.
-	args = append(args, "-ffloat-store")
 	// The -fno-fast-math flag disables aggressive floating-point optimizations that may violate
 	// IEEE 754 standards or alter the precise semantics of floating-point arithmetic.
 	//
@@ -139,46 +127,6 @@ fn pushCompCmdClang(mut args: []string): []string {
 	// This flag is essential when exact IEEE 754 compliance is required,
 	// for example in numerical software where reproducibility and correctness are critical.
 	args = append(args, "-fno-fast-math")
-	// The -fexcess-precision=standard flag enforces that floating-point computations use only the
-	// precision specified by the IEEE 754 standard for the given data type (e.g., f32, f64).
-	//
-	// Some hardware and compilers by default may use extended precision registers (like x87 FPU)
-	// which hold intermediate results at higher precision than the defined type,
-	// causing subtle differences in rounding and comparison results.
-	//
-	// This flag ensures that excess precision is not used, so calculations strictly conform
-	// to the standard precision and rounding behavior, which is crucial for IEEE 754 compliance.
-	//
-	// Enabling this flag helps maintain consistent, predictable floating-point behavior across
-	// different platforms and compilation settings, avoiding hard-to-debug numerical discrepancies.
-	//
-	// Pass this flag if the target operating system is not Windows.
-	// Because user may use MSVC Clang on Windows, which is does not supports this flag.
-	if build::OS != dist::Windows {
-		args = append(args, "-fexcess-precision=standard")
-	}
-	// Assume rounding-mode is fixed and never will be changed.
-	args = append(args, "-fno-rounding-math")
-	// The -ffp-contract=fast flag enables the contraction of floating-point operations,
-	// allowing the compiler to combine operations like multiply and add into a
-	// fused multiply-add (FMA) instruction when supported by the target architecture.
-	//
-	// Fused multiply-add performs both the multiplication and the addition in a single step,
-	// with only one rounding, which can improve both performance and numerical accuracy
-	// compared to performing the operations separately.
-	//
-	// Enabling contraction may change the rounding behavior compared to separate
-	// operations, as intermediate results are not rounded independently. This can lead to
-	// slight differences in results but often improves precision in common use cases.
-	//
-	// This flag allows the compiler to apply hardware optimizations that take advantage
-	// of FMA instructions, which are particularly useful in numerical computations,
-	// linear algebra, and machine learning workloads.
-	//
-	// When strict IEEE 754 operation-by-operation semantics are not required, enabling
-	// contraction is generally recommended for better performance and often better
-	// overall numerical accuracy.
-	args = append(args, "-ffp-contract=fast")
 
 	if env::Production {
 		args = append(args, "-O3")        // Enable all optimizations.
@@ -218,18 +166,6 @@ fn pushCompCmdGcc(mut args: []string): []string {
 	}
 	// Enable wrap around behavior.
 	args = append(args, "-fwrapv")
-	// The -ffloat-store flag is used to prevent excess precision issues in
-	// floating-point arithmetic on certain architectures, particularly x86.
-	// By default, the x87 floating-point unit (FPU) uses extended precision
-	// (80-bit) for calculations, which can lead to inconsistencies when storing
-	// values in 32-bit or 64-bit floating-point variables. This flag forces
-	// intermediate floating-point results to be stored in memory before being
-	// used again, ensuring that they conform to the expected precision
-	// (32-bit float or 64-bit double). While this can improve consistency across
-	// different compiler optimizations and hardware, it may also introduce a slight
-	// performance overhead due to additional memory operations. But it is a
-	// good tradeoff for consistency.
-	args = append(args, "-ffloat-store")
 	// The -fno-fast-math flag disables aggressive floating-point optimizations that may violate
 	// IEEE 754 standards or alter the precise semantics of floating-point arithmetic.
 	//
@@ -257,34 +193,13 @@ fn pushCompCmdGcc(mut args: []string): []string {
 	// Enabling this flag helps maintain consistent, predictable floating-point behavior across
 	// different platforms and compilation settings, avoiding hard-to-debug numerical discrepancies.
 	//
-	// Pass this flag if the target operating system is not Windows.
-	// Because user may use MSVC Clang on Windows, which is does not supports this flag.
+	// User may use MSVC Clang on Windows, which is does not supports this flag.
 	// GCC is not Clang, but it might be an alias to MCSV Clang, we do not know.
-	if build::OS != dist::Windows {
+	// However, we can not assume anything. Compile according to GCC.
+	// User should use Clang for MSVC Clang.
+	if dist::IsI386(build::Arch) {
 		args = append(args, "-fexcess-precision=standard")
 	}
-	// Assume rounding-mode is fixed and never will be changed.
-	args = append(args, "-fno-rounding-math")
-	// The -ffp-contract=fast flag enables the contraction of floating-point operations,
-	// allowing the compiler to combine operations like multiply and add into a
-	// fused multiply-add (FMA) instruction when supported by the target architecture.
-	//
-	// Fused multiply-add performs both the multiplication and the addition in a single step,
-	// with only one rounding, which can improve both performance and numerical accuracy
-	// compared to performing the operations separately.
-	//
-	// Enabling contraction may change the rounding behavior compared to separate
-	// operations, as intermediate results are not rounded independently. This can lead to
-	// slight differences in results but often improves precision in common use cases.
-	//
-	// This flag allows the compiler to apply hardware optimizations that take advantage
-	// of FMA instructions, which are particularly useful in numerical computations,
-	// linear algebra, and machine learning workloads.
-	//
-	// When strict IEEE 754 operation-by-operation semantics are not required, enabling
-	// contraction is generally recommended for better performance and often better
-	// overall numerical accuracy.
-	args = append(args, "-ffp-contract=fast")
 
 	if env::Production {
 		args = append(args, "-O3")                  // Enable all optimizations.
