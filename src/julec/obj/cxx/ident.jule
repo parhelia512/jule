@@ -56,7 +56,7 @@ impl identCoder {
 				continue
 			}
 			// Unicode, handle as ASCII.
-			buf.WriteString(conv::FormatInt(i64(r), 0xF))!
+			obj::WriteUint(buf, u64(r), 16)
 		}
 	}
 
@@ -68,7 +68,7 @@ impl identCoder {
 	fn toOut(*self, mut &buf: *strings::Builder, name: string, addr: uintptr) {
 		buf.WriteByte('_')!
 		if addr != 0 {
-			buf.WriteString(conv::FormatUint(u64(addr), 0xF))!
+			obj::WriteUint(buf, u64(addr), 16)
 			buf.WriteByte('_')!
 		}
 		self.writeIdentTo(buf, name)
@@ -217,7 +217,7 @@ impl identCoder {
 		if jule::IsBlank(f.AST.Name) {
 			// If the identifier is blank, there may be other fields like that.
 			// So handle them with unique identifier, avoid duplication.
-			buf.WriteString(conv::FormatUint(u64(uintptr(f)), 0xF))!
+			obj::WriteUint(buf, u64(uintptr(f)), 16)
 			return
 		}
 		self.writeIdentTo(buf, f.AST.Name)
@@ -264,7 +264,7 @@ impl identCoder {
 			buf.WriteString(v.AST.Name)!
 		| v.AST.Name == "error":
 			buf.WriteString("__jule_error_")!
-			buf.WriteString(conv::FormatUint(u64(uintptr(v.Scope)), 16))!
+			obj::WriteUint(buf, u64(uintptr(v.Scope)), 16)
 			buf.WriteString(".error")!
 		| v.AST.Name == "self":
 			buf.WriteString(identSelf)!
@@ -286,37 +286,37 @@ impl identCoder {
 
 	fn iterBegin(*self, mut &buf: *strings::Builder, it: uintptr, addrmap: uintptr) {
 		buf.WriteString("_iter_begin_")!
-		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteString(conv::FormatUint(u64(it), 16))!
+		obj::WriteUint(buf, u64(addrmap), 16)
+		obj::WriteUint(buf, u64(it), 16)
 	}
 
 	fn iterEnd(*self, mut &buf: *strings::Builder, it: uintptr, addrmap: uintptr) {
 		buf.WriteString("_iter_end_")!
-		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteString(conv::FormatUint(u64(it), 16))!
+		obj::WriteUint(buf, u64(addrmap), 16)
+		obj::WriteUint(buf, u64(it), 16)
 	}
 
 	fn iterNext(*self, mut &buf: *strings::Builder, it: uintptr, addrmap: uintptr) {
 		buf.WriteString("_iter_next_")!
-		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteString(conv::FormatUint(u64(it), 16))!
+		obj::WriteUint(buf, u64(addrmap), 16)
+		obj::WriteUint(buf, u64(it), 16)
 	}
 
 	fn label(*self, mut &buf: *strings::Builder, u: uintptr, addrmap: uintptr) {
 		buf.WriteString("_julec_label_")!
-		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteString(conv::FormatUint(u64(u), 16))!
+		obj::WriteUint(buf, u64(addrmap), 16)
+		obj::WriteUint(buf, u64(u), 16)
 	}
 
 	fn matchEnd(*self, mut &buf: *strings::Builder, m: uintptr, addrmap: uintptr) {
 		buf.WriteString("_match_end_")!
-		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteString(conv::FormatUint(u64(m), 16))!
+		obj::WriteUint(buf, u64(addrmap), 16)
+		obj::WriteUint(buf, u64(m), 16)
 	}
 
 	fn caseBegin(*self, mut &buf: *strings::Builder, c: uintptr, addrmap: uintptr) {
 		buf.WriteString("_case_begin_")!
-		buf.WriteString(conv::FormatUint(u64(addrmap), 16))!
-		buf.WriteString(conv::FormatUint(u64(c), 16))!
+		obj::WriteUint(buf, u64(addrmap), 16)
+		obj::WriteUint(buf, u64(c), 16)
 	}
 }

@@ -342,7 +342,7 @@ impl ObjectCoder {
 			self.anonObj.WriteString("struct ")!
 			l := self.anonObj.Len()
 			self.anonObj.WriteString("__jule_anon_")!
-			self.anonObj.WriteString(conv::FormatUint(u64(uintptr(m.Func)), 0xF))!
+			obj::WriteUint(&self.anonObj, u64(uintptr(m.Func)), 16)
 			name = string(unsafe { self.anonObj.Buf()[l:] })
 			self.anonObj.WriteString(anonFuncCtxSuffix + "{\n")!
 			for (_, mut v) in m.Captured {
@@ -362,7 +362,7 @@ impl ObjectCoder {
 			self.anonObj.WriteString(anonFuncCtxSuffix + ">().dealloc(); }\n")!
 		} else {
 			name = "__jule_anon"
-			name += conv::FormatUint(u64(uintptr(m.Func)), 0xF)
+			name += conv::FormatUint(u64(uintptr(m.Func)), 16)
 		}
 
 		// Anonymous function.
@@ -667,9 +667,9 @@ impl ObjectCoder {
 		mut ident := strings::Builder{}
 		ident.Grow(1 << 5)
 		ident.WriteString("__jule_trait_offset_mapper_")!
-		ident.WriteString(conv::FormatUint(u64(uintptr(t2)), 0xF))!
+		obj::WriteUint(&ident, u64(uintptr(t2)), 16)
 		ident.WriteString("_to_")!
-		ident.WriteString(conv::FormatUint(u64(uintptr(t1)), 0xF))!
+		obj::WriteUint(&ident, u64(uintptr(t1)), 16)
 		self.Buf.Write(unsafe { ident.Buf() })!
 
 		// Lookup and push if this match is not exist.
@@ -1218,9 +1218,9 @@ impl ObjectCoder {
 		mut nname := strings::Builder{}
 		nname.Grow(30)
 		nname.WriteString("__jule_trait_method_")!
-		nname.WriteString(conv::FormatUint(u64(uintptr(f)), 0xF))!
+		obj::WriteUint(&nname, u64(uintptr(f)), 16)
 		nname.WriteString("_")!
-		nname.WriteString(conv::FormatUint(u64(uintptr(s)), 0xF))!
+		obj::WriteUint(&nname, u64(uintptr(s)), 16)
 
 		mut k := f.Params[0].Type
 		f.Params[0].Type = generalGCPtr
@@ -1369,9 +1369,9 @@ impl ObjectCoder {
 			if !exist {
 				panic("cxx: implementation mistake, [traitDataMethods] could not found MepMap record")
 			}
-			self.write(conv::FormatUint(u64(uintptr(mepf)), 0xF))
+			obj::WriteUint(&self.Buf, u64(uintptr(mepf)), 16)
 			self.write("_")
-			self.write(conv::FormatUint(u64(uintptr(s)), 0xF))
+			obj::WriteUint(&self.Buf, u64(uintptr(s)), 16)
 			self.write(",\n")
 		}
 	}

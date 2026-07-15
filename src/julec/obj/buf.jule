@@ -1,0 +1,14 @@
+// Copyright 2026 The Jule Project Contributors. All rights reserved.
+// Use of this source code is governed by a BSD 3-Clause
+// license that can be found in the LICENSE file.
+
+use "std/conv"
+use "std/strings"
+
+fn WriteInt(mut &buf: *strings::Builder, x: i64, fmt: int) {
+	unsafe { buf.SetBuf(conv::AppendInt(buf.Buf(), x, fmt)) }
+}
+
+fn WriteUint(mut &buf: *strings::Builder, x: u64, fmt: int) {
+	unsafe { buf.SetBuf(conv::AppendUint(buf.Buf(), x, fmt)) }
+}
