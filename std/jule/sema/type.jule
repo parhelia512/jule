@@ -158,6 +158,15 @@ impl Type {
 		return (unsafe { (&Type)(&lt) }).Equal(unsafe { (&Type)(&rt) })
 	}
 
+	// Reports whether the type is possibly cached.
+	// So the same type instance may be used more than once.
+	fn isPossiblyCached(mut *self): bool {
+		return self.Prim() != nil ||
+			self.Trait() != nil ||
+			self.Enum() != nil ||
+			self.TypeEnum() != nil
+	}
+
 	// Reports whether actual kind is comparable.
 	fn Comparable(*self): bool {
 		unsafe {

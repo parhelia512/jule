@@ -593,6 +593,15 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 	}
 	e.prefix = s.Value
 
+	// Allocate immutable copy of the value type if needed.
+	// Because error messages or other things may be affected by variadic handling.
+	// If type is cached, so used same instance for the type, all instances
+	// may be variadic same time, which is may break analysis.
+	mut valueType := s.Value
+	if valueType.isPossiblyCached() {
+		valueType = new(Type, *valueType)
+	}
+
 	mut slice := &SliceExpr{
 		ElemType: s.Value,
 		Elems:    make([]&Value, 0, len(fc.Args)-1),
@@ -609,14 +618,14 @@ fn builtinCallerAppend(mut e: &eval, mut fc: &ast::CallExpr, mut v: &Value): &Va
 		if e1.Type.Flags&F_VARIADIC != 0 {
 			e.pushErr(arg.Token, "variadic argument cannot be used with plain arguments")
 		}
-		// Temporarily set `s.Value` as variadic to obtain good error messages with
+		// Temporarily set value type as variadic to obtain good error messages with
 		// decent type information data.
-		s.Value.Flags |= F_VARIADIC
-		defer { s.Value.Flags &= ^F_VARIADIC }
-		if e.s.checkValidityForInitExpr(sValueMutable, reference, s.Value, e1, arg.Token) {
+		valueType.Flags |= F_VARIADIC
+		defer { valueType.Flags &= ^F_VARIADIC }
+		if e.s.checkValidityForInitExpr(sValueMutable, reference, valueType, e1, arg.Token) {
 			// Check type if validity is good.
 			// Helps to reduce error logs and duplicated logs.
-			if !e.s.checkAssignType(reference, firstAssignToDest, s.Value, e1, arg.Token, e.getOwnerRefers()) {
+			if !e.s.checkAssignType(reference, firstAssignToDest, valueType, e1, arg.Token, e.getOwnerRefers()) {
 				return nil
 			}
 		} else {
