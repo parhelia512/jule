@@ -36,20 +36,21 @@ impl identCoder {
 	// Write identifiers to buf. If identifier contains unicode runes,
 	// handle as ASCII characters. Some backend compilers are not supports
 	// unicode identifiers and causes compile errors.
+	#disable nilptr boundary
 	fn writeIdentTo(*self, mut &buf: *strings::Builder, name: string) {
-		for _, b in name {
-			if b >= utf8::RuneSelf {
-				// identifier contains unicode runes.
-				goto unicode
+		mut i := 0
+		for i < len(name); i++ {
+			if name[i] >= utf8::RuneSelf {
+				// Identifier contains at least one unicode rune.
+				goto Unicode
 			}
 		}
 		// identifier is ASCII, append directly.
 		buf.WriteString(name)!
 		return
-	unicode:
+	Unicode:
 		for _, r in name {
 			if r < utf8::RuneSelf { // ASCII
-				// Cast to byte to enable compiler optimization.
 				// Append directly to buf.
 				buf.WriteByte(byte(r))!
 				continue
