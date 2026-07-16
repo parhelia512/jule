@@ -1401,6 +1401,17 @@ impl sema {
 		if !ok {
 			return false
 		}
+
+		// Allocate immutable copy of the type if needed.
+		// Because we mutate it according to the type alias.
+		// If type is cached, so used same instance for the type, all instances
+		// may be type alias relevant same time, which is may break analysis.
+		if ta.Type.isPossiblyCached() {
+			ta.Type = new(Type, *ta.Type)
+		}
+		ta.Type.Provider = ta.FullName
+		ta.Type.Flags = ta.Flags & F_GENERIC
+
 		if ta.AST.Flags&ast::F_STRICT == 0 && ta.AST.Flags&ast::F_EXTERN != 0 {
 			self.pushErr(ta.AST.Token, "external types cannot be soft type alias")
 			self.pushSuggestion("define as strict type alias, like; type @: Type", ta.AST.Name)

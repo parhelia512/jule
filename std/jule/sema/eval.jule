@@ -444,10 +444,10 @@ impl eval {
 		}
 	}
 
-	fn _evalEnum(*self, mut enm: &Enum): &Value {
+	fn _evalEnum(*self, mut typ: &Type): &Value {
 		return &Value{
 			Decl: true,
-			Type: enm.getType(),
+			Type: typ,
 		}
 	}
 
@@ -457,13 +457,13 @@ impl eval {
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
-		return self._evalEnum(enm)
+		return self._evalEnum(enm.getType())
 	}
 
-	fn _evalTypeEnum(*self, mut enm: &TypeEnum): &Value {
+	fn _evalTypeEnum(*self, mut typ: &Type): &Value {
 		return &Value{
 			Decl: true,
-			Type: enm.getType(),
+			Type: typ,
 		}
 	}
 
@@ -473,15 +473,13 @@ impl eval {
 			self.pushSuggestion("make it public by starting with a capital letter")
 			return nil
 		}
-		return self._evalTypeEnum(enm)
+		return self._evalTypeEnum(enm.getType())
 	}
 
-	fn _evalStruct(*self, mut s: &StructIns): &Value {
+	fn _evalStruct(*self, mut s: &StructIns, mut typ: &Type): &Value {
 		mut v := &Value{
-			Decl: true,
-			Type: &Type{
-				Kind: s,
-			},
+			Decl:  true,
+			Type:  typ,
 			Model: s,
 		}
 		return v
@@ -514,7 +512,10 @@ impl eval {
 			// Otherwise, add a reference when it is instantiated.
 			self.pushReference(ins)
 		}
-		return self._evalStruct(ins)
+		mut typ := &Type{
+			Kind: ins,
+		}
+		return self._evalStruct(ins, typ)
 	}
 
 	fn evalFuncIns(*self, mut f: &FuncIns): &Value {
@@ -665,9 +666,8 @@ impl eval {
 
 		ta.Flags |= F_USED
 
-		mut kind := ta.Type.Kind
 		let mut v: &Value = nil
-		match type kind {
+		match type ta.Type.Kind {
 		| &StructIns:
 			// Eval structure instance directly.
 			// No risk for instantiation because type aliases always points to
@@ -691,42 +691,40 @@ impl eval {
 			//
 			// But, as far as tested, there is no risk for current implementation.
 			// Future implementations should pay attention for here.
-			mut s := kind.(&StructIns)
+			mut s := ta.Type.Kind.(&StructIns)
 			// Handle generic strict type alias structure instances.
 			// They are must be instantiated and the source instance is a placeholder.
 			// Do not mutate it, never. Allocate a new instance, and handle it.
 			if len(ta.Generics) > 0 {
 				s = s.Decl.instance()
-				return self._evalStruct(s)
+				mut typ := new(Type, *ta.Type)
+				typ.Kind = s
+				return self._evalStruct(s, typ)
 			}
 			self.pushReference(s)
-			v = self._evalStruct(s)
+			v = self._evalStruct(s, ta.Type)
 		| &Enum:
-			v = self._evalEnum(kind.(&Enum))
+			v = self._evalEnum(ta.Type)
 		| &TypeEnum:
-			v = self._evalTypeEnum(kind.(&TypeEnum))
+			v = self._evalTypeEnum(ta.Type)
 		| &Trait:
-			v = self.evalTrait(kind.(&Trait))
+			v = self.evalTrait(ta.Type)
 		|:
 			v = &Value{
 				Decl: true,
-				Type: &Type{
-					Kind: ta.Type.Kind,
-				},
+				Type: ta.Type,
 			}
 			v.Model = v.Type
 		}
-		v.Type.Flags |= ta.Flags & F_GENERIC
-		v.Type.Provider = ta.FullName
 		return v
 	}
 
-	fn evalTrait(mut *self, mut t: &Trait): &Value {
+	fn evalTrait(mut *self, mut typ: &Type): &Value {
 		// Push reference to the trait.
-		self.pushReference(t)
+		self.pushReference(typ.Trait())
 		return &Value{
 			Decl: true,
-			Type: t.getType(),
+			Type: typ,
 		}
 	}
 
@@ -750,7 +748,7 @@ impl eval {
 		| &TypeAlias:
 			return self.evalTypeAlias(def.(&TypeAlias), name)
 		| &Trait:
-			return self.evalTrait(def.(&Trait))
+			return self.evalTrait(def.(&Trait).getType())
 		}
 		self.pushErr(name, "undefined: "+name.Kind)
 		return nil

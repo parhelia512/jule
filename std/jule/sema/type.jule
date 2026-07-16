@@ -1090,21 +1090,18 @@ impl typeChecker {
 			}
 		}
 
-		mut tk := &Type{
-			Provider: ta.FullName,
-			Flags:    ta.Flags & F_GENERIC,
-			Kind:     ta.Type.Kind,
-		}
+		mut typ := ta.Type
 
 		// Handle generic strict type alias structure instances.
 		// They are must be instantiated and the source instance is a placeholder.
 		// Do not mutate it, never. Allocate a new instance, and handle it.
 		if len(ta.Generics) > 0 {
-			tk.Kind = ta.Type.Kind.(&StructIns).Decl.instance()
+			typ = new(Type, *typ)
+			typ.Kind = ta.Type.Kind.(&StructIns).Decl.instance()
 		} else {
-			self.pushReferenceByKind(tk)
+			self.pushReferenceByKind(typ)
 		}
-		return tk
+		return typ
 	}
 
 	fn fromEnum(mut *self, decl: &token::Token, mut e: &Enum): &Type {
