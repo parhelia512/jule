@@ -36,6 +36,12 @@ fn primTypeAlias(name: string, mut k: &Type): &TypeAlias {
 	}
 }
 
+fn primTypeAliasWithProvider(name: string, mut k: &Type): &TypeAlias {
+	k = new(Type, *k)
+	k.Provider = name
+	return primTypeAlias(name, k)
+}
+
 let mut primNil = &Type{Kind: nil}
 let mut primVoid = &Type{Kind: buildPrimType("void")}
 let mut primAny = &Type{Kind: buildPrimType(types::Any)}
@@ -112,8 +118,8 @@ let mut builtinTypeAliases: map[string]&TypeAlias = {
 	"f64":      primTypeAlias("f64", primF64),
 	"cmplx64":  primTypeAlias("cmplx64", primCmplx64),
 	"cmplx128": primTypeAlias("cmplx128", primCmplx128),
-	"byte":     primTypeAlias("byte", primU8),
-	"rune":     primTypeAlias("rune", primI32),
+	"byte":     primTypeAliasWithProvider("byte", primU8),
+	"rune":     primTypeAliasWithProvider("rune", primI32),
 }
 
 fn findBuiltinTypeAlias(name: string): &TypeAlias {
