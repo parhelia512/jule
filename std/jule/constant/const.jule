@@ -657,14 +657,14 @@ impl Const {
 	fn String(*self): string {
 		match {
 		| self.IsNil():
-			return "nil"
+			return "<nil>"
 		| self.IsBool():
 			if self.data.(bool) {
 				return "true"
 			}
 			return "false"
 		| self.IsString():
-			return self.data.(string)
+			return conv::Quote(self.data.(string))
 		| self.IsInt():
 			i := self.data.(big::Int)
 			return i.Format(10)
