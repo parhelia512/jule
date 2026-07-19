@@ -164,8 +164,8 @@ template <typename T> struct __jule_Ptr {
     inline __jule_Ptr<T> &must_ok(const char *file) noexcept {
         if (this->operator==(nullptr)) {
             if (file != nullptr) {
-                auto n = strlen(file);
-                char *message = new (std::nothrow) char[84 + n + 1];
+                const size_t n = strlen(file);
+                char *message = new (std::nothrow) char[87 + n + 1];
                 if (!message) {
                     __jule_panic(
                         (__jule_U8
@@ -174,11 +174,11 @@ template <typename T> struct __jule_Ptr {
                         89);
                 }
                 (void)strncpy(message, __JULE_ERROR__INVALID_MEMORY, 49);
-                (void)strncpy(message + 47,
-                              "\nruntime: smart pointer is nil\nfile: ", 38);
-                (void)strncpy(message + 84, file, n);
-                message[84 + n] = '\0';
-                __jule_panic((__jule_U8 *)message, 84 + n);
+                (void)strncpy(message + 49,
+                              "\nruntime: smart pointer is nil\nfile: ", 37);
+                (void)strncpy(message + 87, file, n);
+                message[87 + n] = '\0';
+                __jule_panic((__jule_U8 *)message, 87 + n);
             } else {
                 __jule_panic((__jule_U8 *)__JULE_ERROR__INVALID_MEMORY
                              "\nruntime: smart pointer is nil",
