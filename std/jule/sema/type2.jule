@@ -407,6 +407,13 @@ impl assignTypeChecker {
 		}
 		// Should be numeric.
 		kind := prim.Kind
+		if !types::IsNum(kind) {
+			return false
+		}
+		vPrim := self.v.Type.Prim()
+		if vPrim == nil || !types::IsNum(vPrim.Kind) {
+			return false
+		}
 		match {
 		| types::IsCmplx(kind):
 			if !cmplxAssignable(kind, self.v) {
