@@ -2126,7 +2126,32 @@ impl eval {
 		}
 	}
 
-	fn callBuiltinFunc(mut &self, mut fc: &ast::CallExpr, mut &v: *&Value) {
+	fn checkForAsyncRuntimeMeasurements(mut &self,
+		f: &FuncIns, fc: &ast::CallExpr, IsCo: bool, Await: bool) {
+		if !f.IsBuiltin() && f.Decl.AST.Flags&ast::F_ASYNC != 0 {
+			if !IsCo && !Await {
+				self.pushErr(fc.Token, "`async` function call must be either concurrent or awaited")
+				self.pushSuggestion("use `co myFunc()` for concurrent execution or `myFunc().await` to wait for the result")
+			} else if IsCo && Await {
+				self.pushErr(fc.Token, "concurrent calls cannot be awaited")
+			} else if self.isGlobal() {
+				self.pushErr(fc.Token, "`async` function calls are not allowed at global scope")
+			} else if !self.isAsync() {
+				self.pushErr(fc.Token, "`async` functions can only be called from within an `async` scope")
+			}
+		} else if IsCo {
+			self.pushErr(fc.Token, "only `async` functions can be called with `co`")
+		} else if Await {
+			self.pushErr(fc.Token, "only `async` functions can be awaited")
+		}
+	}
+
+	fn callBuiltinFunc(mut &self,
+		mut f: &FuncIns, mut fc: &ast::CallExpr, mut &v: *&Value,
+		IsCo: bool, Await: bool) {
+		// Check for async runtime measurements.
+		self.checkForAsyncRuntimeMeasurements(f, fc, IsCo, Await)
+
 		if !fc.Unhandled() { // Error handled?
 			// Built-in functions are not fallible.
 			self.pushErr(fc.Token, "non-fallible function cannot be handled like fallible functions")
@@ -2191,8 +2216,12 @@ impl eval {
 
 	fn callFunc(mut &self, mut fc: &ast::CallExpr, mut &v: *&Value) {
 		mut f := (*v).Type.Func()
+
+		IsCo := fc.Flags&ast::F_CO != 0
+		Await := fc.Flags&ast::F_AWAIT != 0
+
 		if f.IsBuiltin() {
-			self.callBuiltinFunc(fc, v)
+			self.callBuiltinFunc(f, fc, v, IsCo, Await)
 			return
 		}
 
@@ -2322,32 +2351,17 @@ impl eval {
 			Func:  f,
 			Expr:  callModel,
 			Args:  fcac.argModels,
-			IsCo:  fc.Flags&ast::F_CO != 0,
-			Await: fc.Flags&ast::F_AWAIT != 0,
+			IsCo:  IsCo,
+			Await: Await,
 		}
 		(*v).Model = model
 		(*v).Mutable = true
 
 		// Check for async runtime measurements.
-		if f.Decl.AST.Flags&ast::F_ASYNC != 0 {
-			if !model.IsCo && !model.Await {
-				self.s.pushErr(fc.Token, "`async` function call must be either concurrent or awaited")
-				self.s.pushSuggestion("use `co myFunc()` for concurrent execution or `myFunc().await` to wait for the result")
-			} else if model.IsCo && model.Await {
-				self.s.pushErr(fc.Token, "concurrent calls cannot be awaited")
-			} else if self.isGlobal() {
-				self.s.pushErr(fc.Token, "`async` function calls are not allowed at global scope")
-			} else if !self.isAsync() {
-				self.s.pushErr(fc.Token, "`async` functions can only be called from within an `async` scope")
-			}
-		} else if model.IsCo {
-			self.s.pushErr(fc.Token, "only `async` functions can be called with `co`")
-		} else if model.Await {
-			self.s.pushErr(fc.Token, "only `async` functions can be awaited")
-		}
+		self.checkForAsyncRuntimeMeasurements(f, fc, IsCo, Await)
 
 		if f.Decl.AST.Flags&ast::F_FALLIBLE != 0 {
-			if model.IsCo {
+			if IsCo {
 				self.s.pushErr(fc.Token, "concurrent calls are not allowed to fallible functions")
 				self.s.pushSuggestion("handle the fallible function in a separate function or anonymous function")
 			}
